@@ -88,8 +88,12 @@ MODEL_LABELS = {
     2: "Natural vegetation",
     3: "Water",
     4: "Anthropized / blocked",
+    5: "Bare soil",
+    6: "Flooded bare soil",
+    7: "Flooded anthropized / blocked",
     8: "Migrated mangrove",
     9: "Flooded mangrove",
+    10: "Flooded natural vegetation",
 }
 MODEL_STATE_NAMES = {
     0: "nodata",
@@ -883,11 +887,15 @@ class BRMangueStudio(tk.Tk):
 
         legend_bar = ttk.Frame(visual_tab, padding=(3, 2))
         legend_bar.grid(row=0, column=0, sticky="ew")
-        ttk.Label(legend_bar, text="Model states:", foreground="#5d6b78").pack(side="left", padx=(0, 6))
-        for code, label in MODEL_LABELS.items():
-            swatch = tk.Label(legend_bar, background=MODEL_COLORS[code], width=2, height=1, relief="solid", bd=1)
-            swatch.pack(side="left", padx=(2, 3))
-            ttk.Label(legend_bar, text=label, foreground="#36454f").pack(side="left", padx=(0, 8))
+        ttk.Label(legend_bar, text="Model states:", foreground="#5d6b78").grid(row=0, column=0, sticky="w", pady=(0, 2))
+        legend_items = ttk.Frame(legend_bar)
+        legend_items.grid(row=1, column=0, sticky="ew")
+        for index, (code, label) in enumerate(MODEL_LABELS.items()):
+            item = ttk.Frame(legend_items)
+            item.grid(row=index // 5, column=index % 5, sticky="w", padx=(0, 12), pady=(0, 2))
+            swatch = tk.Label(item, background=MODEL_COLORS[code], width=2, height=1, relief="solid", bd=1)
+            swatch.pack(side="left", padx=(0, 3))
+            ttk.Label(item, text=label, foreground="#36454f").pack(side="left")
 
         visual_area = ttk.PanedWindow(visual_tab, orient="vertical")
         visual_area.grid(row=1, column=0, sticky="nsew")
@@ -1873,6 +1881,8 @@ class BRMangueStudio(tk.Tk):
             f"Mangrove: {int(summary.get('mangrove', 0)):,}\n"
             f"Migrated mangrove: {int(summary.get('migrated_mangrove', 0)):,}\n"
             f"Flooded mangrove: {int(summary.get('flooded_mangrove', 0)):,}\n"
+            f"Flooded natural vegetation: {int(summary.get('flooded_natural', 0)):,}\n"
+            f"Flooded anthropized / blocked: {int(summary.get('flooded_anthropized', 0)):,}\n"
             f"Annual gain: {int(summary.get('annual_gain', 0)):,}\n"
             f"Annual loss: {int(summary.get('annual_loss', 0)):,}\n"
             f"Elevation range: {float(summary.get('min_alt2', 0)):.3f}–{float(summary.get('max_alt2', 0)):.3f}"

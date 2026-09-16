@@ -154,8 +154,11 @@ class BrMangueGrid:
                 "sea": int(np.count_nonzero(self.usos == MAR)),
                 "anthropized": int(np.count_nonzero(self.usos == AREA_ANTROPIZADA)),
                 "bare": int(np.count_nonzero(self.usos == SOLO_DESCOBERTO)),
+                "flooded_bare": int(np.count_nonzero(self.usos == SOLO_DESCOBERTO_INUNDADO)),
+                "flooded_anthropized": int(np.count_nonzero(self.usos == AREA_ANTROPIZADA_INUNDADO)),
                 "migrated_mangrove": int(np.count_nonzero(self.usos == MANGUE_MIGRADO)),
                 "flooded_mangrove": int(np.count_nonzero(self.usos == MANGUE_INUNDADO)),
+                "flooded_natural": int(np.count_nonzero(self.usos == VEGETACAO_TERRESTRE_INUNDADO)),
             }
         )
         return counts

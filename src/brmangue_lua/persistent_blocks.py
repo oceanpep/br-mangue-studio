@@ -179,8 +179,11 @@ class PersistentBlockRunner:
             "sea": int(np.count_nonzero(usos == MAR)),
             "anthropized": int(np.count_nonzero(usos == AREA_ANTROPIZADA)),
             "bare": int(np.count_nonzero(usos == SOLO_DESCOBERTO)),
+            "flooded_bare": int(np.count_nonzero(usos == SOLO_DESCOBERTO_INUNDADO)),
+            "flooded_anthropized": int(np.count_nonzero(usos == AREA_ANTROPIZADA_INUNDADO)),
             "migrated_mangrove": int(np.count_nonzero(usos == MANGUE_MIGRADO)),
             "flooded_mangrove": int(np.count_nonzero(usos == MANGUE_INUNDADO)),
+            "flooded_natural": int(np.count_nonzero(usos == VEGETACAO_TERRESTRE_INUNDADO)),
             "min_alt2": float(np.nanmin(alt2)),
             "max_alt2": float(np.nanmax(alt2)),
         }
