@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="BR-MANGUE Studio: reproducible spatial mangrove modelling in a modern Python desktop application.">
+  <title>BR-MANGUE Studio</title>
+  <link rel="icon" href="assets/BR-MANGUE_BR_icon.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="./">
+        <img src="assets/BR-MANGUE_BR_icon.png" alt="BR-MANGUE icon">
+        <span>BR-MANGUE <em>Studio</em></span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#about">About</a>
+        <a href="#download">Download</a>
+        <a href="#documentation">Documentation</a>
+        <a href="#research">Research</a>
+        <a class="nav-button" href="https://github.com/oceanpep/br-mangue-studio">Repository</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <p class="eyebrow">GEOTAM · research software</p>
+          <h1>Understand how mangroves respond to a changing coast.</h1>
+          <p class="lead">BR-MANGUE Studio is a transparent desktop application for spatial cellular modelling, scenario exploration, and reproducible coastal research.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="https://github.com/oceanpep/br-mangue-studio/releases">Download a release</a>
+            <a class="button secondary" href="#documentation">Read the documentation</a>
+          </div>
+          <p class="version-note">Research beta · Python architecture · Continuous and block processing</p>
+        </div>
+        <div class="hero-card">
+          <img src="assets/BR-MANGUE_STUDIO_preview_original.png" alt="BR-MANGUE Studio logo">
+          <div class="hero-card-footer"><span>Reproducible</span><span>Provider-independent</span><span>Open for review</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="section">
+      <div class="container">
+        <p class="eyebrow">The project</p>
+        <h2>A practical home for the BR-MANGUE model</h2>
+        <p class="section-intro">The Studio preserves the model rules from the reference implementation while providing a portable workflow for raster inputs, class mapping, simulation monitoring, and annual outputs.</p>
+        <div class="feature-grid">
+          <article><span class="feature-number">01</span><h3>Use your own data</h3><p>Load any aligned categorical land-cover raster, elevation model, optional soil layer, and study-area mask.</p></article>
+          <article><span class="feature-number">02</span><h3>Inspect every run</h3><p>Follow maps, class counts, trajectories, transitions, and resource usage while the simulation runs.</p></article>
+          <article><span class="feature-number">03</span><h3>Keep results reproducible</h3><p>Each run records its inputs, parameters, processing engine, annual states, and metadata.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="download" class="section tinted">
+      <div class="container split">
+        <div><p class="eyebrow">Get started</p><h2>Download and run</h2><p>Windows packages are published as versioned releases. Download the package, extract it, and start <code>BRMANGUE_Studio.exe</code>.</p><a class="text-link" href="https://github.com/oceanpep/br-mangue-studio/releases">View all releases →</a></div>
+        <div class="info-card"><strong>Current channel</strong><span>Research beta</span><small>Release notes and checksums accompany each package.</small></div>
+      </div>
+    </section>
+
+    <section id="documentation" class="section">
+      <div class="container split">
+        <div><p class="eyebrow">Learn</p><h2>Documentation built around real workflows</h2><p>Start with the Studio guide, then review the input requirements and processing-engine notes before running a scenario.</p></div>
+        <div class="link-list">
+          <a href="BRMANGUE_STUDIO.md"><span>Studio workflow</span><small>Projects, mapping, simulation, and outputs</small><b>↗</b></a>
+          <a href="TESTE_SAO_LUIS_MAPBIOMAS2025_ANADEM_20260909.md"><span>Raster input requirements</span><small>Alignment, masks, and optional soil</small><b>↗</b></a>
+          <a href="ENGINE_COMPARISON_20260909.md"><span>Processing engines</span><small>Continuous versus persistent blocks</small><b>↗</b></a>
+          <a href="PARITY_AUDIT_20260909.md"><span>Parity and audit notes</span><small>Scope, assumptions, and known limits</small><b>↗</b></a>
+        </div>
+      </div>
+    </section>
+
+    <section id="research" class="section tinted">
+      <div class="container split research-block">
+        <div><p class="eyebrow">Research and community</p><h2>Connect software, evidence, and people</h2><p>This space will collect studies that use BR-MANGUE, active applications, reproducibility materials, and project news. Contributions and careful issue reports are welcome as the public release matures.</p><a class="text-link" href="https://github.com/oceanpep/br-mangue-studio/issues">Discuss an issue or idea →</a></div>
+        <div class="geotam-card"><span>Developed with</span><img src="assets/GEOTAM_logo.jpeg" alt="GEOTAM laboratory logo"><small>Laboratório de Geotecnologias e Ciências Ambientais</small></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><div class="container footer-wrap"><span>© 2026 BR-MANGUE Studio · GEOTAM</span><span><a href="https://github.com/oceanpep/br-mangue-studio">GitHub</a> · <a href="https://github.com/oceanpep/br-mangue-studio/releases">Releases</a></span></div></footer>
+</body>
+</html>
