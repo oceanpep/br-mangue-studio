@@ -1,0 +1,29 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# Local build artifacts and packaged applications
+build/
+build_*/
+dist/
+dist_*/
+
+# Generated simulation outputs and temporary workspaces
+outputs/
+estudos_caso/*/resultados/
+*.memmap
+*.dat
+*.tif
+*.tiff
+*.gif
+*.mp4
+*.zip
+
+# Local environment and editor files
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+*.log
