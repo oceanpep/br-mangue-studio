@@ -88,12 +88,17 @@ MODEL_LABELS = {
     2: "Natural vegetation",
     3: "Water",
     4: "Anthropized / blocked",
-    5: "Bare soil",
-    6: "Flooded bare soil",
-    7: "Flooded anthropized / blocked",
     8: "Migrated mangrove",
     9: "Flooded mangrove",
-    10: "Flooded natural vegetation",
+}
+# The map uses the six standard visual classes. Flooded non-mangrove states
+# remain available in the detailed table and monitor, while their map colour
+# follows the corresponding parent land-cover class.
+DISPLAY_STATE_REMAP = {
+    5: 4,   # bare soil -> blocked/developed palette
+    6: 4,   # flooded bare soil -> blocked/developed palette
+    7: 4,   # flooded anthropized/blocked -> blocked/developed palette
+    10: 2,  # flooded natural vegetation -> natural vegetation palette
 }
 MODEL_STATE_NAMES = {
     0: "nodata",
@@ -416,7 +421,10 @@ def _save_annual_figure_file(
         for component in FIGURE_COMPONENTS
     }
 
-    image = _display_values_for_inputs(inputs, state, dtype=np.uint8, fill_value=0)
+    display_state = np.asarray(state, dtype=np.uint8).copy()
+    for source, target in DISPLAY_STATE_REMAP.items():
+        display_state[np.asarray(state) == source] = target
+    image = _display_values_for_inputs(inputs, display_state, dtype=np.uint8, fill_value=0)
     cmap = ListedColormap([MODEL_COLORS[i] for i in range(11)])
     norm = BoundaryNorm(np.arange(-0.5, 11.5, 1), cmap.N)
     state_fig = Figure(figsize=(7.2, 5.6), dpi=120)
@@ -892,7 +900,7 @@ class BRMangueStudio(tk.Tk):
         legend_items.grid(row=1, column=0, sticky="ew")
         for index, (code, label) in enumerate(MODEL_LABELS.items()):
             item = ttk.Frame(legend_items)
-            item.grid(row=index // 5, column=index % 5, sticky="w", padx=(0, 12), pady=(0, 2))
+            item.grid(row=0, column=index, sticky="w", padx=(0, 12), pady=(0, 2))
             swatch = tk.Label(item, background=MODEL_COLORS[code], width=2, height=1, relief="solid", bd=1)
             swatch.pack(side="left", padx=(0, 3))
             ttk.Label(item, text=label, foreground="#36454f").pack(side="left")
@@ -1332,7 +1340,10 @@ class BRMangueStudio(tk.Tk):
             messagebox.showerror("Input validation", str(exc))
 
     def _make_display(self, usos: np.ndarray) -> tuple[np.ndarray, tuple[int, int, int, int]]:
-        return self._make_display_values(usos, dtype=np.uint8, fill_value=0)
+        values = np.asarray(usos, dtype=np.uint8).copy()
+        for source, target in DISPLAY_STATE_REMAP.items():
+            values[np.asarray(usos) == source] = target
+        return self._make_display_values(values, dtype=np.uint8, fill_value=0)
 
     def _make_display_values(
         self,
