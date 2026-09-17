@@ -247,6 +247,9 @@ def load_raster_inputs(
         neighbors = _build_raster_neighbors(index_grid, rows, cols)
         profile = mb.profile.copy()
         profile.update(count=1, dtype="uint8", nodata=0)
+        # A VRT can be used as an input mosaic, but it is read-only. Outputs
+        # must always be materialized as GeoTIFFs regardless of input driver.
+        profile["driver"] = "GTiff"
         grid = BrMangueGrid(
             usos=usos,
             alt2=alt2,
