@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CMMA and ANADEM performance benchmark for BR-MANGUE Studio.">
+  <title>CMMA + ANADEM benchmark · BR-MANGUE Studio</title>
+  <link rel="icon" href="assets/BR-MANGUE_BR_icon.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header"><div class="container nav-wrap"><a class="brand" href="index.html"><img src="assets/BR-MANGUE_BR_icon.png" alt="BR-MANGUE icon"><span>MANGUE <em>Studio</em></span></a><nav aria-label="Primary navigation"><a href="index.html#about">About</a><a href="index.html#performance">Performance</a><a href="downloads.html">Download</a><a href="guide.html">Guide</a><a href="articles.html" aria-current="page">Articles</a><a href="projects.html">Projects</a></nav></div></header>
+
+  <main>
+    <section class="page-hero"><div class="container page-hero-grid"><div><p class="eyebrow">Benchmark note · 17 September 2026</p><h1>How the Studio scales on a real coastal grid.</h1><p class="page-lead">A reproducible comparison of continuous and persistent-block processing using the CMMA land-cover raster and ANADEM elevation data for Maranhão Island, Brazil.</p></div><div class="page-hero-badge"><span>Measured run</span><b>1.084M</b><small>active cells · 30 m grid</small></div></div></section>
+
+    <section class="section"><div class="container">
+      <div class="metric-grid"><div class="metric-card"><strong>10.84M</strong><span>cell-updates measured</span></div><div class="metric-card"><strong>23.4 s</strong><span>continuous median</span></div><div class="metric-card"><strong>61.7 s</strong><span>blocks median</span></div><div class="metric-card"><strong>0</strong><span>state differences</span></div></div>
+      <p class="section-intro">The benchmark covers ten annual transitions from 2025 to 2035. Each engine was run three times with the same inputs and parameters; the values below report the median elapsed time. Annual GeoTIFF snapshots were disabled so the comparison measures simulation work rather than export time.</p>
+      <div class="benchmark-table-wrap"><table class="benchmark-table"><thead><tr><th>Engine</th><th>Configuration</th><th>Median time</th><th>Throughput</th><th>Peak RSS</th></tr></thead><tbody><tr><td>Continuous</td><td>Active grid held in memory</td><td>23.4 s</td><td>0.463M cell-updates/s</td><td>196.8 MiB</td></tr><tr><td>Blocks</td><td>Persistent 10,000-cell chunks</td><td>61.7 s</td><td>0.176M cell-updates/s</td><td>254.2 MiB</td></tr></tbody></table></div>
+      <div class="benchmark-detail"><div><h3>Input and scenario</h3><p>MapBiomas Collection 11, band 41 (2025), plus ANADEM 30 m elevation and the organized study-area mask. Tide influence: 6.0 m. Sea-level rise: 0.3 mm/year. Soil/suitability layer disabled; migration fallback enabled.</p></div><div><h3>What the check tells us</h3><p>The two engines produced byte-identical final GeoTIFFs and identical annual trajectories. This verifies implementation equivalence and gives a transparent performance reference; it is not an ecological validation or a universal hardware limit.</p></div></div>
+      <p class="benchmark-note">Host used for the measurement: Intel Core i3-1215U with 19.7 GiB total RAM. Actual times will vary with CPU load, storage, output settings, and raster size. Continuous is the faster choice when the grid fits comfortably in memory; blocks is the safer workflow for very large projects.</p>
+    </div></section>
+  </main>
+
+  <footer class="site-footer"><div class="container footer-wrap"><span>© 2026 BR-MANGUE Studio · Research software</span><span><a href="index.html">Home</a> · <a href="downloads.html">Downloads</a> · <a href="guide.html">Guide</a></span></div></footer>
+</body>
+</html>
