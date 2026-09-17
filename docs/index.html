@@ -77,13 +77,13 @@
       <div class="container">
         <p class="eyebrow">Performance</p>
         <h2>One set of rules. Two ways to scale.</h2>
-        <p class="section-intro">Continuous processing keeps the active grid in memory for direct inspection. Block processing works in compact chunks and is designed to reduce RAM pressure on larger rasters. Both engines produce the same model results.</p>
+        <p class="section-intro">This measured reference uses the CMMA land-cover raster and ANADEM elevation raster for Maranhão Island: 1.084 million active cells, 30 m resolution, and ten annual transitions. Continuous processing is faster on this host; persistent blocks trade speed for a disk-backed workflow on larger grids. Both engines produce the same model results.</p>
         <div class="benchmark-grid">
-          <article class="benchmark-card"><strong>Continuous</strong><span>~438k updates/s</span><small>5.05 million cell-updates in 11.54 s on the reference test.</small></article>
-          <article class="benchmark-card"><strong>Blocks in memory</strong><span>~449k updates/s</span><small>Same 5.05 million cell-updates in 11.26 s, with identical outputs.</small></article>
-          <article class="benchmark-card"><strong>Persistent blocks</strong><span>RAM-efficient</span><small>Reference diagnostic peaked at about 130 MiB for 50,496 cells; state is kept on disk.</small></article>
+          <article class="benchmark-card"><strong>Continuous</strong><span>~0.463M updates/s</span><small>10.84 million cell-updates in 23.4 s (median of three runs).</small></article>
+          <article class="benchmark-card"><strong>Blocks · 10,000 cells</strong><span>~0.176M updates/s</span><small>10.84 million cell-updates in 61.7 s (median of three runs).</small></article>
+          <article class="benchmark-card"><strong>Output check</strong><span>Identical states</span><small>Final maps and annual trajectories matched between engines; peak RSS was about 197 MiB continuous and 254 MiB blocks.</small></article>
         </div>
-        <p class="benchmark-note">A 16 GB computer does not have one universal cell limit: the practical capacity depends on raster dimensions, data types, annual outputs, storage, and other applications running at the same time. The current benchmark reports throughput, not a guaranteed maximum number of cells. Continuous is best for grids that fit comfortably in memory; blocks is the recommended path for multi-million-cell rasters.</p>
+        <p class="benchmark-note">Measured on an Intel Core i3-1215U host with 19.7 GiB total RAM, using no annual GeoTIFF writes. These figures describe one reproducible run, not a guaranteed maximum or universal cell limit. The practical capacity depends on raster dimensions, data types, output settings, storage, and other applications. <a class="text-link" href="benchmark-cmma-anadem-20260917.html">Read the full benchmark note →</a></p>
       </div>
     </section>
 
