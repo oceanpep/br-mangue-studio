@@ -12,11 +12,13 @@ import json
 import os
 from pathlib import Path
 import queue
+import re
 import shutil
 import sys
 import threading
 import time
 from datetime import datetime
+from functools import lru_cache
 from typing import Any
 
 import numpy as np
@@ -34,6 +36,11 @@ from rasterio.crs import CRS
 from rasterio.enums import Resampling
 from rasterio.warp import calculate_default_transform, reproject
 from rasterio.windows import Window
+
+try:
+    from pyproj.database import query_crs_info
+except ImportError:  # pragma: no cover - available in source and packaged builds
+    query_crs_info = None
 
 try:
     import psutil
@@ -137,6 +144,70 @@ UI_COLORS = {
     "blue_dark": "#125b82",
     "green": "#2d7f52",
 }
+
+# This is the user-provided local definition for the Albers projection used as
+# the first suggestion. PROJ does not register 10857 as an EPSG code, so the
+# Studio keeps the label and applies the supplied WKT definition directly.
+DEFAULT_ALBERS_WKT = '''PROJCS["Conica_Equivalente_de_Albers_Brasil",
+  GEOGCS["GCS_SIRGAS2000",
+    DATUM["D_SIRGAS2000",
+      SPHEROID["Geodetic_Reference_System_of_1980",6378137,298.2572221009113]],
+    PRIMEM["Greenwich",0],
+    UNIT["Degree",0.017453292519943295]],
+  PROJECTION["Albers"],
+  PARAMETER["standard_parallel_1",-2],
+  PARAMETER["standard_parallel_2",-22],
+  PARAMETER["latitude_of_origin",-12],
+  PARAMETER["central_meridian",-54],
+  PARAMETER["false_easting",5000000],
+  PARAMETER["false_northing",10000000],
+  UNIT["Meter",1]]'''
+DEFAULT_TARGET_CRS_LABEL = "10857 — Albers Brasil (SIRGAS 2000)"
+CRS_PRESET_VALUES = {
+    DEFAULT_TARGET_CRS_LABEL: DEFAULT_ALBERS_WKT,
+    "EPSG:5880 — SIRGAS 2000 / Brazil Polyconic": "EPSG:5880",
+    "EPSG:31982 — SIRGAS 2000 / UTM zone 22S": "EPSG:31982",
+    "EPSG:31983 — SIRGAS 2000 / UTM zone 23S": "EPSG:31983",
+    "EPSG:31984 — SIRGAS 2000 / UTM zone 24S": "EPSG:31984",
+    "EPSG:4674 — SIRGAS 2000 (geographic)": "EPSG:4674",
+    "EPSG:4326 — WGS 84 (geographic)": "EPSG:4326",
+}
+
+
+def _resolve_target_crs(value: str) -> CRS:
+    """Resolve a displayed CRS choice, EPSG code, or full WKT definition."""
+    text = value.strip()
+    if not text:
+        raise ValueError("Choose a target CRS or enter an EPSG code.")
+    if text in CRS_PRESET_VALUES:
+        definition = CRS_PRESET_VALUES[text]
+        return CRS.from_wkt(definition) if definition.lstrip().startswith(("PROJCS[", "GEOGCS[")) else CRS.from_user_input(definition)
+    if text == "10857" or text.lower().startswith("10857 "):
+        return CRS.from_wkt(DEFAULT_ALBERS_WKT)
+    match = re.match(r"^(EPSG|ESRI):\d+", text, flags=re.IGNORECASE)
+    if match:
+        return CRS.from_user_input(match.group(0))
+    return CRS.from_user_input(text)
+
+
+@lru_cache(maxsize=1)
+def _epsg_crs_choices() -> tuple[tuple[str, str], ...]:
+    """Return searchable EPSG CRS labels without blocking the interface repeatedly."""
+    if query_crs_info is None:
+        return ()
+    choices: list[tuple[str, str]] = []
+    try:
+        infos = query_crs_info(
+            auth_name="EPSG",
+            pj_types=["PROJECTED_CRS", "GEOGRAPHIC_2D_CRS"],
+            allow_deprecated=False,
+        )
+        for info in infos:
+            code = str(info.code)
+            choices.append((f"EPSG:{code} — {info.name}", f"EPSG:{code}"))
+    except Exception:
+        return ()
+    return tuple(choices)
 
 
 def _resource_path(name: str) -> Path:
@@ -715,8 +786,10 @@ class BRMangueStudio(tk.Tk):
         self.datum_var = tk.StringVar(value="Not loaded")
         self.vertical_datum_var = tk.StringVar(value="")
         self.expected_crs_var = tk.StringVar(value="")
-        self.target_crs_var = tk.StringVar(value="")
+        self.target_crs_var = tk.StringVar(value=DEFAULT_TARGET_CRS_LABEL)
         self.target_resolution_var = tk.StringVar(value="")
+        self.target_crs_combo: ttk.Combobox | None = None
+        self._crs_choice_values: dict[str, str] = dict(CRS_PRESET_VALUES)
         self.project_status_var = tk.StringVar(value="No project open")
         self.run_status_var = tk.StringVar(value="Ready")
         self.resource_var = tk.StringVar(value="CPU — | RAM — | Disk —")
@@ -850,16 +923,72 @@ class BRMangueStudio(tk.Tk):
         ttk.Entry(parent, textvariable=self.source_crs_var, state="readonly").grid(row=18, column=0, columnspan=2, sticky="ew")
         ttk.Label(parent, text="Datum metadata").grid(row=19, column=0, sticky="w", pady=(5, 0))
         ttk.Entry(parent, textvariable=self.datum_var, state="readonly").grid(row=20, column=0, columnspan=2, sticky="ew")
-        ttk.Label(parent, text="Expected CRS (optional check)").grid(row=21, column=0, sticky="w", pady=(5, 0))
+        ttk.Label(parent, text="Input CRS check (optional)").grid(row=21, column=0, sticky="w", pady=(5, 0))
         ttk.Entry(parent, textvariable=self.expected_crs_var).grid(row=22, column=0, columnspan=2, sticky="ew")
-        ttk.Label(parent, text="Target CRS for reprojection (optional)").grid(row=23, column=0, sticky="w", pady=(5, 0))
-        ttk.Entry(parent, textvariable=self.target_crs_var).grid(row=24, column=0, columnspan=2, sticky="ew")
-        ttk.Label(parent, text="Target resolution (map units/pixel, optional)").grid(row=25, column=0, sticky="w", pady=(5, 0))
-        ttk.Entry(parent, textvariable=self.target_resolution_var).grid(row=26, column=0, columnspan=2, sticky="ew")
-        ttk.Button(parent, text="Reproject and align input rasters", command=self.reproject_inputs).grid(row=27, column=0, columnspan=2, sticky="ew", pady=(6, 0))
-        ttk.Label(parent, text="Declared vertical datum (metadata)").grid(row=28, column=0, sticky="w", pady=(5, 0))
-        ttk.Entry(parent, textvariable=self.vertical_datum_var).grid(row=29, column=0, columnspan=2, sticky="ew")
-        ttk.Label(parent, text="Reprojection creates new aligned GeoTIFF copies in the project prepared_inputs folder; original rasters remain unchanged. Vertical datum conversion is not inferred automatically.", wraplength=360, foreground="#5d6b78").grid(row=30, column=0, columnspan=2, sticky="w", pady=(10, 0))
+        ttk.Label(parent, text="Reprojection target (search by name or EPSG code)").grid(row=23, column=0, sticky="w", pady=(5, 0))
+        self.target_crs_combo = ttk.Combobox(
+            parent,
+            textvariable=self.target_crs_var,
+            state="normal",
+            width=42,
+        )
+        self.target_crs_combo.grid(row=24, column=0, columnspan=2, sticky="ew")
+        self.target_crs_combo.bind("<FocusIn>", self._on_crs_focus)
+        self.target_crs_combo.bind("<KeyRelease>", self._on_crs_keyrelease)
+        self.target_crs_combo.bind("<<ComboboxSelected>>", self._on_crs_selected)
+        ttk.Label(
+            parent,
+            text="Type a name such as SIRGAS 2000 or an EPSG code. The default is 10857, using the supplied Albers Brasil definition.",
+            wraplength=360,
+            foreground="#5d6b78",
+        ).grid(row=25, column=0, columnspan=2, sticky="w", pady=(2, 5))
+        ttk.Label(parent, text="Target resolution (map units/pixel, optional)").grid(row=26, column=0, sticky="w", pady=(5, 0))
+        ttk.Entry(parent, textvariable=self.target_resolution_var).grid(row=27, column=0, columnspan=2, sticky="ew")
+        ttk.Button(parent, text="Reproject and align input rasters", command=self.reproject_inputs).grid(row=28, column=0, columnspan=2, sticky="ew", pady=(6, 0))
+        ttk.Label(parent, text="Declared vertical datum (metadata only)").grid(row=29, column=0, sticky="w", pady=(5, 0))
+        ttk.Entry(parent, textvariable=self.vertical_datum_var).grid(row=30, column=0, columnspan=2, sticky="ew")
+        ttk.Label(parent, text="Reprojection creates new aligned GeoTIFF copies in the project prepared_inputs folder; original rasters remain unchanged. Vertical datum conversion is not inferred automatically.", wraplength=360, foreground="#5d6b78").grid(row=31, column=0, columnspan=2, sticky="w", pady=(10, 0))
+        self._update_crs_suggestions()
+
+    def _update_crs_suggestions(self, query: str | None = None) -> None:
+        """Update the editable CRS list using the current search text."""
+        combo = self.target_crs_combo
+        if combo is None:
+            return
+        text = self.target_crs_var.get().strip() if query is None else query.strip()
+        normalized = " ".join(text.casefold().split())
+        choices: list[str] = []
+        seen: set[str] = set()
+
+        def add(label: str, value: str) -> None:
+            if label in seen:
+                return
+            seen.add(label)
+            self._crs_choice_values[label] = value
+            choices.append(label)
+
+        for label, value in CRS_PRESET_VALUES.items():
+            if not normalized or normalized in label.casefold():
+                add(label, value)
+
+        if normalized:
+            for label, value in _epsg_crs_choices():
+                if normalized in label.casefold():
+                    add(label, value)
+                    if len(choices) >= 40:
+                        break
+        combo.configure(values=choices)
+
+    def _on_crs_focus(self, _event: Any = None) -> None:
+        self._update_crs_suggestions()
+
+    def _on_crs_keyrelease(self, event: Any) -> None:
+        if event.keysym in {"Up", "Down", "Left", "Right", "Return", "Escape", "Tab"}:
+            return
+        self._update_crs_suggestions(self.target_crs_var.get())
+
+    def _on_crs_selected(self, _event: Any = None) -> None:
+        self._update_crs_suggestions(self.target_crs_var.get())
 
     def _build_class_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
@@ -1206,9 +1335,7 @@ class BRMangueStudio(tk.Tk):
             if not land_cover.exists() or not elevation.exists():
                 raise FileNotFoundError("Select valid land-cover and elevation rasters first.")
             target_text = self.target_crs_var.get().strip()
-            if not target_text:
-                raise ValueError("Enter a target CRS such as EPSG:31983 or EPSG:4326.")
-            target_crs = CRS.from_user_input(target_text)
+            target_crs = _resolve_target_crs(target_text)
             resolution_text = self.target_resolution_var.get().strip()
             resolution = float(resolution_text) if resolution_text else None
             if resolution is not None and resolution <= 0:
@@ -1284,7 +1411,7 @@ class BRMangueStudio(tk.Tk):
                 )
                 variable.set(str(output))
             target_label = target_crs.to_string()
-            self.target_crs_var.set(target_label)
+            self.target_crs_var.set(target_text)
             self.expected_crs_var.set(target_label)
             self.run_status_var.set("Prepared aligned rasters; validate and load inputs")
             self.inspect_mapbiomas()
@@ -1966,7 +2093,7 @@ class BRMangueStudio(tk.Tk):
         self.datum_var.set("Not loaded")
         self.vertical_datum_var.set("")
         self.expected_crs_var.set("")
-        self.target_crs_var.set("")
+        self.target_crs_var.set(DEFAULT_TARGET_CRS_LABEL)
         self.target_resolution_var.set("")
         self._update_class_bars({})
         self.project_status_var.set(f"New project: {Path(folder)}")
@@ -2072,7 +2199,7 @@ class BRMangueStudio(tk.Tk):
             self.land_cover_year_var.set("" if saved_year in (None, "") else str(saved_year))
             spatial = payload.get("spatial_reference", {})
             self.expected_crs_var.set(spatial.get("expected_crs", ""))
-            self.target_crs_var.set(spatial.get("target_crs", ""))
+            self.target_crs_var.set(spatial.get("target_crs", DEFAULT_TARGET_CRS_LABEL) or DEFAULT_TARGET_CRS_LABEL)
             saved_resolution = spatial.get("target_resolution", "")
             self.target_resolution_var.set("" if saved_resolution in (None, "") else str(saved_resolution))
             self.vertical_datum_var.set(spatial.get("declared_vertical_datum", ""))
