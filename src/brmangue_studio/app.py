@@ -33,6 +33,7 @@ from tkinter import filedialog, messagebox, ttk
 from rasterio.crs import CRS
 from rasterio.enums import Resampling
 from rasterio.warp import calculate_default_transform, reproject
+from rasterio.windows import Window
 
 try:
     import psutil
@@ -405,6 +406,32 @@ def _display_values_for_inputs(
     return crop[::stride, ::stride]
 
 
+def _display_elevation_for_inputs(inputs: RasterInputSet) -> np.ndarray:
+    """Return a display-sized elevation image without requiring the full grid."""
+    if inputs.grid is not None:
+        return _display_values_for_inputs(inputs, inputs.grid.alt2, dtype=np.float64, fill_value=np.nan)
+
+    grid_meta = inputs.metadata.get("grid", {})
+    row_min = int(grid_meta.get("valid_row_min", 0))
+    row_max = int(grid_meta.get("valid_row_max", inputs.raster_shape[0] - 1))
+    col_min = int(grid_meta.get("valid_col_min", 0))
+    col_max = int(grid_meta.get("valid_col_max", inputs.raster_shape[1] - 1))
+    height = max(1, row_max - row_min + 1)
+    width = max(1, col_max - col_min + 1)
+    stride = max(1, int(max(height, width) / 700))
+    out_height = max(1, int(np.ceil(height / stride)))
+    out_width = max(1, int(np.ceil(width / stride)))
+    with rasterio.open(inputs.metadata["elevation"]["path"]) as source:
+        values = source.read(
+            1,
+            window=Window(col_min, row_min, width, height),
+            out_shape=(out_height, out_width),
+            resampling=Resampling.nearest,
+            masked=True,
+        )
+    return np.asarray(values.filled(np.nan), dtype=np.float64)
+
+
 def _save_annual_figure_file(
     inputs: RasterInputSet,
     run_dir: Path,
@@ -445,7 +472,7 @@ def _save_annual_figure_file(
     state_fig.subplots_adjust(left=0.09, right=0.98, top=0.91, bottom=0.24)
     FigureCanvasAgg(state_fig).print_figure(paths["state"], dpi=150, bbox_inches="tight")
 
-    elev_image = _display_values_for_inputs(inputs, inputs.grid.alt2, dtype=np.float64, fill_value=np.nan)
+    elev_image = _display_elevation_for_inputs(inputs)
     finite = elev_image[np.isfinite(elev_image)]
     elev_fig = Figure(figsize=(7.2, 5.6), dpi=120)
     elev_ax = elev_fig.add_subplot(111)
