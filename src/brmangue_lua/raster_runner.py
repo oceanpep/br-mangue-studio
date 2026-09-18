@@ -10,6 +10,7 @@ from pathlib import Path
 import json
 import shutil
 import time
+import gc
 from typing import Any, Callable
 
 import numpy as np
@@ -57,6 +58,33 @@ def _write_state(inputs: RasterInputSet, runner: Any, path: Path, year: int) -> 
     inputs.write_state_raster(np.asarray(usos), path, year=year)
 
 
+def _restore_materialized_input_grid(inputs: RasterInputSet) -> None:
+    """Reopen the compact input grid after a persistent-block run.
+
+    The block engine only needs the input arrays while the persistent state
+    files are being created.  Reopening here keeps the GUI's map and annual
+    figure code compatible without retaining those arrays during every step.
+    """
+    land_cover = inputs.metadata["land_cover"]
+    elevation = inputs.metadata["elevation"]
+    mask = inputs.metadata.get("mask", {})
+    soil = inputs.metadata.get("soil", {})
+    mapping = land_cover.get("mapping", {}).get("source_to_model")
+    restored = load_raster_inputs(
+        land_cover["path"],
+        elevation["path"],
+        mask_path=mask.get("path"),
+        soil_path=soil.get("path"),
+        soil_enabled=bool(soil.get("enabled", False)),
+        land_cover_band=int(land_cover.get("band", 1)),
+        land_cover_year=land_cover.get("reference_year"),
+        mapping=mapping,
+        exclude_source_codes=[int(code) for code in mask.get("excluded_source_codes", [])],
+    )
+    inputs.grid = restored.grid
+    inputs.n_cells_cached = restored.n_cells
+
+
 def run_raster_simulation(
     inputs: RasterInputSet,
     output_dir: str | Path,
@@ -88,16 +116,14 @@ def run_raster_simulation(
     if save_annual_states:
         states_dir.mkdir(parents=True, exist_ok=True)
     write_input_metadata(inputs, output_dir / "input_metadata.json")
+    if inputs.grid is None:
+        raise ValueError("Os rasters precisam ser carregados antes de iniciar a simulação.")
     inputs.write_state_raster(inputs.grid.usos, output_dir / f"initial_usos_{initial_year}.tif", year=initial_year)
     initial_class_counts = dict(inputs.grid.class_counts())
 
-    started = time.perf_counter()
-    process = psutil.Process() if psutil is not None else None
-    rss_before = process.memory_info().rss if process else None
-    peak_rss = rss_before or 0
-
     runner: Any
     workspace: Path | None = None
+    input_grid_released = False
     if engine == "continuous":
         runner = inputs.grid
     elif engine == "blocks":
@@ -108,6 +134,12 @@ def run_raster_simulation(
             block_size=block_size,
             source_path=str(Path(inputs.metadata["land_cover"]["path"]).resolve()),
         )
+        # The persistent runner now owns the state and neighbourhood arrays.
+        # Drop the full materialized grid during the simulation so its arrays
+        # are not kept alongside the two on-disk state slots.
+        inputs.grid = None
+        input_grid_released = True
+        gc.collect()
     else:
         if dissmodel_runner == "continuous":
             runner = inputs.grid
@@ -119,11 +151,23 @@ def run_raster_simulation(
                 block_size=block_size,
                 source_path=str(Path(inputs.metadata["land_cover"]["path"]).resolve()),
             )
+            inputs.grid = None
+            input_grid_released = True
+            gc.collect()
+
+    # Start performance and memory accounting after the persistent runner has
+    # been created and the full materialized input grid has been released.
+    # This reports the cost of the simulation itself instead of counting the
+    # one-time setup copy as resident state for every block step.
+    started = time.perf_counter()
+    process = psutil.Process() if psutil is not None else None
+    rss_before = process.memory_info().rss if process else None
+    peak_rss = rss_before or 0
 
     rows: list[dict[str, Any]] = []
     # Compare the first annual loss with the initial state rather than with a
     # state that has already been updated in the current run.
-    previous_mangrove: int | None = int(inputs.grid.class_counts()["mangrove"])
+    previous_mangrove: int | None = int(initial_class_counts.get("mangrove", 0))
     try:
         if engine == "dissmodel":
             from .dissmodel_adapter import run_dissmodel
@@ -162,7 +206,7 @@ def run_raster_simulation(
             )
             trajectory["calendar_year"] = trajectory["year"].astype(int) + int(initial_year)
             if "mangrove" in trajectory.columns and not trajectory.empty:
-                previous = int(inputs.grid.class_counts()["mangrove"])
+                previous = int(initial_class_counts.get("mangrove", 0))
                 gains: list[int] = []
                 losses: list[int] = []
                 for value in trajectory["mangrove"].astype(int):
@@ -209,6 +253,10 @@ def run_raster_simulation(
                     )
             trajectory = pd.DataFrame(rows)
             trajectory.to_csv(output_dir / "trajectory.csv", index=False)
+    except Exception:
+        if input_grid_released and inputs.grid is None:
+            _restore_materialized_input_grid(inputs)
+        raise
     finally:
         if hasattr(runner, "close"):
             runner.close()
@@ -219,6 +267,19 @@ def run_raster_simulation(
         shutil.copy2(states_dir / f"usos_{final_year}.tif", final_path)
     elif not final_path.exists():
         _write_state(inputs, runner, final_path, final_year)
+
+    # Close and release persistent memmaps before reopening the compact grid
+    # for GUI post-processing.  This keeps the simulation peak independent of
+    # the number of annual frames requested.
+    if hasattr(runner, "close"):
+        runner.close()
+    runner_to_release = runner
+    runner = None
+    del runner_to_release
+    gc.collect()
+
+    if input_grid_released:
+        _restore_materialized_input_grid(inputs)
 
     if process is not None:
         peak_rss = max(peak_rss, process.memory_info().rss)
@@ -242,6 +303,14 @@ def run_raster_simulation(
         "elapsed_seconds": time.perf_counter() - started,
         "rss_before_bytes": rss_before,
         "peak_rss_bytes": peak_rss,
+        "block_input_materialization": {
+            "input_grid_released_after_persistent_copy": bool(input_grid_released),
+            "reopened_for_postprocessing": bool(input_grid_released),
+            "memory_note": (
+                "The full input grid is released while persistent blocks run; "
+                "it is reopened after the run for maps and annual figures."
+            ) if input_grid_released else None,
+        },
         "soil_enabled": bool(inputs.metadata["soil"]["enabled"]),
         "migration_without_soil": bool(parameters.allow_migration_without_soil),
         "soil_behavior_when_disabled": (
