@@ -236,6 +236,20 @@ def _center_window(window: tk.Misc, width: int, height: int) -> None:
     window.geometry(f"{width}x{height}+{x}+{y}")
 
 
+def _format_duration(seconds: float | int | None) -> str:
+    """Format elapsed seconds for the live monitor and final run summary."""
+    if seconds is None:
+        return "—"
+    total = max(0, int(round(float(seconds))))
+    hours, remainder = divmod(total, 3600)
+    minutes, seconds_value = divmod(remainder, 60)
+    if hours:
+        return f"{hours} h {minutes:02d} min {seconds_value:02d} s"
+    if minutes:
+        return f"{minutes} min {seconds_value:02d} s"
+    return f"{seconds_value} s"
+
+
 def _reproject_raster_to_grid(
     source_path: str | Path,
     destination_path: str | Path,
@@ -761,6 +775,8 @@ class BRMangueStudio(tk.Tk):
         self.animation_path: Path | None = None
         self.animation_paths: dict[str, Path] = {}
         self.simulation_table_path: Path | None = None
+        self.model_elapsed_seconds: float | None = None
+        self.total_elapsed_seconds: float | None = None
         self.render_stride = 1
         self.process = psutil.Process() if psutil is not None else None
         self._build_variables()
@@ -1652,10 +1668,12 @@ class BRMangueStudio(tk.Tk):
             self.animation_year_var.set("Year —")
             self.running = True
             self.run_started = time.perf_counter()
+            self.model_elapsed_seconds = None
+            self.total_elapsed_seconds = None
             self.run_status_var.set("Running…")
             self.cells_var.set("Cells processed: 0")
             self.speed_var.set("Speed: —")
-            self._set_monitor("Simulation started.\n")
+            self._set_monitor("Simulation started.\nElapsed: 0 s\n")
             code_roles = {code: var.get() for code, var in self.class_vars.items()}
             callback = lambda event: self.message_queue.put(("step", event))
             initial_year = int(self.initial_year_var.get())
@@ -1698,6 +1716,14 @@ class BRMangueStudio(tk.Tk):
                 save_annual_states=True,
                 step_callback=callback,
             )
+            model_elapsed_seconds: float | None = None
+            metadata_path = self.run_dir / "metadata.json"
+            if metadata_path.exists():
+                try:
+                    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+                    model_elapsed_seconds = float(metadata.get("elapsed_seconds"))
+                except (OSError, TypeError, ValueError):
+                    model_elapsed_seconds = None
             final_year = int(initial_year + parameters.final_time)
             final_path = self.run_dir / f"final_usos_{final_year}.tif"
             final_state = None
@@ -1727,6 +1753,8 @@ class BRMangueStudio(tk.Tk):
                         "animation_path": animation_path,
                         "animation_paths": animation_paths,
                         "spreadsheet_path": spreadsheet_path,
+                        "model_elapsed_seconds": model_elapsed_seconds,
+                        "total_elapsed_seconds": time.perf_counter() - self.run_started,
                     },
                 )
             )
@@ -1746,7 +1774,8 @@ class BRMangueStudio(tk.Tk):
                 self._handle_step(payload)
             elif kind == "postprocess":
                 self.run_status_var.set(str(payload))
-                self._set_monitor(str(payload))
+                elapsed = time.perf_counter() - getattr(self, "run_started", time.perf_counter())
+                self._set_monitor(f"{payload}\nElapsed: {_format_duration(elapsed)}")
             elif kind == "done":
                 self.running = False
                 result = payload if isinstance(payload, dict) else {"trajectory": payload}
@@ -1763,6 +1792,8 @@ class BRMangueStudio(tk.Tk):
                 }
                 spreadsheet_path = result.get("spreadsheet_path")
                 self.simulation_table_path = Path(spreadsheet_path) if spreadsheet_path else None
+                self.model_elapsed_seconds = result.get("model_elapsed_seconds")
+                self.total_elapsed_seconds = result.get("total_elapsed_seconds")
                 self.run_status_var.set(f"Finished — {self.run_dir}")
                 if hasattr(self, "result_path_var") and self.run_dir is not None:
                     self.result_path_var.set(str(self.run_dir))
@@ -1772,10 +1803,19 @@ class BRMangueStudio(tk.Tk):
                         f"Four independent animations and figures saved  |  {len(self.annual_figure_paths)} annual frames"
                     )
                 self._load_animation()
-                self._set_monitor(self._monitor_text() + "\nSimulation finished.\n")
+                model_time = _format_duration(self.model_elapsed_seconds)
+                total_time = _format_duration(self.total_elapsed_seconds)
+                self._set_monitor(
+                    self._monitor_text()
+                    + "\nSimulation finished.\n"
+                    + f"Model time: {model_time}\n"
+                    + f"Total run time: {total_time}\n"
+                )
             elif kind == "error":
                 self.running = False
                 self.run_status_var.set("Failed")
+                elapsed = time.perf_counter() - getattr(self, "run_started", time.perf_counter())
+                self._set_monitor(f"Simulation failed after {_format_duration(elapsed)}.\n")
                 messagebox.showerror("Simulation", payload)
         self.after(40, self._poll_messages)
 
@@ -2049,6 +2089,7 @@ class BRMangueStudio(tk.Tk):
         self._redraw_class_chart()
 
     def _format_monitor(self, summary: dict[str, Any]) -> str:
+        elapsed = time.perf_counter() - getattr(self, "run_started", time.perf_counter())
         return (
             f"Calendar year: {summary.get('calendar_year', '—')}\n"
             f"Mangrove: {int(summary.get('mangrove', 0)):,}\n"
@@ -2058,7 +2099,8 @@ class BRMangueStudio(tk.Tk):
             f"Flooded anthropized / blocked: {int(summary.get('flooded_anthropized', 0)):,}\n"
             f"Annual gain: {int(summary.get('annual_gain', 0)):,}\n"
             f"Annual loss: {int(summary.get('annual_loss', 0)):,}\n"
-            f"Elevation range: {float(summary.get('min_alt2', 0)):.3f}–{float(summary.get('max_alt2', 0)):.3f}"
+            f"Elevation range: {float(summary.get('min_alt2', 0)):.3f}–{float(summary.get('max_alt2', 0)):.3f}\n"
+            f"Elapsed: {_format_duration(elapsed)}"
         )
 
     def _set_monitor(self, text: str) -> None:
