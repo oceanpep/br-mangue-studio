@@ -45,17 +45,28 @@ DEFAULT_MAPBIOMAS_MAPPING = DEFAULT_LAND_COVER_MAPPING
 class RasterInputSet:
     """Compact grid and spatial metadata used for exports."""
 
-    grid: BrMangueGrid
+    # The compact grid is normally materialized for the interface.  The
+    # persistent block runner may temporarily release it after copying the
+    # arrays to disk, so the raster metadata remains usable while ``grid`` is
+    # absent.
+    grid: BrMangueGrid | None
     raster_shape: tuple[int, int]
     valid_rows: np.ndarray
     valid_cols: np.ndarray
     valid_mask: np.ndarray
     profile: dict[str, Any]
     metadata: dict[str, Any]
+    n_cells_cached: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.n_cells_cached is None:
+            if self.grid is None:
+                raise ValueError("n_cells_cached é obrigatório quando grid está ausente.")
+            self.n_cells_cached = int(self.grid.size)
 
     @property
     def n_cells(self) -> int:
-        return int(self.grid.size)
+        return int(self.n_cells_cached or 0)
 
     def write_state_raster(self, usos: np.ndarray, path: str | Path, *, year: int) -> Path:
         """Escreve um vetor de estados de volta à grade raster original."""
