@@ -2,14 +2,17 @@
 # Build from the project root with:
 #   pyinstaller packaging/BRMANGUE_Studio.spec --clean
 
-from PyInstaller.utils.hooks import collect_submodules
+import os
+import pyproj
+
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 hiddenimports = [
     "brmangue_lua.persistent_blocks",
     "brmangue_lua.raster_inputs",
     "brmangue_lua.raster_runner",
     "brmangue_studio",
-] + collect_submodules("rasterio")
+] + collect_submodules("rasterio") + collect_submodules("pyproj")
 
 datas = [
     ("../src/brmangue_lua/engine.py", "brmangue_lua"),
@@ -21,6 +24,8 @@ datas = [
     ("../src/brmangue_studio/assets/BR-MANGUE_BR_icon.ico", "brmangue_studio/assets"),
     ("../src/brmangue_studio/assets/GEOTAM_logo.jpeg", "brmangue_studio/assets"),
 ]
+pyproj_data = os.path.join(os.path.dirname(pyproj.__file__), "proj_dir", "share", "proj")
+datas += [(pyproj_data, "pyproj/proj_dir/share/proj")]
 
 a = Analysis(
     ["../src/brmangue_studio/__main__.py"],
@@ -36,7 +41,7 @@ a = Analysis(
     # still supports those integrations; a separate extended build can remove
     # these exclusions when required.
     excludes=[
-        "dissmodel", "geopandas", "fiona", "shapely", "pyproj", "folium",
+        "dissmodel", "geopandas", "fiona", "shapely", "folium",
         "PyQt5", "qtpy", "IPython", "jupyter", "jupyterlab", "notebook",
         "dask", "distributed", "bokeh", "plotly", "scipy", "statsmodels",
         "skimage", "sklearn", "xarray", "h5py", "astropy", "intake",

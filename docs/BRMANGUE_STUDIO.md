@@ -74,12 +74,14 @@ executável e não depende de um caminho fixo no computador do usuário.
 4. Clique em **Inspect land-cover classes** e escolha o papel de cada código.
    Códigos marcados como **Exclude** ficam fora do domínio válido; não são
    transformados em uma classe ecológica.
-5. Se os rasters estiverem em CRS, resolução ou grades diferentes, informe o
-   **Target CRS for reprojection** (por exemplo, `EPSG:31983`) e, se desejado,
-   a resolução em unidades do mapa por pixel. Clique em **Reproject and align
-   input rasters**. O Studio cria cópias em `prepared_inputs/` e preserva os
-   arquivos originais. Em seguida, revise as classes e clique em **Validate and
-   load inputs**.
+5. Se os rasters estiverem em CRS, resolução ou grades diferentes, use o campo
+   **Reprojection target**. Digite parte do nome (por exemplo, `SIRGAS 2000`)
+   ou um código como `EPSG:31983` e escolha uma das sugestões. O primeiro item
+   é `10857 — Albers Brasil (SIRGAS 2000)`, usando a definição WKT fornecida
+   para o projeto. Se preferir, informe a resolução em unidades do mapa por
+   pixel e clique em **Reproject and align input rasters**. O Studio cria cópias
+   em `prepared_inputs/` e preserva os arquivos originais. Em seguida, revise
+   as classes e clique em **Validate and load inputs**.
 6. Ajuste os parâmetros e clique em **Run simulation**. A execução ocorre em
   uma thread separada, permitindo acompanhar o mapa, o DEM, o gráfico e as
   contagens por classe. O painel visual é atualizado a cada ano do calendário;
@@ -100,9 +102,9 @@ núcleo. A taxa ainda não é uma taxa regional calibrada. A acreção constante
 quando informada, é em milímetros por ano. Deixe o campo vazio para preservar a
 fórmula legada do Lua.
 
-O campo `Target CRS for reprojection` atua sobre o sistema horizontal e o
-datum associado ao CRS. A resolução opcional é expressa nas unidades do CRS
-de destino. O campo `Declared vertical datum` continua sendo apenas
+O campo `Reprojection target` atua sobre o sistema horizontal e o datum
+associado ao CRS. A resolução opcional é expressa nas unidades do CRS de
+destino. O campo `Declared vertical datum` continua sendo apenas
 documental: o Studio não estima nem converte datum vertical ou geóide
 automaticamente. Essa conversão precisa ser realizada com uma superfície
 geoidal ou referência vertical fornecida pelo usuário antes da simulação.
