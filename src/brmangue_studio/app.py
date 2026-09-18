@@ -190,6 +190,14 @@ def _resolve_target_crs(value: str) -> CRS:
     return CRS.from_user_input(text)
 
 
+def _crs_equivalent(left: str, right: str) -> bool:
+    """Compare CRS definitions semantically instead of comparing WKT text."""
+    try:
+        return _resolve_target_crs(left) == _resolve_target_crs(right)
+    except Exception:
+        return left.strip().casefold() == right.strip().casefold()
+
+
 @lru_cache(maxsize=1)
 def _epsg_crs_choices() -> tuple[tuple[str, str], ...]:
     """Return searchable EPSG CRS labels without blocking the interface repeatedly."""
@@ -1478,7 +1486,7 @@ class BRMangueStudio(tk.Tk):
                 exclude_source_codes=excluded,
             )
             source_crs = str(inputs.metadata["land_cover"]["crs"] or "Unknown")
-            if expected and expected.lower() != source_crs.lower():
+            if expected and not _crs_equivalent(expected, source_crs):
                 raise ValueError(f"Expected CRS {expected} does not match input CRS {source_crs}; reproject inputs before loading.")
             self.inputs = inputs
             self.initial_class_counts = dict(inputs.grid.class_counts())
