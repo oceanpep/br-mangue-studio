@@ -122,18 +122,17 @@ def _build_raster_neighbors(index_grid: np.ndarray, rows: np.ndarray, cols: np.n
         (0, -1), (0, 1),
         (1, -1), (1, 0), (1, 1),
     )
+    # Read the eight shifted positions directly from the index grid.  The
+    # previous implementation created a full-size temporary array for every
+    # direction, which unnecessarily doubled the peak memory of large rasters.
     for k, (dr, dc) in enumerate(offsets):
-        src_r0 = max(0, -dr)
-        src_r1 = min(height, height - dr)
-        src_c0 = max(0, -dc)
-        src_c1 = min(width, width - dc)
-        dst_r0 = max(0, dr)
-        dst_r1 = min(height, height + dr)
-        dst_c0 = max(0, dc)
-        dst_c1 = min(width, width + dc)
-        shifted = np.full_like(index_grid, -1)
-        shifted[dst_r0:dst_r1, dst_c0:dst_c1] = index_grid[src_r0:src_r1, src_c0:src_c1]
-        result[:, k] = shifted[rows, cols]
+        source_rows = rows - dr
+        source_cols = cols - dc
+        inside = (
+            (source_rows >= 0) & (source_rows < height)
+            & (source_cols >= 0) & (source_cols < width)
+        )
+        result[inside, k] = index_grid[source_rows[inside], source_cols[inside]]
     return result
 
 
@@ -228,6 +227,12 @@ def load_raster_inputs(
         usos, mapping_meta = _map_land_cover_classes(mb_values[valid], mapping)
         alt2 = dem_values[valid]
 
+        # Raster dimensions are safely below the int32 limit and compact
+        # coordinates substantially reduce the setup footprint for large
+        # domains.  Rasterio and NumPy accept these arrays for indexing.
+        rows = rows.astype(np.int32, copy=False)
+        cols = cols.astype(np.int32, copy=False)
+
         soil_values = np.full(rows.size, SOIL_DISABLED_SENTINEL, dtype=np.int16)
         soil_meta: dict[str, Any] = {
             "enabled": bool(soil_enabled),
@@ -253,6 +258,11 @@ def load_raster_inputs(
                     },
                 })
 
+        # Release masked full-raster temporaries before constructing the
+        # neighbour table.  Only the compact state vectors and valid mask are
+        # needed from this point onward.
+        del mapbiomas, elevation, map_mask, dem_mask, mb_values, dem_values
+
         index_grid = np.full(mb.shape, -1, dtype=np.int32)
         index_grid[rows, cols] = np.arange(rows.size, dtype=np.int32)
         neighbors = _build_raster_neighbors(index_grid, rows, cols)
@@ -265,8 +275,8 @@ def load_raster_inputs(
             usos=usos,
             alt2=alt2,
             classe_solos=soil_values,
-            col=cols.astype(np.int64),
-            lin=rows.astype(np.int64),
+            col=cols,
+            lin=rows,
             neighbors=neighbors,
             source_path=str(mapbiomas_path),
             crs_wkt=mb.crs.to_wkt() if mb.crs else None,
@@ -311,8 +321,8 @@ def load_raster_inputs(
         return RasterInputSet(
             grid=grid,
             raster_shape=mb.shape,
-            valid_rows=rows.astype(np.int64),
-            valid_cols=cols.astype(np.int64),
+            valid_rows=rows,
+            valid_cols=cols,
             valid_mask=valid,
             profile=profile,
             metadata=metadata,

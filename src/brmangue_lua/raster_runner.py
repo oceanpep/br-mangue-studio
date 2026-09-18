@@ -58,33 +58,6 @@ def _write_state(inputs: RasterInputSet, runner: Any, path: Path, year: int) -> 
     inputs.write_state_raster(np.asarray(usos), path, year=year)
 
 
-def _restore_materialized_input_grid(inputs: RasterInputSet) -> None:
-    """Reopen the compact input grid after a persistent-block run.
-
-    The block engine only needs the input arrays while the persistent state
-    files are being created.  Reopening here keeps the GUI's map and annual
-    figure code compatible without retaining those arrays during every step.
-    """
-    land_cover = inputs.metadata["land_cover"]
-    elevation = inputs.metadata["elevation"]
-    mask = inputs.metadata.get("mask", {})
-    soil = inputs.metadata.get("soil", {})
-    mapping = land_cover.get("mapping", {}).get("source_to_model")
-    restored = load_raster_inputs(
-        land_cover["path"],
-        elevation["path"],
-        mask_path=mask.get("path"),
-        soil_path=soil.get("path"),
-        soil_enabled=bool(soil.get("enabled", False)),
-        land_cover_band=int(land_cover.get("band", 1)),
-        land_cover_year=land_cover.get("reference_year"),
-        mapping=mapping,
-        exclude_source_codes=[int(code) for code in mask.get("excluded_source_codes", [])],
-    )
-    inputs.grid = restored.grid
-    inputs.n_cells_cached = restored.n_cells
-
-
 def run_raster_simulation(
     inputs: RasterInputSet,
     output_dir: str | Path,
@@ -253,10 +226,6 @@ def run_raster_simulation(
                     )
             trajectory = pd.DataFrame(rows)
             trajectory.to_csv(output_dir / "trajectory.csv", index=False)
-    except Exception:
-        if input_grid_released and inputs.grid is None:
-            _restore_materialized_input_grid(inputs)
-        raise
     finally:
         if hasattr(runner, "close"):
             runner.close()
@@ -268,18 +237,15 @@ def run_raster_simulation(
     elif not final_path.exists():
         _write_state(inputs, runner, final_path, final_year)
 
-    # Close and release persistent memmaps before reopening the compact grid
-    # for GUI post-processing.  This keeps the simulation peak independent of
-    # the number of annual frames requested.
+    # Close and release persistent memmaps before post-processing.  The full
+    # input grid remains released; the GUI reads only a downsampled elevation
+    # preview when it generates figures.
     if hasattr(runner, "close"):
         runner.close()
     runner_to_release = runner
     runner = None
     del runner_to_release
     gc.collect()
-
-    if input_grid_released:
-        _restore_materialized_input_grid(inputs)
 
     if process is not None:
         peak_rss = max(peak_rss, process.memory_info().rss)
@@ -305,10 +271,10 @@ def run_raster_simulation(
         "peak_rss_bytes": peak_rss,
         "block_input_materialization": {
             "input_grid_released_after_persistent_copy": bool(input_grid_released),
-            "reopened_for_postprocessing": bool(input_grid_released),
+            "reopened_for_postprocessing": False,
             "memory_note": (
                 "The full input grid is released while persistent blocks run; "
-                "it is reopened after the run for maps and annual figures."
+                "post-run figures use raster metadata and a downsampled elevation preview."
             ) if input_grid_released else None,
         },
         "soil_enabled": bool(inputs.metadata["soil"]["enabled"]),

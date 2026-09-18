@@ -41,7 +41,7 @@ def test_block_runner_releases_and_restores_materialized_grid(tmp_path):
     )
 
     assert len(trajectory) == 1
-    assert inputs.grid is not None
+    assert inputs.grid is None
     assert inputs.n_cells == 4
     metadata = (tmp_path / "run" / "metadata.json").read_text(encoding="utf-8")
     assert "input_grid_released_after_persistent_copy" in metadata
