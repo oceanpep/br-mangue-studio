@@ -211,6 +211,15 @@ def load_raster_inputs(
         dem_mask = ~np.ma.getmaskarray(elevation)
         spatial_mask = _read_mask(mask_path, mb)
         mb_values = np.asarray(mapbiomas.filled(0))
+        # Some categorical GeoTIFFs contain IEEE NaN values even when their
+        # declared nodata value is -9999.  NaN is not masked by rasterio in
+        # that case and would later reach ``int(code)`` while building the
+        # class-count metadata.  Treat non-finite categorical pixels as
+        # invalid input cells before any class mapping or integer conversion.
+        if np.issubdtype(mb_values.dtype, np.floating):
+            finite_map = np.isfinite(mb_values)
+            map_mask &= finite_map
+            mb_values = np.where(finite_map, mb_values, 0)
         dem_values = np.asarray(elevation.filled(np.nan), dtype=np.float64)
         excluded = np.asarray(exclude_source_codes or [], dtype=mb_values.dtype)
         valid = (
