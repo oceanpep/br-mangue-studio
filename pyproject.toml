@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "brmangue-python-lua-parity"
-version = "0.1.0a1"
-description = "Python translation of the BRMANGUE Lua/TerraME demonstration model"
+version = "1.0.0"
+description = "BR-MANGUE Studio: a reproducible Python desktop application for coastal mangrove cellular modelling"
 requires-python = ">=3.10"
 dependencies = [
     "geopandas>=0.14",

@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use BR-MANGUE Studio, please cite the release and the accompanying article."
+title: "BR-MANGUE Studio"
+type: software
+version: 1.0.0
+date-released: 2026-09-21
+abstract: >-
+  Desktop research software for running and inspecting the BR-MANGUE spatial
+  cellular model of mangrove response to coastal sea-level change. The Studio
+  provides aligned raster inputs, explicit class mapping, continuous and
+  persistent-block processing, annual outputs, visual monitoring, and
+  reproducible run metadata.
+authors:
+  - family-names: Sousa
+    given-names: Felipe Martins
+    affiliation: Universidade Federal do Maranhão
+  - family-names: Bezerra
+    given-names: Denilson da Silva
+repository-code: https://github.com/oceanpep/br-mangue-studio
+url: https://oceanpep.github.io/br-mangue-studio/
+keywords:
+  - mangrove modelling
+  - cellular automaton
+  - coastal change
+  - sea-level rise
+  - geospatial raster
+  - environmental modelling
+  - research software

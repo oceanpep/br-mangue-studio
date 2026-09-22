@@ -250,6 +250,18 @@ def _format_duration(seconds: float | int | None) -> str:
     return f"{seconds_value} s"
 
 
+def _format_bytes(value: int | float | None) -> str:
+    """Format a byte count for the final run summary."""
+    if value is None:
+        return "—"
+    amount = max(0.0, float(value))
+    for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
+        if amount < 1024.0 or unit == "TiB":
+            return f"{amount:.1f} {unit}"
+        amount /= 1024.0
+    return "—"
+
+
 def _reproject_raster_to_grid(
     source_path: str | Path,
     destination_path: str | Path,
@@ -1805,11 +1817,25 @@ class BRMangueStudio(tk.Tk):
                 self._load_animation()
                 model_time = _format_duration(self.model_elapsed_seconds)
                 total_time = _format_duration(self.total_elapsed_seconds)
+                performance_text = ""
+                if self.run_dir is not None:
+                    metadata_path = self.run_dir / "metadata.json"
+                    try:
+                        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+                        performance = metadata.get("performance", {})
+                        performance_text = (
+                            f"Peak process RAM: {_format_bytes(performance.get('peak_rss_bytes'))}\n"
+                            f"Throughput: {float(performance.get('cell_updates_per_second', 0.0)) / 1_000_000:.3f}M cell-updates/s\n"
+                            f"Output size: {_format_bytes(performance.get('output_size_bytes'))}\n"
+                        )
+                    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+                        performance_text = ""
                 self._set_monitor(
                     self._monitor_text()
                     + "\nSimulation finished.\n"
                     + f"Model time: {model_time}\n"
                     + f"Total run time: {total_time}\n"
+                    + performance_text
                 )
             elif kind == "error":
                 self.running = False
