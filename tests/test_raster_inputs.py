@@ -66,3 +66,22 @@ def test_raster_loader_accepts_aligned_optional_soil(tmp_path):
     )
     assert inputs.metadata["soil"]["enabled"] is True
     assert inputs.grid.classe_solos.tolist() == [3, 0, 2, 9]
+
+
+def test_raster_loader_ignores_unmasked_nan_in_categorical_raster(tmp_path):
+    # A few MapBiomas/land-cover exports carry NaN cells in addition to their
+    # declared nodata value.  Those cells must be excluded before class codes
+    # are converted to integers for the mapping metadata.
+    mb = np.array([[5.0, np.nan], [33.0, 6.0]], dtype=np.float32)
+    dem = np.ones((2, 2), dtype=np.float32)
+    mb_path = tmp_path / "mb_nan.tif"
+    dem_path = tmp_path / "dem_nan.tif"
+    _write_raster(mb_path, mb, dtype="float32", nodata=-9999)
+    _write_raster(dem_path, dem, dtype="float32", nodata=-9999)
+
+    inputs = load_raster_inputs(mb_path, dem_path, soil_enabled=False)
+
+    assert inputs.n_cells == 3
+    assert "nan" not in inputs.metadata["land_cover"]["mapping"]["source_code_counts_valid"]
+    assert inputs.grid.class_counts()["mangrove"] == 1
+    assert inputs.grid.class_counts()["sea"] == 1
