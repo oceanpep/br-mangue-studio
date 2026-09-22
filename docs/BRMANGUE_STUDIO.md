@@ -1,5 +1,7 @@
 # BR-MANGUE Studio — interface desktop
 
+Para o fluxo completo do executável, consulte o [Manual do usuário](MANUAL_USUARIO_BR_MANGUE_STUDIO.md).
+
 ## O que é
 
 O BR-MANGUE Studio é uma interface gráfica opcional para o núcleo
@@ -34,6 +36,12 @@ Nesta versão, a interface já oferece:
   processadas, velocidade e tempo registrados;
 - CSV de trajetória, GeoTIFF anual, metadados, figuras anuais em `figures/`,
   `simulation.gif` e `transition_by_land_cover_code.csv` na pasta da execução.
+  O `metadata.json` também guarda o tempo de preparação, o tempo do modelo,
+  o tempo total, o pico de RSS, a memória do sistema, a ocupação de disco,
+  os contadores de CPU/I/O e o tamanho final dos produtos. O `trajectory.csv`
+  registra duração, RSS e throughput de cada ano. O arquivo
+  `resource_samples.csv` guarda amostras periódicas de RAM, CPU e espaço livre
+  em disco durante a execução.
 
 ## Instalação e execução no ambiente Conda
 
@@ -60,7 +68,7 @@ usado como elevação. O modelo não identifica nem exige um provedor específic
 ## Tela de abertura
 
 Ao iniciar o Studio, uma tela compacta apresenta o logotipo, a versão atual
-(`0.2.0 beta`) e o estado de carregamento. Ela fecha automaticamente quando o
+(`1.0.0`) e o estado de carregamento. Ela fecha automaticamente quando o
 workspace principal está pronto. O logotipo é empacotado junto com a versão
 executável e não depende de um caminho fixo no computador do usuário.
 

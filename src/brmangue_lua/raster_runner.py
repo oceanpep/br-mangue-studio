@@ -11,6 +11,7 @@ import json
 import shutil
 import time
 import gc
+import threading
 from typing import Any, Callable
 
 import numpy as np
@@ -53,6 +54,62 @@ def _parameters_metadata(parameters: ModelParameters) -> dict[str, Any]:
     }
 
 
+def _safe_process_io(process: Any | None) -> dict[str, int] | None:
+    """Return process I/O counters when the operating system exposes them."""
+    if process is None:
+        return None
+    try:
+        counters = process.io_counters()
+    except Exception:
+        return None
+    return {
+        "read_bytes": int(getattr(counters, "read_bytes", 0)),
+        "write_bytes": int(getattr(counters, "write_bytes", 0)),
+    }
+
+
+def _safe_cpu_times(process: Any | None) -> dict[str, float] | None:
+    """Return user and system CPU seconds when available."""
+    if process is None:
+        return None
+    try:
+        times = process.cpu_times()
+    except Exception:
+        return None
+    return {
+        "user_seconds": float(getattr(times, "user", 0.0)),
+        "system_seconds": float(getattr(times, "system", 0.0)),
+    }
+
+
+def _safe_virtual_memory() -> dict[str, int] | None:
+    """Return system memory counters without making psutil mandatory."""
+    if psutil is None:
+        return None
+    try:
+        memory = psutil.virtual_memory()
+    except (AttributeError, OSError, psutil.Error):
+        return None
+    return {
+        "total_bytes": int(memory.total),
+        "available_bytes": int(memory.available),
+        "used_bytes": int(memory.used),
+        "percent": float(memory.percent),
+    }
+
+
+def _directory_size_bytes(path: Path) -> int:
+    """Sum completed output files, ignoring files that disappear mid-scan."""
+    total = 0
+    for item in path.rglob("*"):
+        try:
+            if item.is_file():
+                total += int(item.stat().st_size)
+        except OSError:
+            continue
+    return total
+
+
 def _write_state(inputs: RasterInputSet, runner: Any, path: Path, year: int) -> None:
     usos, _, _ = _state_arrays(runner)
     inputs.write_state_raster(np.asarray(usos), path, year=year)
@@ -83,6 +140,7 @@ def run_raster_simulation(
     if dissmodel_runner not in {"continuous", "blocks"}:
         raise ValueError("dissmodel_runner deve ser continuous ou blocks.")
 
+    run_started = time.perf_counter()
     output_dir = Path(output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     states_dir = output_dir / "states"
@@ -136,6 +194,46 @@ def run_raster_simulation(
     process = psutil.Process() if psutil is not None else None
     rss_before = process.memory_info().rss if process else None
     peak_rss = rss_before or 0
+    memory_before = _safe_virtual_memory()
+    disk_free_before = int(shutil.disk_usage(output_dir).free)
+    io_before = _safe_process_io(process)
+    cpu_before = _safe_cpu_times(process)
+    last_step_mark = started
+    resource_samples: list[dict[str, Any]] = []
+    sampling_stop = threading.Event()
+    sampler_thread: threading.Thread | None = None
+
+    def _sample_resources() -> None:
+        if process is None or psutil is None:
+            return
+        while True:
+            sample_time = time.perf_counter()
+            try:
+                memory = psutil.virtual_memory()
+                disk_free = shutil.disk_usage(output_dir).free
+                resource_samples.append(
+                    {
+                        "elapsed_seconds": round(sample_time - started, 6),
+                        "rss_bytes": int(process.memory_info().rss),
+                        "system_memory_available_bytes": int(memory.available),
+                        "system_memory_used_bytes": int(memory.used),
+                        "system_memory_percent": float(memory.percent),
+                        "cpu_percent": float(psutil.cpu_percent(None)),
+                        "disk_free_bytes": int(disk_free),
+                    }
+                )
+            except Exception:
+                pass
+            if sampling_stop.wait(1.0):
+                return
+
+    if process is not None:
+        sampler_thread = threading.Thread(
+            target=_sample_resources,
+            name="brmangue-resource-sampler",
+            daemon=True,
+        )
+        sampler_thread.start()
 
     rows: list[dict[str, Any]] = []
     # Compare the first annual loss with the initial state rather than with a
@@ -147,8 +245,14 @@ def run_raster_simulation(
 
             def _handle_dissmodel_step(record: dict[str, Any]) -> None:
                 """Forward each DissModel event to annual outputs and GUI."""
+                nonlocal last_step_mark, peak_rss
                 year_index = int(record["year"])
                 calendar_year = int(initial_year + year_index)
+                step_elapsed = max(time.perf_counter() - last_step_mark, 0.0)
+                last_step_mark = time.perf_counter()
+                step_rss = process.memory_info().rss if process else None
+                if step_rss is not None:
+                    peak_rss = max(peak_rss, step_rss)
                 summary = dict(record)
                 row: dict[str, Any] = {
                     "year": year_index,
@@ -156,6 +260,11 @@ def run_raster_simulation(
                     **summary,
                     "annual_gain": int(record.get("gain", 0)),
                     "annual_loss": int(record.get("loss", 0)),
+                    "step_elapsed_seconds": round(step_elapsed, 6),
+                    "step_rss_bytes": step_rss,
+                    "step_cells_per_second": round(inputs.n_cells / step_elapsed, 3)
+                    if step_elapsed > 0
+                    else None,
                 }
                 rows.append(row)
                 if save_annual_states:
@@ -188,11 +297,23 @@ def run_raster_simulation(
                     previous = int(value)
                 trajectory["gain"] = gains
                 trajectory["loss"] = losses
+            step_metrics = pd.DataFrame(rows)
+            if not step_metrics.empty:
+                metric_columns = [
+                    "year",
+                    "step_elapsed_seconds",
+                    "step_rss_bytes",
+                    "step_cells_per_second",
+                ]
+                trajectory = trajectory.merge(
+                    step_metrics[metric_columns], on="year", how="left"
+                )
             trajectory.to_csv(output_dir / "trajectory.csv", index=False)
             _write_state(inputs, runner, output_dir / f"final_usos_{initial_year + parameters.final_time}.tif", initial_year + parameters.final_time)
             rows = trajectory.to_dict(orient="records")
         else:
             for time_index in range(parameters.start, parameters.final_time + 1):
+                step_started = time.perf_counter()
                 if engine == "continuous":
                     runner.step(time_index, parameters)
                     summary = _summary_grid(runner)
@@ -201,17 +322,24 @@ def run_raster_simulation(
                 mangrove = int(summary["mangrove"])
                 previous = mangrove if previous_mangrove is None else previous_mangrove
                 calendar_year = int(initial_year + time_index)
+                step_elapsed = max(time.perf_counter() - step_started, 0.0)
+                step_rss = process.memory_info().rss if process else None
                 row: dict[str, Any] = {
                     "year": int(time_index),
                     "calendar_year": calendar_year,
                     **summary,
                     "annual_gain": max(mangrove - previous, 0),
                     "annual_loss": max(previous - mangrove, 0),
+                    "step_elapsed_seconds": round(step_elapsed, 6),
+                    "step_rss_bytes": step_rss,
+                    "step_cells_per_second": round(inputs.n_cells / step_elapsed, 3)
+                    if step_elapsed > 0
+                    else None,
                 }
                 rows.append(row)
                 previous_mangrove = mangrove
-                if process is not None:
-                    peak_rss = max(peak_rss, process.memory_info().rss)
+                if step_rss is not None:
+                    peak_rss = max(peak_rss, step_rss)
                 if save_annual_states:
                     _write_state(inputs, runner, states_dir / f"usos_{calendar_year}.tif", calendar_year)
                 if step_callback is not None:
@@ -227,6 +355,9 @@ def run_raster_simulation(
             trajectory = pd.DataFrame(rows)
             trajectory.to_csv(output_dir / "trajectory.csv", index=False)
     finally:
+        sampling_stop.set()
+        if sampler_thread is not None:
+            sampler_thread.join(timeout=2.0)
         if hasattr(runner, "close"):
             runner.close()
 
@@ -249,6 +380,43 @@ def run_raster_simulation(
 
     if process is not None:
         peak_rss = max(peak_rss, process.memory_info().rss)
+    simulation_finished = time.perf_counter()
+    rss_after = process.memory_info().rss if process else None
+    memory_after = _safe_virtual_memory()
+    io_after = _safe_process_io(process)
+    cpu_after = _safe_cpu_times(process)
+    disk_free_after = int(shutil.disk_usage(output_dir).free)
+    simulation_elapsed = simulation_finished - started
+    steps_completed = len(rows)
+    total_cell_updates = int(inputs.n_cells) * steps_completed
+    output_size_before_metadata = _directory_size_bytes(output_dir)
+    resource_trace_path = output_dir / "resource_samples.csv"
+    if resource_samples:
+        pd.DataFrame(resource_samples).to_csv(resource_trace_path, index=False)
+
+    def _delta_counter(
+        before: dict[str, int] | None, after: dict[str, int] | None, key: str
+    ) -> int | None:
+        if before is None or after is None:
+            return None
+        return int(after.get(key, 0) - before.get(key, 0))
+
+    io_delta = None
+    if io_before is not None and io_after is not None:
+        io_delta = {
+            "read_bytes": _delta_counter(io_before, io_after, "read_bytes"),
+            "write_bytes": _delta_counter(io_before, io_after, "write_bytes"),
+        }
+    cpu_delta = None
+    if cpu_before is not None and cpu_after is not None:
+        cpu_delta = {
+            "user_seconds": round(
+                cpu_after["user_seconds"] - cpu_before["user_seconds"], 6
+            ),
+            "system_seconds": round(
+                cpu_after["system_seconds"] - cpu_before["system_seconds"], 6
+            ),
+        }
     final_class_counts = {
         key: int(rows[-1].get(key, 0))
         for key in initial_class_counts
@@ -266,9 +434,46 @@ def run_raster_simulation(
         "cells": inputs.n_cells,
         "initial_class_counts": initial_class_counts,
         "final_class_counts": final_class_counts,
-        "elapsed_seconds": time.perf_counter() - started,
+        # ``elapsed_seconds`` is retained for compatibility and refers to the
+        # simulation interval only. The detailed timing block distinguishes
+        # preparation, simulation, and output/post-processing work.
+        "elapsed_seconds": round(simulation_elapsed, 6),
         "rss_before_bytes": rss_before,
         "peak_rss_bytes": peak_rss,
+        "performance": {
+            "preparation_elapsed_seconds": round(started - run_started, 6),
+            "simulation_elapsed_seconds": round(simulation_elapsed, 6),
+            "postprocessing_elapsed_seconds": None,
+            "total_run_elapsed_seconds": None,
+            "annual_steps": steps_completed,
+            "cell_updates": total_cell_updates,
+            "cell_updates_per_second": round(total_cell_updates / simulation_elapsed, 3)
+            if simulation_elapsed > 0
+            else None,
+            "rss_before_bytes": rss_before,
+            "rss_after_bytes": rss_after,
+            "peak_rss_bytes": peak_rss,
+            "peak_rss_gib": round(peak_rss / 1024**3, 6),
+            "system_memory_before": memory_before,
+            "system_memory_after": memory_after,
+            "disk_free_before_bytes": disk_free_before,
+            "disk_free_after_bytes": disk_free_after,
+            "output_size_bytes": output_size_before_metadata,
+            "process_io_before": io_before,
+            "process_io_after": io_after,
+            "process_io_delta": io_delta,
+            "process_cpu_before": cpu_before,
+            "process_cpu_after": cpu_after,
+            "process_cpu_delta": cpu_delta,
+            "resource_trace": resource_trace_path.name if resource_samples else None,
+            "resource_sample_count": len(resource_samples),
+            "resource_sampling_interval_seconds": 1.0 if resource_samples else None,
+            "measurement_scope": (
+                "Simulation starts after input validation, raster loading, and "
+                "persistent block workspace creation. Output files are included "
+                "in total run timing but not in the simulation timing."
+            ),
+        },
         "block_input_materialization": {
             "input_grid_released_after_persistent_copy": bool(input_grid_released),
             "reopened_for_postprocessing": False,
@@ -287,7 +492,21 @@ def run_raster_simulation(
         ),
         "input_metadata": "input_metadata.json",
     }
-    (output_dir / "metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+    metadata_path = output_dir / "metadata.json"
+    metadata_path.write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    postprocessing_elapsed = max(time.perf_counter() - simulation_finished, 0.0)
+    metadata["performance"]["postprocessing_elapsed_seconds"] = round(
+        postprocessing_elapsed, 6
+    )
+    metadata["performance"]["total_run_elapsed_seconds"] = round(
+        time.perf_counter() - run_started, 6
+    )
+    metadata["performance"]["output_size_bytes"] = _directory_size_bytes(output_dir)
+    metadata_path.write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return trajectory
 
 

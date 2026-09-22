@@ -1,4 +1,5 @@
 import numpy as np
+import json
 import rasterio
 from rasterio.transform import from_origin
 
@@ -43,5 +44,17 @@ def test_block_runner_releases_and_restores_materialized_grid(tmp_path):
     assert len(trajectory) == 1
     assert inputs.grid is None
     assert inputs.n_cells == 4
-    metadata = (tmp_path / "run" / "metadata.json").read_text(encoding="utf-8")
-    assert "input_grid_released_after_persistent_copy" in metadata
+    metadata_path = tmp_path / "run" / "metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert metadata["block_input_materialization"][
+        "input_grid_released_after_persistent_copy"
+    ] is True
+    assert metadata["performance"]["annual_steps"] == 1
+    assert metadata["performance"]["cell_updates"] == 4
+    assert metadata["performance"]["peak_rss_bytes"] >= metadata["rss_before_bytes"]
+    assert metadata["performance"]["output_size_bytes"] > 0
+    assert metadata["performance"]["resource_trace"] == "resource_samples.csv"
+    assert metadata["performance"]["resource_sample_count"] >= 1
+    assert (tmp_path / "run" / "resource_samples.csv").exists()
+    assert "step_elapsed_seconds" in trajectory.columns
+    assert "step_cells_per_second" in trajectory.columns

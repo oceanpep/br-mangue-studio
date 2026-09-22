@@ -11,6 +11,8 @@ dist_*/
 
 # Generated simulation outputs and temporary workspaces
 outputs/
+results/
+prepared_inputs/
 estudos_caso/*/resultados/
 *.memmap
 *.dat
