@@ -34,7 +34,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from rasterio.crs import CRS
 from rasterio.enums import Resampling
-from rasterio.warp import calculate_default_transform, reproject
+from rasterio.vrt import WarpedVRT
+from rasterio.warp import calculate_default_transform
 from rasterio.windows import Window
 
 try:
@@ -274,7 +275,14 @@ def _reproject_raster_to_grid(
     resampling: Resampling,
     target_nodata: float | int,
 ) -> Path:
-    """Write one raster on a common target grid without changing the source."""
+    """Write one raster on a common target grid without changing the source.
+
+    The output is written window by window through a ``WarpedVRT``.  The
+    previous implementation materialized both the complete source band and
+    the complete destination grid in RAM.  That was especially costly for a
+    CMMA-scale grid (hundreds of millions of pixels) and could make an
+    otherwise valid Albers reprojection fail before the simulation started.
+    """
     source_path = Path(source_path)
     destination_path = Path(destination_path)
     with rasterio.open(source_path) as source:
@@ -288,24 +296,7 @@ def _reproject_raster_to_grid(
             limits = np.iinfo(source_dtype)
             if target_nodata < limits.min or target_nodata > limits.max:
                 target_nodata = int(limits.min)
-        destination = np.full(
-            (target_height, target_width),
-            target_nodata,
-            dtype=source_dtype,
-        )
-        source_data = source.read(band, masked=True)
         source_fill = source.nodata if source.nodata is not None else target_nodata
-        reproject(
-            source=source_data.filled(source_fill),
-            destination=destination,
-            src_transform=source.transform,
-            src_crs=source.crs,
-            dst_transform=target_transform,
-            dst_crs=target_crs,
-            resampling=resampling,
-            src_nodata=source_fill,
-            dst_nodata=target_nodata,
-        )
         profile = source.profile.copy()
         profile.update(
             driver="GTiff",
@@ -321,7 +312,28 @@ def _reproject_raster_to_grid(
         )
         destination_path.parent.mkdir(parents=True, exist_ok=True)
         with rasterio.open(destination_path, "w", **profile) as output:
-            output.write(destination, 1)
+            # WarpedVRT performs the coordinate transformation lazily.  Only
+            # one output block is resident at a time, keeping peak memory
+            # independent of the total raster area.
+            with WarpedVRT(
+                source,
+                crs=target_crs,
+                transform=target_transform,
+                width=int(target_width),
+                height=int(target_height),
+                resampling=resampling,
+                src_nodata=source_fill,
+                nodata=target_nodata,
+            ) as warped:
+                for _, window in output.block_windows(1):
+                    block = warped.read(1, window=window, masked=True)
+                    values = np.asarray(block.filled(target_nodata))
+                    # NaNs can be present in floating rasters without being
+                    # declared as nodata.  Do not let them propagate into
+                    # the prepared GeoTIFFs.
+                    if np.issubdtype(values.dtype, np.floating):
+                        values = np.where(np.isfinite(values), values, target_nodata)
+                    output.write(values.astype(source_dtype, copy=False), 1, window=window)
     return destination_path
 
 
