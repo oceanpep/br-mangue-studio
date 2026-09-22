@@ -1364,10 +1364,15 @@ class BRMangueStudio(tk.Tk):
                             raise ValueError("The study-area mask must share shape, CRS and transform with the land-cover raster.")
                         study_mask = np.asarray(mask_src.read(1, masked=True).filled(0)) != 0
                     values_array = np.asarray(data.filled(0))
+                    if np.issubdtype(values_array.dtype, np.floating):
+                        values_array = np.where(np.isfinite(values_array), values_array, 0)
                     values_array[~study_mask] = 0
                     values, counts = np.unique(values_array, return_counts=True)
                 else:
-                    values, counts = np.unique(np.asarray(data.compressed()), return_counts=True)
+                    values_array = np.asarray(data.compressed())
+                    if np.issubdtype(values_array.dtype, np.floating):
+                        values_array = values_array[np.isfinite(values_array)]
+                    values, counts = np.unique(values_array, return_counts=True)
             self.class_counts = {int(code): int(count) for code, count in zip(values, counts) if int(code) != 0}
             self._rebuild_class_rows()
             scope = "in study area" if self.mask_var.get().strip() else "in raster"
