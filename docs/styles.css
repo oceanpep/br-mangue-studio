@@ -126,7 +126,14 @@ h2 { max-width: 720px; margin: 0 0 13px; color: var(--ink); font-size: clamp(30p
 .origin-card span { color: var(--blue); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
 .origin-card b { color: var(--ink); font-family: "Space Grotesk", sans-serif; font-size: 28px; line-height: 1.12; }
 .origin-card small { color: var(--muted); line-height: 1.5; }
-.site-footer { padding: 25px 0; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); background: #fff; }
+.site-footer { color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); background: #fff; }
+.geotam-footer { border-bottom: 1px solid var(--line); background: linear-gradient(105deg, #f2fafb 0%, #f5fbf6 100%); }
+.geotam-footer-inner { display: flex; align-items: center; justify-content: center; gap: 15px; min-height: 72px; padding: 11px 0; }
+.geotam-footer img { display: block; width: 126px; max-height: 42px; object-fit: contain; }
+.geotam-footer span { display: grid; gap: 1px; text-align: left; }
+.geotam-footer strong { color: var(--ink-soft); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.geotam-footer small { color: var(--muted); font-size: 11px; line-height: 1.35; }
+.footer-wrap { padding: 25px 0; }
 .footer-wrap { display: flex; justify-content: space-between; gap: 20px; }
 .site-footer a { color: var(--blue); transition: color .2s ease; }
 .site-footer a:hover { color: var(--green); }
@@ -153,6 +160,10 @@ code { padding: 2px 6px; color: var(--blue-deep); border-radius: 5px; background
   .container { width: min(100% - 32px, 1120px); }
   .nav-wrap { min-height: 64px; }
   .brand { font-size: 15px; }
+  .geotam-footer-inner { justify-content: flex-start; gap: 10px; }
+  .geotam-footer img { width: 108px; }
+  .geotam-footer strong { font-size: 10px; letter-spacing: .07em; }
+  .geotam-footer small { font-size: 10px; }
   .hero h1 { font-size: 40px; }
   .lead { font-size: 18px; }
   .hero-actions { align-items: stretch; flex-direction: column; }
