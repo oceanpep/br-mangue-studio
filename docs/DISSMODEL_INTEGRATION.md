@@ -28,8 +28,9 @@ O DissModel registra:
 - Mangrove;
 - Flooded mangrove;
 - Migrated mangrove;
-- Annual gain;
-- Annual loss.
+- Annual gain (gross cells entering the active extent);
+- Annual loss (gross cells leaving the active extent);
+- Annual net change (gain minus loss).
 
 O gráfico ao vivo é opcional. Para abri-lo em uma sessão gráfica, acrescente `--show-chart`. A execução sem essa opção continua adequada para terminal, Spyder, VS Code e testes automatizados.
 

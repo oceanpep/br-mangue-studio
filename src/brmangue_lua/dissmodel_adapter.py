@@ -68,24 +68,39 @@ class BRMangueLuaDissModel(Model):
         self.parameters = parameters
         self.resumos = resumos
         self.step_callback = step_callback
-        self._previous_mangrove: int | None = None
 
     def execute(self) -> None:
         year = int(round(self.env.now()))
         result = self.runner.step(year, self.parameters)
         summary = _runner_summary(self.runner, result)
         mangrove = int(summary["mangrove"])
-        previous = mangrove if self._previous_mangrove is None else self._previous_mangrove
-        gain = max(mangrove - previous, 0)
-        loss = max(previous - mangrove, 0)
-        self._previous_mangrove = mangrove
+        transitions = dict(getattr(self.runner, "last_transition_metrics", {}))
+        extent = int(
+            transitions.get(
+                "mangrove_extent",
+                mangrove + int(summary.get("migrated_mangrove", 0)),
+            )
+        )
+        gain = int(transitions.get("annual_gain", 0))
+        loss = int(transitions.get("annual_loss", 0))
+        net = int(transitions.get("annual_net_change", gain - loss))
 
         self.mangrove = mangrove
         self.flooded = int(summary["flooded_mangrove"])
         self.migrated = int(summary["migrated_mangrove"])
         self.gain = gain
         self.loss = loss
-        record = {"year": year, **summary, "gain": gain, "loss": loss}
+        record = {
+            "year": year,
+            **summary,
+            "mangrove_extent": extent,
+            "annual_gain": gain,
+            "annual_loss": loss,
+            "annual_net_change": net,
+            # Keep the short names used by the optional DissModel chart/API.
+            "gain": gain,
+            "loss": loss,
+        }
         self.resumos.append(record)
         if self.step_callback is not None:
             self.step_callback(record)
@@ -174,6 +189,7 @@ def run_dissmodel_shapefile(
                 "legacy_lua_accretion_typo": parameters.legacy_lua_accretion_typo,
                 "allow_migration_without_soil": parameters.allow_migration_without_soil,
                 "accretion_rate_mm": parameters.accretion_rate_mm,
+                "migration_maturity_years": parameters.migration_maturity_years,
             },
         }
         (output_dir / "metadata.json").write_text(

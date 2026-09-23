@@ -68,6 +68,29 @@ class RasterInputSet:
     def n_cells(self) -> int:
         return int(self.n_cells_cached or 0)
 
+    @property
+    def cell_area_km2(self) -> float | None:
+        """Return the area of one input cell in km² when the CRS is metric."""
+        resolution = self.metadata.get("land_cover", {}).get("resolution", [])
+        if len(resolution) < 2:
+            return None
+        try:
+            crs = rasterio.crs.CRS.from_user_input(self.profile.get("crs"))
+            if not crs.is_projected:
+                return None
+            factor = float(crs.linear_units_factor[1])
+            width = abs(float(resolution[0])) * factor
+            height = abs(float(resolution[1])) * factor
+            return (width * height) / 1_000_000.0
+        except (TypeError, ValueError, rasterio.errors.CRSError):
+            return None
+
+    @property
+    def cell_area_m2(self) -> float | None:
+        """Return the area of one input cell in square metres."""
+        area_km2 = self.cell_area_km2
+        return area_km2 * 1_000_000.0 if area_km2 is not None else None
+
     def write_state_raster(self, usos: np.ndarray, path: str | Path, *, year: int) -> Path:
         """Escreve um vetor de estados de volta à grade raster original."""
         path = Path(path)
@@ -315,6 +338,23 @@ def load_raster_inputs(
             "grid": {
                 "cells": int(rows.size),
                 "neighbor_type": "Moore-8 compact index table",
+                "cell_width_map_units": float(abs(mb.res[0])),
+                "cell_height_map_units": float(abs(mb.res[1])),
+                "cell_area_m2": (
+                    float(abs(mb.res[0]) * abs(mb.res[1]) * float(mb.crs.linear_units_factor[1]))
+                    if mb.crs is not None and mb.crs.is_projected
+                    else None
+                ),
+                "cell_area_km2": (
+                    float(
+                        abs(mb.res[0])
+                        * abs(mb.res[1])
+                        * float(mb.crs.linear_units_factor[1]) ** 2
+                        / 1_000_000.0
+                    )
+                    if mb.crs is not None and mb.crs.is_projected
+                    else None
+                ),
                 "valid_row_min": int(rows.min()),
                 "valid_row_max": int(rows.max()),
                 "valid_col_min": int(cols.min()),
