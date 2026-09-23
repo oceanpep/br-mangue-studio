@@ -4,6 +4,7 @@ title: "BR-MANGUE Studio"
 type: software
 version: 1.0.0
 date-released: 2026-09-21
+license: MIT
 abstract: >-
   Desktop research software for running and inspecting the BR-MANGUE spatial
   cellular model of mangrove response to coastal sea-level change. The Studio
