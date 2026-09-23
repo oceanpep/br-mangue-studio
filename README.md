@@ -93,6 +93,7 @@ record or release when redistribution is permitted.
 Detailed notes are available in [`docs/`](docs/), including the Studio workflow,
 the complete [user manual](docs/MANUAL_USUARIO_BR_MANGUE_STUDIO.md), engine
 comparison, raster input requirements, and parity audits.
+The programmatic interface is summarized in the [API reference](docs/API.md).
 The release procedure for a citable [Zenodo archive](docs/ZENODO_RELEASE.md)
 is documented separately.
 The proposed structure and evidence plan for the software article is in the
