@@ -1,5 +1,9 @@
 # BR-MANGUE Studio
 
+[![Tests](https://github.com/oceanpep/br-mangue-studio/actions/workflows/tests.yml/badge.svg)](https://github.com/oceanpep/br-mangue-studio/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Citation](https://img.shields.io/badge/citation-CITATION.cff-blue.svg)](CITATION.cff)
+
 BR-MANGUE Studio is a desktop application for running and inspecting the
 BR-MANGUE spatial cellular model. It provides the reference model logic in a
 modern Python implementation, with continuous and persistent block processing,
@@ -27,10 +31,12 @@ inspection without requiring a specific data provider.
 
 ## Download
 
-Stable Windows builds are published in the repository's **Releases** section.
-Download the latest release package, extract it, and start
+Stable Windows builds are published on the [BR-MANGUE Studio download page](https://oceanpep.github.io/br-mangue-studio/downloads.html).
+Download the latest package, save it in a writable folder, and start
 `BRMANGUE_Studio.exe`. The application does not require a separate Python
-installation when using the packaged Windows build.
+installation when using the packaged Windows build. The repository also keeps
+the source, checksum, release notes, and reproducibility record for each
+version.
 
 ## Run from source
 
@@ -91,6 +97,14 @@ The release procedure for a citable [Zenodo archive](docs/ZENODO_RELEASE.md)
 is documented separately.
 The proposed structure and evidence plan for the software article is in the
 [article outline](docs/ARTICLE_1_SOFTWARE_PAPER_OUTLINE.md).
+The JOSS-format draft is in [`paper.md`](paper.md), with the current readiness
+audit in [`docs/JOSS_READINESS.md`](docs/JOSS_READINESS.md).
+
+## License and citation
+
+BR-MANGUE Studio is distributed under the MIT License. Please cite the
+specific release used in a study using [`CITATION.cff`](CITATION.cff). A Zenodo
+DOI will be added after the first archived release.
 
 ## Research context
 
