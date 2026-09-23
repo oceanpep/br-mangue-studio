@@ -127,7 +127,7 @@ FIGURE_COMPONENT_LABELS = {
     "state": "Cell state",
     "elevation": "Elevation / relative surface",
     "trajectory": "Mangrove trajectory",
-    "change": "Annual change",
+    "change": "Net annual change",
 }
 
 APP_VERSION = "1.0.0"
@@ -549,6 +549,27 @@ def _display_elevation_for_inputs(inputs: RasterInputSet) -> np.ndarray:
     return np.asarray(values.filled(np.nan), dtype=np.float64)
 
 
+def _area_frame(inputs: RasterInputSet, frame: pd.DataFrame) -> pd.DataFrame:
+    """Ensure display frames expose km² equivalents when the CRS is metric."""
+    area = inputs.cell_area_km2
+    if area is None or frame.empty:
+        return frame
+    result = frame.copy()
+    result["cell_area_km2"] = float(area)
+    for column in (
+        "mangrove",
+        "migrated_mangrove",
+        "flooded_mangrove",
+        "mangrove_extent",
+        "annual_gain",
+        "annual_loss",
+        "annual_net_change",
+    ):
+        if column in result and f"{column}_km2" not in result:
+            result[f"{column}_km2"] = result[column].astype(float) * float(area)
+    return result
+
+
 def _save_annual_figure_file(
     inputs: RasterInputSet,
     run_dir: Path,
@@ -608,6 +629,7 @@ def _save_annual_figure_file(
     FigureCanvasAgg(elev_fig).print_figure(paths["elevation"], dpi=150, bbox_inches="tight")
 
     visible = trajectory[trajectory["calendar_year"] <= year] if not trajectory.empty else trajectory
+    visible = _area_frame(inputs, visible)
     trajectory_fig = Figure(figsize=(7.2, 4.6), dpi=120)
     trajectory_ax = trajectory_fig.add_subplot(111)
     if not visible.empty:
@@ -629,16 +651,20 @@ def _save_annual_figure_file(
     change_fig = Figure(figsize=(7.2, 4.6), dpi=120)
     change_ax = change_fig.add_subplot(111)
     if not visible.empty:
-        gains = visible.get("annual_gain", pd.Series(np.zeros(len(visible)))).to_numpy()
-        losses = visible.get("annual_loss", pd.Series(np.zeros(len(visible)))).to_numpy()
+        if "annual_net_change" in visible:
+            net_change = visible["annual_net_change"].fillna(0).to_numpy()
+        else:
+            gains = visible.get("annual_gain", pd.Series(np.zeros(len(visible)))).to_numpy()
+            losses = visible.get("annual_loss", pd.Series(np.zeros(len(visible)))).to_numpy()
+            net_change = gains - losses
         years = visible["calendar_year"].to_numpy()
-        change_ax.bar(years, gains, color="#72b66b", label="Gross annual gain", width=0.72)
-        change_ax.bar(years, -losses, color="#ef3b2c", label="Gross annual loss", width=0.72)
+        change_ax.bar(years, np.maximum(net_change, 0), color="#72b66b", label="Net annual gain", width=0.72)
+        change_ax.bar(years, np.minimum(net_change, 0), color="#ef3b2c", label="Net annual loss", width=0.72)
         change_ax.legend(loc="best", fontsize=8)
     change_ax.axhline(0, color="#333333", linewidth=0.8)
     change_ax.set_title("")
     change_ax.set_xlabel("Calendar year")
-    change_ax.set_ylabel("Change (cells)")
+    change_ax.set_ylabel("Net annual change (cells)")
     change_ax.grid(alpha=0.2, axis="y")
     change_fig.subplots_adjust(left=0.10, right=0.98, top=0.90, bottom=0.16)
     FigureCanvasAgg(change_fig).print_figure(paths["change"], dpi=150, bbox_inches="tight")
@@ -740,8 +766,13 @@ def _write_simulation_spreadsheet(
             values = np.asarray(src.read(1)[inputs.valid_rows, inputs.valid_cols], dtype=np.int16)
         counts = np.bincount(np.clip(values, 0, 10), minlength=11)
         row: dict[str, Any] = {"calendar_year": year, "valid_cells": int(inputs.n_cells)}
+        cell_area_km2 = inputs.cell_area_km2
+        if cell_area_km2 is not None:
+            row["valid_cells_km2"] = float(inputs.n_cells * cell_area_km2)
         for code, name in MODEL_STATE_NAMES.items():
             row[f"state_{code}_{name}_cells"] = int(counts[code])
+            if cell_area_km2 is not None:
+                row[f"state_{code}_{name}_km2"] = float(counts[code] * cell_area_km2)
         count_rows.append(row)
     counts_frame = pd.DataFrame(count_rows)
     if trajectory_frame.empty:
@@ -826,6 +857,7 @@ class BRMangueStudio(tk.Tk):
         self.tide_height_var = tk.StringVar(value="6.0")
         self.slr_var = tk.StringVar(value="0.5")
         self.accretion_var = tk.StringVar(value="")
+        self.migration_maturity_var = tk.StringVar(value="3")
         self.block_size_var = tk.StringVar(value="10000")
         self.engine_var = tk.StringVar(value="blocks")
         self.soil_enabled_var = tk.BooleanVar(value=False)
@@ -1063,19 +1095,20 @@ class BRMangueStudio(tk.Tk):
             ("Tidal influence height (m)", self.tide_height_var),
             ("Sea-level rise (mm/year)", self.slr_var),
             ("Constant surface accretion (mm/year, optional)", self.accretion_var),
+            ("Migration maturation delay (years)", self.migration_maturity_var),
             ("Block size (cells)", self.block_size_var),
         ]
         for row, (label, variable) in enumerate(fields):
             ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=4)
             ttk.Entry(parent, textvariable=variable, width=18).grid(row=row, column=1, sticky="ew", pady=4)
-        ttk.Label(parent, text="Processing engine").grid(row=6, column=0, sticky="w", pady=4)
+        ttk.Label(parent, text="Processing engine").grid(row=7, column=0, sticky="w", pady=4)
         engine_values = ["blocks", "continuous"]
         if DISSMODEL_AVAILABLE:
             engine_values.append("dissmodel")
-        ttk.Combobox(parent, textvariable=self.engine_var, values=engine_values, state="readonly", width=16).grid(row=6, column=1, sticky="w", pady=4)
-        ttk.Checkbutton(parent, text="Enable optional mangrove suitability layer", variable=self.soil_enabled_var).grid(row=7, column=0, columnspan=2, sticky="w", pady=5)
-        ttk.Checkbutton(parent, text="Allow migration without suitability layer", variable=self.migration_without_soil_var).grid(row=8, column=0, columnspan=2, sticky="w", pady=5)
-        ttk.Label(parent, text="Without a suitability raster, migration can use the natural-vegetation and bare-soil roles selected above. All other transition rules remain active.", wraplength=360, foreground="#5d6b78").grid(row=9, column=0, columnspan=2, sticky="w", pady=(10, 0))
+        ttk.Combobox(parent, textvariable=self.engine_var, values=engine_values, state="readonly", width=16).grid(row=7, column=1, sticky="w", pady=4)
+        ttk.Checkbutton(parent, text="Enable optional mangrove suitability layer", variable=self.soil_enabled_var).grid(row=8, column=0, columnspan=2, sticky="w", pady=5)
+        ttk.Checkbutton(parent, text="Allow migration without suitability layer", variable=self.migration_without_soil_var).grid(row=9, column=0, columnspan=2, sticky="w", pady=5)
+        ttk.Label(parent, text="A migrated cell becomes a new propagation source only after the maturation delay. Use 0 for a sensitivity test without a biological delay.", wraplength=360, foreground="#5d6b78").grid(row=10, column=0, columnspan=2, sticky="w", pady=(10, 0))
 
     def _build_center(self, parent: ttk.Frame) -> None:
         parent.rowconfigure(0, weight=1)
@@ -1144,6 +1177,8 @@ class BRMangueStudio(tk.Tk):
         self.ax_elevation = self.visual_axes["elevation"]
         self.ax_current = self.visual_axes["current"]
         self.ax_trajectory = self.visual_axes["trajectory"]
+        self.ax_trajectory_area = self.ax_trajectory.twinx()
+        self.ax_trajectory_area.patch.set_visible(False)
         controls = ttk.Frame(visual_tab, padding=(5, 5))
         controls.grid(row=2, column=0, sticky="ew")
         ttk.Button(controls, text="Run simulation", style="Accent.TButton", command=self.start_run).pack(side="left")
@@ -1174,6 +1209,10 @@ class BRMangueStudio(tk.Tk):
         self.trajectory_figure = Figure(figsize=(9, 7), dpi=100)
         self.traj_area_ax = self.trajectory_figure.add_subplot(211)
         self.traj_change_ax = self.trajectory_figure.add_subplot(212, sharex=self.traj_area_ax)
+        self.traj_area_km2_ax = self.traj_area_ax.twinx()
+        self.traj_change_km2_ax = self.traj_change_ax.twinx()
+        self.traj_area_km2_ax.patch.set_visible(False)
+        self.traj_change_km2_ax.patch.set_visible(False)
         self.trajectory_figure.subplots_adjust(left=0.08, right=0.98, top=0.96, bottom=0.12, hspace=0.10)
         self.trajectory_canvas = FigureCanvasTkAgg(self.trajectory_figure, master=trajectory_tab)
         self.trajectory_canvas.get_tk_widget().grid(row=0, column=0, sticky="nsew")
@@ -1191,7 +1230,7 @@ class BRMangueStudio(tk.Tk):
             ("state", "Cell state", animation_top_row),
             ("elevation", "Elevation / relative surface", animation_top_row),
             ("trajectory", "Mangrove trajectory", animation_bottom_row),
-            ("change", "Annual change", animation_bottom_row),
+            ("change", "Net annual change", animation_bottom_row),
         ]
         for key, title, row in animation_panels:
             panel = ttk.LabelFrame(row, text=title, padding=(3, 3), labelanchor="n")
@@ -1318,11 +1357,20 @@ class BRMangueStudio(tk.Tk):
             ax.text(0.5, 0.5, "Load input rasters to begin", ha="center", va="center", transform=ax.transAxes)
             ax.set_xticks([])
             ax.set_yticks([])
+        self.ax_trajectory_area.clear()
+        self.ax_trajectory_area.set_visible(False)
+        self.ax_trajectory_area.set_yticks([])
         for ax in (self.traj_area_ax, self.traj_change_ax):
             ax.clear()
             ax.text(0.5, 0.5, "Run a simulation to build the trajectory", ha="center", va="center", transform=ax.transAxes)
             ax.set_xticks([])
             ax.set_yticks([])
+        self.traj_area_km2_ax.clear()
+        self.traj_area_km2_ax.set_visible(False)
+        self.traj_area_km2_ax.set_yticks([])
+        self.traj_change_km2_ax.clear()
+        self.traj_change_km2_ax.set_visible(False)
+        self.traj_change_km2_ax.set_yticks([])
         self._draw_visual_canvases()
         self.trajectory_canvas.draw_idle()
         if hasattr(self, "animation_labels"):
@@ -1621,6 +1669,10 @@ class BRMangueStudio(tk.Tk):
         self.ax_trajectory.clear()
         self.ax_trajectory.set_xlabel("Calendar year")
         self.ax_trajectory.set_ylabel("Cells")
+        self.ax_trajectory_area.clear()
+        self.ax_trajectory_area.set_visible(False)
+        self.ax_trajectory_area.set_ylabel("")
+        self.ax_trajectory_area.set_yticks([])
         self._draw_visual_canvases()
 
     def _parameters(self) -> ModelParameters:
@@ -1630,6 +1682,9 @@ class BRMangueStudio(tk.Tk):
             raise ValueError("Final calendar year must be greater than initial year.")
         accretion_text = self.accretion_var.get().strip()
         accretion = float(accretion_text) if accretion_text else None
+        migration_maturity_years = int(self.migration_maturity_var.get())
+        if migration_maturity_years < 0:
+            raise ValueError("Migration maturation delay must be zero or greater.")
         soil_enabled = bool(self.soil_enabled_var.get() and self.soil_var.get().strip())
         return ModelParameters(
             start=1,
@@ -1641,6 +1696,7 @@ class BRMangueStudio(tk.Tk):
             legacy_lua_accretion_typo=True,
             allow_migration_without_soil=(not soil_enabled) and bool(self.migration_without_soil_var.get()),
             accretion_rate_mm=accretion,
+            migration_maturity_years=migration_maturity_years,
         )
 
     def start_run(self) -> None:
@@ -1884,8 +1940,10 @@ class BRMangueStudio(tk.Tk):
     def _draw_trajectory(self) -> None:
         if not self.trajectory_records:
             return
-        frame = pd.DataFrame(self.trajectory_records)
+        frame = _area_frame(self.inputs, pd.DataFrame(self.trajectory_records)) if self.inputs is not None else pd.DataFrame(self.trajectory_records)
         self.ax_trajectory.clear()
+        self.ax_trajectory_area.clear()
+        self.ax_trajectory_area.set_visible(False)
         for column, label, color in [
             ("mangrove", "Mangrove", "#006d2c"),
             ("migrated_mangrove", "Migrated mangrove", "#7b3294"),
@@ -1897,8 +1955,11 @@ class BRMangueStudio(tk.Tk):
         self.ax_trajectory.set_ylabel("Cells")
         self.ax_trajectory.grid(alpha=0.25)
         self.ax_trajectory.legend(fontsize=8)
+        # Area equivalents remain available in trajectory.csv and the monitor,
+        # but are intentionally omitted from the chart to keep the figure clear.
 
         self.traj_area_ax.clear()
+        self.traj_area_km2_ax.clear()
         for column, label, color in [
             ("mangrove", "Mangrove cells", "#006d2c"),
             ("migrated_mangrove", "Migrated mangrove", "#7b3294"),
@@ -1911,16 +1972,23 @@ class BRMangueStudio(tk.Tk):
         self.traj_area_ax.grid(alpha=0.25)
         self.traj_area_ax.legend(loc="best", fontsize=8)
         self.traj_area_ax.tick_params(labelbottom=False)
+        self.traj_area_km2_ax.set_visible(False)
 
         self.traj_change_ax.clear()
+        self.traj_change_km2_ax.clear()
         years = frame["calendar_year"].to_numpy()
-        gains = frame.get("annual_gain", pd.Series(np.zeros(len(frame)))).to_numpy()
-        losses = frame.get("annual_loss", pd.Series(np.zeros(len(frame)))).to_numpy()
-        self.traj_change_ax.bar(years, gains, color="#72b66b", label="Gross annual gain", width=0.72)
-        self.traj_change_ax.bar(years, -losses, color="#ef3b2c", label="Gross annual loss", width=0.72)
+        if "annual_net_change" in frame:
+            net_change = frame["annual_net_change"].fillna(0).to_numpy()
+        else:
+            gains = frame.get("annual_gain", pd.Series(np.zeros(len(frame)))).to_numpy()
+            losses = frame.get("annual_loss", pd.Series(np.zeros(len(frame)))).to_numpy()
+            net_change = gains - losses
+        self.traj_change_ax.bar(years, np.maximum(net_change, 0), color="#72b66b", label="Net annual gain", width=0.72)
+        self.traj_change_ax.bar(years, np.minimum(net_change, 0), color="#ef3b2c", label="Net annual loss", width=0.72)
+        self.traj_change_km2_ax.set_visible(False)
         self.traj_change_ax.axhline(0, color="#333333", linewidth=0.8)
         self.traj_change_ax.set_xlabel("Calendar year")
-        self.traj_change_ax.set_ylabel("Annual change (cells)")
+        self.traj_change_ax.set_ylabel("Net annual change (cells)")
         self.traj_change_ax.grid(alpha=0.2, axis="y")
         self.traj_change_ax.legend(loc="best", fontsize=8, ncol=2)
         self.trajectory_canvas.draw_idle()
@@ -2133,17 +2201,41 @@ class BRMangueStudio(tk.Tk):
 
     def _format_monitor(self, summary: dict[str, Any]) -> str:
         elapsed = time.perf_counter() - getattr(self, "run_started", time.perf_counter())
+        extent = int(summary.get("mangrove_extent", 0))
+        if not extent:
+            extent = int(summary.get("mangrove", 0)) + int(summary.get("migrated_mangrove", 0))
+        gain = int(summary.get("annual_gain", 0))
+        loss = int(summary.get("annual_loss", 0))
+        net = int(summary.get("annual_net_change", gain - loss))
+        area = self.inputs.cell_area_km2 if self.inputs is not None else None
+        extent_area = summary.get("mangrove_extent_km2")
+        gain_area = summary.get("annual_gain_km2")
+        loss_area = summary.get("annual_loss_km2")
+        net_area = summary.get("annual_net_change_km2")
+        if area is not None:
+            extent_area = extent * area if extent_area is None else float(extent_area)
+            gain_area = gain * area if gain_area is None else float(gain_area)
+            loss_area = loss * area if loss_area is None else float(loss_area)
+            net_area = net * area if net_area is None else float(net_area)
+        extent_text = f"{extent:,} cells"
+        if extent_area is not None:
+            extent_text += f" ({float(extent_area):,.3f} km²)"
         return (
             f"Calendar year: {summary.get('calendar_year', '—')}\n"
             f"Mangrove: {int(summary.get('mangrove', 0)):,}\n"
             f"Migrated mangrove: {int(summary.get('migrated_mangrove', 0)):,}\n"
+            f"Active mangrove extent: {extent_text}\n"
             f"Flooded mangrove: {int(summary.get('flooded_mangrove', 0)):,}\n"
             f"Flooded natural vegetation: {int(summary.get('flooded_natural', 0)):,}\n"
             f"Flooded anthropized / blocked: {int(summary.get('flooded_anthropized', 0)):,}\n"
-            f"Annual gain: {int(summary.get('annual_gain', 0)):,}\n"
-            f"Annual loss: {int(summary.get('annual_loss', 0)):,}\n"
-            f"Elevation range: {float(summary.get('min_alt2', 0)):.3f}–{float(summary.get('max_alt2', 0)):.3f}\n"
-            f"Elapsed: {_format_duration(elapsed)}"
+            f"Gross annual gain: {gain:,} cells"
+            + (f" ({float(gain_area):,.4f} km²)\n" if gain_area is not None else "\n")
+            + f"Gross annual loss: {loss:,} cells"
+            + (f" ({float(loss_area):,.4f} km²)\n" if loss_area is not None else "\n")
+            + f"Net annual change: {net:+,} cells"
+            + (f" ({float(net_area):+,.4f} km²)\n" if net_area is not None else "\n")
+            + f"Elevation range: {float(summary.get('min_alt2', 0)):.3f}–{float(summary.get('max_alt2', 0)):.3f}\n"
+            + f"Elapsed: {_format_duration(elapsed)}"
         )
 
     def _set_monitor(self, text: str) -> None:
@@ -2250,6 +2342,7 @@ class BRMangueStudio(tk.Tk):
                 "sea_level_rise_mm_per_year": float(self.slr_var.get()),
                 "sea_level_rise_m_per_model_step": float(self.slr_var.get()) / 1000.0,
                 "accretion_rate_mm": self.accretion_var.get(),
+                "migration_maturity_years": int(self.migration_maturity_var.get()),
                 "block_size": int(self.block_size_var.get()),
                 "engine": self.engine_var.get(),
                 "soil_enabled": bool(self.soil_enabled_var.get()),
@@ -2303,6 +2396,7 @@ class BRMangueStudio(tk.Tk):
                 (self.tide_height_var, "tide_height_m", 6.0),
                 (self.slr_var, "sea_level_rise_mm_per_year", parameters.get("sea_level_rise_per_step", 0.5)),
                 (self.accretion_var, "accretion_rate_mm", ""),
+                (self.migration_maturity_var, "migration_maturity_years", 3),
                 (self.block_size_var, "block_size", 10000),
                 (self.engine_var, "engine", "blocks"),
             ]:

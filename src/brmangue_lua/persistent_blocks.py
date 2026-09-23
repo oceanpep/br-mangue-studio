@@ -8,7 +8,7 @@ sem carregar uma lista de objetos por célula.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 import json
 import time
@@ -39,6 +39,7 @@ from .engine import (
     VEGETACAO_TERRESTRE,
     VEGETACAO_TERRESTRE_INUNDADO,
     is_sea_or_flooded,
+    mangrove_extent_metrics,
 )
 
 
@@ -46,6 +47,7 @@ STATE_DTYPES: dict[str, np.dtype[Any]] = {
     "usos": np.dtype("int16"),
     "alt2": np.dtype("float64"),
     "classe_solos": np.dtype("int16"),
+    "migration_age": np.dtype("int16"),
 }
 
 
@@ -65,6 +67,7 @@ class PersistentBlockRunner:
     state_b: dict[str, np.memmap]
     current_slot: str = "a"
     years_completed: int = 0
+    last_transition_metrics: dict[str, int] = field(default_factory=dict, init=False, repr=False)
 
     @classmethod
     def create_from_shapefile(
@@ -125,6 +128,7 @@ class PersistentBlockRunner:
                     "usos": grid.usos,
                     "alt2": grid.alt2,
                     "classe_solos": grid.classe_solos,
+                    "migration_age": grid.migration_age,
                 }[name]
                 state[slot][name][:] = source
                 state[slot][name].flush()
@@ -225,10 +229,22 @@ class PersistentBlockRunner:
         usos = current["usos"]
         alt2 = current["alt2"]
         solos = current["classe_solos"]
+        past_migration_age = past["migration_age"]
+        migration_age = current["migration_age"]
 
         for start in range(0, self.n_cells, self.block_size):
             stop = min(start + self.block_size, self.n_cells)
             for index in range(start, stop):
+                if int(past_usos[index]) == MANGUE_MIGRADO:
+                    age = min(int(past_migration_age[index]) + 1, np.iinfo(np.int16).max)
+                    migration_age[index] = age
+                elif int(usos[index]) == MANGUE_MIGRADO:
+                    # Converted earlier in this same step: retain age zero.
+                    age = -1
+                else:
+                    age = -1
+                    migration_age[index] = -1
+
                 if is_sea_or_flooded(int(past_usos[index])) and past_alt2[index] >= 0:
                     lower: list[int] = []
                     for neighbor in self.neighbors[index]:
@@ -242,7 +258,13 @@ class PersistentBlockRunner:
                         if not is_sea_or_flooded(int(past_usos[neighbor])):
                             self._apply_flooding(usos, past_usos, neighbor)
 
-                if int(solos[index]) in (SOLO_MANGUE, CANAL_FLUVIAL):
+                soil_source = int(solos[index]) in (SOLO_MANGUE, CANAL_FLUVIAL)
+                mature_migrated_soil_source = (
+                    int(usos[index]) == MANGUE_MIGRADO
+                    and age >= parameters.migration_maturity_years
+                    and int(solos[index]) == SOLO_MANGUE_MIGRADO
+                )
+                if soil_source or mature_migrated_soil_source:
                     for neighbor in self.neighbors[index]:
                         if neighbor >= 0 and (
                             int(usos[neighbor]) in (VEGETACAO_TERRESTRE, SOLO_DESCOBERTO)
@@ -251,7 +273,11 @@ class PersistentBlockRunner:
                         ):
                             solos[neighbor] = SOLO_MANGUE_MIGRADO
 
-                if int(usos[index]) == MANGUE:
+                migration_source = int(usos[index]) == MANGUE or (
+                    int(usos[index]) == MANGUE_MIGRADO
+                    and age >= parameters.migration_maturity_years
+                )
+                if migration_source:
                     for neighbor in self.neighbors[index]:
                         if neighbor >= 0 and (
                             int(usos[neighbor]) in (VEGETACAO_TERRESTRE, SOLO_DESCOBERTO)
@@ -263,6 +289,7 @@ class PersistentBlockRunner:
                             )
                         ):
                             usos[neighbor] = MANGUE_MIGRADO
+                            migration_age[neighbor] = 0
 
                 migrated_soil = (
                     not parameters.legacy_lua_accretion_typo
@@ -276,6 +303,7 @@ class PersistentBlockRunner:
         current["usos"].flush()
         current["alt2"].flush()
         current["classe_solos"].flush()
+        self.last_transition_metrics = mangrove_extent_metrics(past_usos, usos)
         self.current_slot = "b" if self.current_slot == "a" else "a"
         self.years_completed += 1
         return self.summary()
@@ -337,6 +365,7 @@ def run_persistent_shapefile(
                     "legacy_lua_accretion_typo": parameters.legacy_lua_accretion_typo,
                     "allow_migration_without_soil": parameters.allow_migration_without_soil,
                     "accretion_rate_mm": parameters.accretion_rate_mm,
+                    "migration_maturity_years": parameters.migration_maturity_years,
                 },
                 "elapsed_seconds": getattr(runner, "elapsed_seconds", None),
                 "rss_before_bytes": getattr(runner, "rss_before_bytes", None),

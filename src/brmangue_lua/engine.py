@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 import json
@@ -42,6 +42,34 @@ _FLOODED = frozenset(
     }
 )
 
+# Both states represent living/active mangrove extent.  A cell that changes
+# from MANGUE to MANGUE_MIGRADO has moved within this extent, not disappeared.
+ACTIVE_MANGROVE_STATES = frozenset({MANGUE, MANGUE_MIGRADO})
+
+
+def mangrove_extent_metrics(
+    previous_usos: np.ndarray,
+    current_usos: np.ndarray,
+) -> dict[str, int]:
+    """Measure annual change in the active mangrove extent.
+
+    ``MANGUE_MIGRADO`` is included deliberately: the original count of the
+    exact ``MANGUE`` code falls when a cell migrates, although the mangrove
+    extent has not been lost.  Gross gains and losses are counted from the
+    cell-by-cell transition, and ``annual_net_change`` is their balance.
+    """
+    active_states = tuple(ACTIVE_MANGROVE_STATES)
+    previous_active = np.isin(previous_usos, active_states)
+    current_active = np.isin(current_usos, active_states)
+    gain = int(np.count_nonzero(~previous_active & current_active))
+    loss = int(np.count_nonzero(previous_active & ~current_active))
+    return {
+        "mangrove_extent": int(np.count_nonzero(current_active)),
+        "annual_gain": gain,
+        "annual_loss": loss,
+        "annual_net_change": gain - loss,
+    }
+
 
 @dataclass(frozen=True)
 class ModelParameters:
@@ -59,6 +87,16 @@ class ModelParameters:
     allow_migration_without_soil: bool = False
     # Optional constant accretion rate in millimetres per time step.
     accretion_rate_mm: float | None = None
+    # Complete annual steps before a migrated cell can act as a source.
+    # Zero is available for sensitivity tests that reproduce immediate
+    # source activation; the Studio default is three years.
+    migration_maturity_years: int = 3
+
+    def __post_init__(self) -> None:
+        if int(self.migration_maturity_years) != self.migration_maturity_years:
+            raise ValueError("migration_maturity_years deve ser um número inteiro.")
+        if self.migration_maturity_years < 0:
+            raise ValueError("migration_maturity_years deve ser maior ou igual a zero.")
 
 
 @dataclass
@@ -73,6 +111,17 @@ class BrMangueGrid:
     neighbors: tuple[tuple[int, ...], ...] | np.ndarray
     source_path: str | None = None
     crs_wkt: str | None = None
+    # Completed age of migrated cells; -1 means that the cell is not migrated.
+    migration_age: np.ndarray | None = None
+    last_transition_metrics: dict[str, int] = field(default_factory=dict, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        if self.migration_age is None:
+            self.migration_age = np.full(self.usos.shape, -1, dtype=np.int16)
+        elif self.migration_age.shape != self.usos.shape:
+            raise ValueError("migration_age deve ter o mesmo tamanho de usos.")
+        else:
+            self.migration_age = np.asarray(self.migration_age, dtype=np.int16)
 
     @classmethod
     def from_geodataframe(
@@ -144,6 +193,7 @@ class BrMangueGrid:
             neighbors=self.neighbors,
             source_path=self.source_path,
             crs_wkt=self.crs_wkt,
+            migration_age=self.migration_age.copy(),
         )
 
     def class_counts(self) -> dict[str, int]:
@@ -181,10 +231,17 @@ class BrMangueGrid:
         indices: Iterable[int] | None = None,
         _past_usos: np.ndarray | None = None,
         _past_alt2: np.ndarray | None = None,
+        _past_migration_age: np.ndarray | None = None,
     ) -> None:
         """Advance the grid by one time step."""
+        full_step = indices is None and _past_usos is None
         past_usos = self.usos.copy() if _past_usos is None else _past_usos
         past_alt2 = self.alt2.copy() if _past_alt2 is None else _past_alt2
+        past_migration_age = (
+            self.migration_age.copy()
+            if _past_migration_age is None
+            else _past_migration_age
+        )
         if indices is None:
             indices = range(self.size)
 
@@ -200,6 +257,21 @@ class BrMangueGrid:
 
         # Keep previous-state arrays immutable while the current state updates.
         for index in indices:
+            # Age advances at the beginning of the annual step. A cell that
+            # becomes migrated during this step is reset to zero below and
+            # therefore cannot propagate immediately in the next step when a
+            # positive maturation delay is configured.
+            if int(past_usos[index]) == MANGUE_MIGRADO:
+                age = min(int(past_migration_age[index]) + 1, np.iinfo(np.int16).max)
+                self.migration_age[index] = age
+            elif int(self.usos[index]) == MANGUE_MIGRADO:
+                # The cell was converted earlier in this same step. Keep the
+                # zero assigned by the source cell; it is not mature yet.
+                age = -1
+            else:
+                age = -1
+                self.migration_age[index] = -1
+
             if is_sea_or_flooded(int(past_usos[index])) and past_alt2[index] >= 0:
                 lower = [
                     neighbor
@@ -216,7 +288,13 @@ class BrMangueGrid:
                         self._apply_flooding(neighbor, past_usos)
 
             # Migration uses the current soil, land-cover, and elevation values.
-            if int(self.classe_solos[index]) in (SOLO_MANGUE, CANAL_FLUVIAL):
+            soil_source = int(self.classe_solos[index]) in (SOLO_MANGUE, CANAL_FLUVIAL)
+            mature_migrated_soil_source = (
+                int(self.usos[index]) == MANGUE_MIGRADO
+                and age >= parameters.migration_maturity_years
+                and int(self.classe_solos[index]) == SOLO_MANGUE_MIGRADO
+            )
+            if soil_source or mature_migrated_soil_source:
                 for neighbor in self.neighbors[index]:
                     if int(neighbor) < 0:
                         continue
@@ -227,7 +305,13 @@ class BrMangueGrid:
                     ):
                         self.classe_solos[neighbor] = SOLO_MANGUE_MIGRADO
 
-            if int(self.usos[index]) == MANGUE:
+            # Original mangrove is an immediate source. A migrated cell only
+            # becomes a source after the configured establishment period.
+            migration_source = int(self.usos[index]) == MANGUE or (
+                int(self.usos[index]) == MANGUE_MIGRADO
+                and age >= parameters.migration_maturity_years
+            )
+            if migration_source:
                 for neighbor in self.neighbors[index]:
                     if int(neighbor) < 0:
                         continue
@@ -241,6 +325,7 @@ class BrMangueGrid:
                         and soil_or_landcover_eligible
                     ):
                         self.usos[neighbor] = MANGUE_MIGRADO
+                        self.migration_age[neighbor] = 0
 
             if parameters.legacy_lua_accretion_typo:
                 migrated_soil = False
@@ -252,6 +337,11 @@ class BrMangueGrid:
             ):
                 self.alt2[index] += accretion_rate_m
 
+        # ``run_blocks`` supplies one shared previous-state snapshot and calls
+        # this method once per block.  The complete transition is assembled by
+        # that caller; only a full-grid step can record it here directly.
+        if full_step:
+            self.last_transition_metrics = mangrove_extent_metrics(past_usos, self.usos)
         # The current arrays become the previous state at the next time step.
 
     def run(self, parameters: ModelParameters) -> pd.DataFrame:
@@ -284,6 +374,7 @@ class BrMangueGrid:
         for time in range(parameters.start, parameters.final_time + 1):
             past_usos = self.usos.copy()
             past_alt2 = self.alt2.copy()
+            past_migration_age = self.migration_age.copy()
             for start in range(0, self.size, block_size):
                 stop = min(start + block_size, self.size)
                 self.step(
@@ -292,7 +383,9 @@ class BrMangueGrid:
                     indices=range(start, stop),
                     _past_usos=past_usos,
                     _past_alt2=past_alt2,
+                    _past_migration_age=past_migration_age,
                 )
+            self.last_transition_metrics = mangrove_extent_metrics(past_usos, self.usos)
             row: dict[str, float | int] = {"year": time}
             row.update(self.class_counts())
             row["min_alt2"] = float(np.nanmin(self.alt2))
@@ -322,6 +415,7 @@ class BrMangueGrid:
                 "legacy_lua_accretion_typo": parameters.legacy_lua_accretion_typo,
                 "allow_migration_without_soil": parameters.allow_migration_without_soil,
                 "accretion_rate_mm": parameters.accretion_rate_mm,
+                "migration_maturity_years": parameters.migration_maturity_years,
             },
             "classes": {
                 "MANGUE": MANGUE,

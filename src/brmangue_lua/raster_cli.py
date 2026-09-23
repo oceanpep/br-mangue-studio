@@ -58,6 +58,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Ativa a regra pretendida de acreção para solo migrado.",
     )
+    parser.add_argument(
+        "--migration-maturity-years",
+        type=int,
+        default=3,
+        help="Anos completos antes de uma célula migrada poder propagar (padrão: 3; 0 ativa no passo seguinte).",
+    )
     parser.add_argument("--show-chart", action="store_true")
     parser.add_argument(
         "--no-annual-states",
@@ -80,6 +86,7 @@ def main() -> None:
         sea_level_rise_rate=args.sea_level_rise_rate,
         legacy_lua_accretion_typo=not args.fix_accretion_typo,
         allow_migration_without_soil=(not soil_enabled) and (not args.no_migration_without_soil),
+        migration_maturity_years=args.migration_maturity_years,
     )
     trajectory = load_and_run_raster_simulation(
         args.land_cover,
