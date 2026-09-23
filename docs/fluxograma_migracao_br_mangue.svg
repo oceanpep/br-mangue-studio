@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1060" viewBox="0 0 1600 1060">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef9f8"/>
+      <stop offset="1" stop-color="#e5f1fa"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#17324d" flood-opacity="0.13"/>
+    </filter>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="11" refY="5" orient="auto">
+      <path d="M0,0 L12,5 L0,10 Z" fill="#167c85"/>
+    </marker>
+    <style>
+      .title { font: 700 44px 'Aptos','Arial',sans-serif; fill:#153b57; }
+      .subtitle { font: 400 22px 'Aptos','Arial',sans-serif; fill:#4b6b82; }
+      .label { font: 700 24px 'Aptos','Arial',sans-serif; fill:#153b57; }
+      .body { font: 400 20px 'Aptos','Arial',sans-serif; fill:#315a72; }
+      .small { font: 400 18px 'Aptos','Arial',sans-serif; fill:#4b6b82; }
+      .box { stroke:#c5e2e5; stroke-width:3; rx:22; filter:url(#shadow); }
+    </style>
+  </defs>
+  <rect width="1600" height="1060" fill="url(#bg)"/>
+  <path d="M0 930 C260 840 430 1010 700 920 S1170 820 1600 940 L1600 1060 L0 1060Z" fill="#bfe7e5" opacity=".45"/>
+  <text x="800" y="72" text-anchor="middle" class="title">Como o BR-MANGUE calcula a migração</text>
+  <text x="800" y="110" text-anchor="middle" class="subtitle">A cada ano, as mesmas regras locais são aplicadas a cada célula e às suas vizinhas.</text>
+
+  <rect x="80" y="160" width="420" height="150" class="box" fill="#ffffff"/>
+  <text x="110" y="205" class="label">1 · Entradas alinhadas</text>
+  <text x="110" y="240" class="body">Uso e cobertura • DEM/MDT •</text>
+  <text x="110" y="269" class="body">CRS, resolução e NoData conferidos.</text>
+
+  <rect x="590" y="160" width="420" height="150" class="box" fill="#ffffff"/>
+  <text x="620" y="205" class="label">2 · Classes e vizinhança</text>
+  <text x="620" y="240" class="body">Cada código recebe um papel:</text>
+  <text x="620" y="269" class="body">mangue, água, vegetação ou bloqueio.</text>
+
+  <rect x="1100" y="160" width="420" height="150" class="box" fill="#ffffff"/>
+  <text x="1130" y="205" class="label">3 · Cenário anual</text>
+  <text x="1130" y="240" class="body">Maré, elevação do nível do mar,</text>
+  <text x="1130" y="269" class="body">acresção e anos da simulação.</text>
+
+  <path d="M500 235 H575" stroke="#167c85" stroke-width="6" marker-end="url(#arrow)"/>
+  <path d="M1010 235 H1085" stroke="#167c85" stroke-width="6" marker-end="url(#arrow)"/>
+
+  <rect x="290" y="390" width="1020" height="155" class="box" fill="#e8f6ed" stroke="#78be8a"/>
+  <text x="800" y="440" text-anchor="middle" class="label">4 · Atualização de cada ano</text>
+  <text x="800" y="478" text-anchor="middle" class="body">O modelo lê a célula, a vizinhança e a elevação relativa</text>
+  <text x="800" y="509" text-anchor="middle" class="body">e aplica as transições simultaneamente (sem alterar a ordem do raster).</text>
+
+  <path d="M800 310 V380" stroke="#167c85" stroke-width="6" marker-end="url(#arrow)"/>
+
+  <rect x="80" y="640" width="430" height="185" class="box" fill="#eaf1fb" stroke="#79a9d5"/>
+  <text x="110" y="685" class="label">Mangue permanece adequado</text>
+  <text x="110" y="725" class="body">A célula continua como</text>
+  <text x="110" y="754" class="body">Mangrove enquanto as condições</text>
+  <text x="110" y="783" class="body">de elevação e maré permitem.</text>
+
+  <rect x="585" y="640" width="430" height="185" class="box" fill="#fff0e7" stroke="#f5ab73"/>
+  <text x="615" y="685" class="label">Elevação ultrapassada</text>
+  <text x="615" y="725" class="body">A célula de mangue muda para</text>
+  <text x="615" y="754" class="body">Flooded mangrove e a perda é</text>
+  <text x="615" y="783" class="body">registrada no ano correspondente.</text>
+
+  <rect x="1090" y="640" width="430" height="185" class="box" fill="#f1eafa" stroke="#9f7ac1"/>
+  <text x="1120" y="685" class="label">Área vizinha elegível</text>
+  <text x="1120" y="725" class="body">A célula pode virar Migrated</text>
+  <text x="1120" y="754" class="body">mangrove quando há fonte, espaço</text>
+  <text x="1120" y="783" class="body">e condições ambientais.</text>
+
+  <path d="M620 545 C550 590 450 610 320 630" fill="none" stroke="#167c85" stroke-width="6" marker-end="url(#arrow)"/>
+  <path d="M800 545 V630" stroke="#167c85" stroke-width="6" marker-end="url(#arrow)"/>
+  <path d="M980 545 C1050 590 1150 610 1290 630" fill="none" stroke="#167c85" stroke-width="6" marker-end="url(#arrow)"/>
+
+  <rect x="210" y="900" width="1180" height="105" rx="22" fill="#ffffff" stroke="#c5e2e5" stroke-width="3" filter="url(#shadow)"/>
+  <text x="800" y="938" text-anchor="middle" class="label">Maturação da migração</text>
+  <text x="800" y="973" text-anchor="middle" class="body">Migrated mangrove começa com idade 0 e só vira fonte após o atraso configurado (padrão: 3 anos).</text>
+  <text x="800" y="999" text-anchor="middle" class="small">Depois de madura, a célula também pode propagar o mangue — o valor pode ser alterado na aba Simulation.</text>
+
+  <path d="M1290 825 C1350 855 1360 880 1290 900" fill="none" stroke="#7c4aa1" stroke-width="5" stroke-dasharray="12 10" marker-end="url(#arrow)"/>
+  <text x="1410" y="862" text-anchor="middle" class="small" fill="#7c4aa1">idade ≥ atraso</text>
+</svg>

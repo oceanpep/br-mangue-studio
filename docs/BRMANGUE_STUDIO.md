@@ -26,10 +26,12 @@ Nesta versão, a interface já oferece:
   corrente e trajetória; os divisores podem ser arrastados para redimensionar
   cada linha e o botão **Reset layout** restaura a distribuição equilibrada;
 - parâmetros de anos, maré, elevação relativa, acreção constante opcional,
-  tamanho de bloco e executor contínuo, em blocos ou DissModel;
+  atraso de maturação da migração, tamanho de bloco e executor contínuo, em
+  blocos ou DissModel;
 - mapa inicial, mapa corrente, trajetória e barras divergentes de mudança líquida
   por classe, com zero central, perdas à esquerda e ganhos à direita;
-- trajetória com linha de células, barras separadas de ganhos e perdas e
+- trajetória com linha de células e saldo anual da extensão ativa de mangue;
+  ganhos líquidos aparecem acima de zero e perdas líquidas abaixo de zero;
   animação GIF com uma figura PNG para cada ano;
 - aba opcional para consulta do código das regras celulares e do leitor raster;
 - CPU, RAM do sistema e do processo, espaço livre em disco, células
@@ -42,6 +44,22 @@ Nesta versão, a interface já oferece:
   registra duração, RSS e throughput de cada ano. O arquivo
   `resource_samples.csv` guarda amostras periódicas de RAM, CPU e espaço livre
   em disco durante a execução.
+
+No `trajectory.csv`, a extensão ativa é `mangrove_extent` (Mangrove + Migrated
+mangrove). `annual_gain` e `annual_loss` são as mudanças brutas por célula e
+`annual_net_change` é o saldo usado no gráfico: ganho bruto menos perda bruta.
+Assim, uma célula que migra de Mangrove para Migrated mangrove não é contada
+como perda da extensão ativa.
+
+Quando o GeoTIFF está em um CRS projetado com unidades métricas, o Studio
+calcula automaticamente a área de cada pixel a partir da resolução do raster.
+Por exemplo, um pixel de 30 m × 30 m corresponde a 0,0009 km². A trajetória
+recebe colunas equivalentes terminadas em `_km2`, o monitor exibe a extensão e o
+saldo em km², e `simulation_data.csv` inclui a área de cada estado. Em CRS
+geográfico (graus), a área não é estimada automaticamente; reprojete os dados
+para um CRS métrico antes da simulação.
+As figuras e gráficos exibidos pelo Studio usam apenas células para manter a
+leitura limpa; as equivalências em km² permanecem nas planilhas e no console.
 
 ## Instalação e execução no ambiente Conda
 
@@ -121,6 +139,12 @@ Quando o solo é ativado, a camada deve ser um GeoTIFF inteiro alinhado à grade
 Quando não há solo, **Allow migration without soil** permite a migração para
 vegetação terrestre ou solo exposto; desmarcar a opção reproduz a exigência
 literal das classes de solo do Lua.
+
+O campo **Migration maturation delay (years)** controla quando uma célula no
+estado **Migrated mangrove** passa a ser uma fonte de propagação. O padrão é
+três anos completos; a célula não propaga no ano seguinte à conversão. Use
+valores alternativos para análise de sensibilidade e registre a escolha no
+projeto JSON e no `metadata.json`.
 
 O formulário de entrada possui uma barra de rolagem vertical. Ela permite
 acessar os campos de referência espacial e reprojeção mesmo quando a janela

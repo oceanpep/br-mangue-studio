@@ -38,13 +38,17 @@ parameters = ModelParameters(
     tide_height=6.0,
     sea_level_rise_rate=0.0005,  # m per model step; 0.5 mm/year
     allow_migration_without_soil=True,
+    migration_maturity_years=3,
 )
 ```
 
 Os parâmetros principais são `start`, `final_time`, `tide_height`,
 `sea_level_rise_rate`, `accretion_rate_mm` e
-`allow_migration_without_soil`. A interface gráfica recebe a elevação do nível
-do mar em mm/ano e faz a conversão para metros.
+`allow_migration_without_soil`. `migration_maturity_years` define quantos anos
+completos uma célula recém-migrada precisa permanecer estabelecida antes de
+servir como fonte de propagação. O padrão é `3`; `0` é útil para testes de
+sensibilidade sem atraso biológico. A interface gráfica recebe a elevação do
+nível do mar em mm/ano e faz a conversão para metros.
 
 ## Rodar uma grade em memória
 

@@ -27,6 +27,37 @@ from .persistent_blocks import PersistentBlockRunner
 from .raster_inputs import RasterInputSet, load_raster_inputs, write_input_metadata
 
 
+_AREA_COLUMNS = (
+    "mangrove",
+    "migrated_mangrove",
+    "flooded_mangrove",
+    "vegetation",
+    "sea",
+    "anthropized",
+    "bare",
+    "flooded_bare",
+    "flooded_anthropized",
+    "flooded_natural",
+    "mangrove_extent",
+    "annual_gain",
+    "annual_loss",
+    "annual_net_change",
+)
+
+
+def _add_area_columns(inputs: RasterInputSet, trajectory: pd.DataFrame) -> pd.DataFrame:
+    """Add km² equivalents using the actual aligned raster cell area."""
+    area = inputs.cell_area_km2
+    if area is None or trajectory.empty:
+        return trajectory
+    result = trajectory.copy()
+    result["cell_area_km2"] = float(area)
+    for column in _AREA_COLUMNS:
+        if column in result:
+            result[f"{column}_km2"] = result[column].astype(float) * float(area)
+    return result
+
+
 def _summary_grid(grid: BrMangueGrid) -> dict[str, int | float]:
     result: dict[str, int | float] = grid.class_counts()
     result["min_alt2"] = float(np.nanmin(grid.alt2))
@@ -41,6 +72,22 @@ def _state_arrays(runner: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return runner.usos, runner.alt2, runner.classe_solos
 
 
+def _transition_metrics(runner: Any, summary: dict[str, Any]) -> dict[str, int]:
+    """Return the active-mangrove transition metrics for the completed step."""
+    metrics = dict(getattr(runner, "last_transition_metrics", {}))
+    if metrics:
+        return {key: int(value) for key, value in metrics.items()}
+    # Keep custom/legacy runners usable while making the new CSV schema
+    # explicit.  Such runners cannot recover cell-by-cell gross transitions.
+    extent = int(summary.get("mangrove", 0)) + int(summary.get("migrated_mangrove", 0))
+    return {
+        "mangrove_extent": extent,
+        "annual_gain": 0,
+        "annual_loss": 0,
+        "annual_net_change": 0,
+    }
+
+
 def _parameters_metadata(parameters: ModelParameters) -> dict[str, Any]:
     return {
         "start": int(parameters.start),
@@ -51,6 +98,7 @@ def _parameters_metadata(parameters: ModelParameters) -> dict[str, Any]:
         "legacy_lua_accretion_typo": bool(parameters.legacy_lua_accretion_typo),
         "allow_migration_without_soil": bool(parameters.allow_migration_without_soil),
         "accretion_rate_mm": parameters.accretion_rate_mm,
+        "migration_maturity_years": int(parameters.migration_maturity_years),
     }
 
 
@@ -236,9 +284,6 @@ def run_raster_simulation(
         sampler_thread.start()
 
     rows: list[dict[str, Any]] = []
-    # Compare the first annual loss with the initial state rather than with a
-    # state that has already been updated in the current run.
-    previous_mangrove: int | None = int(initial_class_counts.get("mangrove", 0))
     try:
         if engine == "dissmodel":
             from .dissmodel_adapter import run_dissmodel
@@ -254,12 +299,12 @@ def run_raster_simulation(
                 if step_rss is not None:
                     peak_rss = max(peak_rss, step_rss)
                 summary = dict(record)
+                transitions = _transition_metrics(runner, summary)
                 row: dict[str, Any] = {
                     "year": year_index,
                     "calendar_year": calendar_year,
                     **summary,
-                    "annual_gain": int(record.get("gain", 0)),
-                    "annual_loss": int(record.get("loss", 0)),
+                    **transitions,
                     "step_elapsed_seconds": round(step_elapsed, 6),
                     "step_rss_bytes": step_rss,
                     "step_cells_per_second": round(inputs.n_cells / step_elapsed, 3)
@@ -287,16 +332,9 @@ def run_raster_simulation(
                 step_callback=_handle_dissmodel_step,
             )
             trajectory["calendar_year"] = trajectory["year"].astype(int) + int(initial_year)
-            if "mangrove" in trajectory.columns and not trajectory.empty:
-                previous = int(initial_class_counts.get("mangrove", 0))
-                gains: list[int] = []
-                losses: list[int] = []
-                for value in trajectory["mangrove"].astype(int):
-                    gains.append(max(int(value) - previous, 0))
-                    losses.append(max(previous - int(value), 0))
-                    previous = int(value)
-                trajectory["gain"] = gains
-                trajectory["loss"] = losses
+            # DissModel records already contain the cell-by-cell transition
+            # metrics emitted by the runner.  Do not reconstruct them from the
+            # exact MANGUE count, because migration uses a distinct state code.
             step_metrics = pd.DataFrame(rows)
             if not step_metrics.empty:
                 metric_columns = [
@@ -308,6 +346,7 @@ def run_raster_simulation(
                 trajectory = trajectory.merge(
                     step_metrics[metric_columns], on="year", how="left"
                 )
+            trajectory = _add_area_columns(inputs, trajectory)
             trajectory.to_csv(output_dir / "trajectory.csv", index=False)
             _write_state(inputs, runner, output_dir / f"final_usos_{initial_year + parameters.final_time}.tif", initial_year + parameters.final_time)
             rows = trajectory.to_dict(orient="records")
@@ -319,8 +358,7 @@ def run_raster_simulation(
                     summary = _summary_grid(runner)
                 else:
                     summary = runner.step(time_index, parameters)
-                mangrove = int(summary["mangrove"])
-                previous = mangrove if previous_mangrove is None else previous_mangrove
+                transitions = _transition_metrics(runner, summary)
                 calendar_year = int(initial_year + time_index)
                 step_elapsed = max(time.perf_counter() - step_started, 0.0)
                 step_rss = process.memory_info().rss if process else None
@@ -328,8 +366,7 @@ def run_raster_simulation(
                     "year": int(time_index),
                     "calendar_year": calendar_year,
                     **summary,
-                    "annual_gain": max(mangrove - previous, 0),
-                    "annual_loss": max(previous - mangrove, 0),
+                    **transitions,
                     "step_elapsed_seconds": round(step_elapsed, 6),
                     "step_rss_bytes": step_rss,
                     "step_cells_per_second": round(inputs.n_cells / step_elapsed, 3)
@@ -337,7 +374,6 @@ def run_raster_simulation(
                     else None,
                 }
                 rows.append(row)
-                previous_mangrove = mangrove
                 if step_rss is not None:
                     peak_rss = max(peak_rss, step_rss)
                 if save_annual_states:
@@ -353,6 +389,7 @@ def run_raster_simulation(
                         }
                     )
             trajectory = pd.DataFrame(rows)
+            trajectory = _add_area_columns(inputs, trajectory)
             trajectory.to_csv(output_dir / "trajectory.csv", index=False)
     finally:
         sampling_stop.set()
@@ -432,6 +469,12 @@ def run_raster_simulation(
         "save_annual_states": bool(save_annual_states),
         "parameters": _parameters_metadata(parameters),
         "cells": inputs.n_cells,
+        "cell_area_km2": inputs.cell_area_km2,
+        "area_conversion": (
+            "Projected CRS linear units converted to square kilometres"
+            if inputs.cell_area_km2 is not None
+            else "Unavailable: input CRS is not projected or cell resolution is missing"
+        ),
         "initial_class_counts": initial_class_counts,
         "final_class_counts": final_class_counts,
         # ``elapsed_seconds`` is retained for compatibility and refers to the

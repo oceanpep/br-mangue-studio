@@ -2,6 +2,14 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [Unreleased]
+
+- Added a configurable maturation delay for migrated mangrove cells. The
+  default is three complete annual steps before a migrated cell can propagate;
+  continuous and persistent-block engines preserve the same age state.
+- Added `migration_maturity_years` to project files, command-line execution,
+  run metadata, and the user manual.
+
 ## [1.0.0] — 2026-09-21
 
 This release consolidates the Python desktop application for the BR-MANGUE
@@ -22,4 +30,3 @@ cellular model and prepares a reproducible release workflow.
 
 The scientific equivalence of the continuous and block engines must be checked
 for each released build and documented with the benchmark protocol.
-

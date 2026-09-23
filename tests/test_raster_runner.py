@@ -31,6 +31,7 @@ def test_block_runner_releases_and_restores_materialized_grid(tmp_path):
     _write_raster(elevation, np.ones((2, 2), dtype=np.float32), dtype="float32", nodata=-9999)
 
     inputs = load_raster_inputs(land_cover, elevation, soil_enabled=False)
+    assert inputs.cell_area_km2 == 0.0009
     trajectory = run_raster_simulation(
         inputs,
         tmp_path / "run",
@@ -42,6 +43,18 @@ def test_block_runner_releases_and_restores_materialized_grid(tmp_path):
     )
 
     assert len(trajectory) == 1
+    assert {
+        "mangrove_extent",
+        "annual_gain",
+        "annual_loss",
+        "annual_net_change",
+        "cell_area_km2",
+        "mangrove_extent_km2",
+        "annual_net_change_km2",
+    }.issubset(trajectory.columns)
+    assert int(trajectory.loc[0, "annual_net_change"]) == int(
+        trajectory.loc[0, "annual_gain"] - trajectory.loc[0, "annual_loss"]
+    )
     assert inputs.grid is None
     assert inputs.n_cells == 4
     metadata_path = tmp_path / "run" / "metadata.json"

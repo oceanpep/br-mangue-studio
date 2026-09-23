@@ -59,6 +59,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Usa vegetação/solo exposto como candidatos à migração sem camada de solo.",
     )
+    parser.add_argument(
+        "--migration-maturity-years",
+        type=int,
+        default=3,
+        help="Anos completos antes de uma célula migrada poder propagar (padrão: 3; 0 ativa no passo seguinte).",
+    )
     return parser
 
 
@@ -71,6 +77,7 @@ def main() -> None:
         legacy_lua_accretion_typo=not args.fix_accretion_typo,
         allow_migration_without_soil=args.allow_migration_without_soil,
         accretion_rate_mm=args.accretion_rate_mm,
+        migration_maturity_years=args.migration_maturity_years,
     )
     trajectory = run_shapefile(
         args.input,

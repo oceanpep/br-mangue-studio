@@ -139,7 +139,7 @@ atribui cada código a um papel do modelo:
 
 | Papel no Studio | O que significa | Pode receber migração? |
 |---|---|---:|
-| **Mangrove** | Mangue existente no estado inicial | É a origem da migração |
+| **Mangrove** | Mangue presente no estado inicial | É a origem da migração |
 | **Natural vegetation** | Vegetação natural que pode acomodar mangue | Sim, se as demais regras permitirem |
 | **Water** | Água, canais, rios, estuários ou mar | Não como destino de migração |
 | **Anthropized / blocked** | Área construída, infraestrutura, praia, solo descoberto sem permissão ou qualquer barreira | Não |
@@ -162,7 +162,7 @@ O Studio também registra estados derivados durante a simulação:
 | Bare soil | Solo descoberto, quando mantido como estado separado |
 | Flooded bare soil | Solo descoberto inundado |
 | Flooded anthropized / blocked | Área bloqueada inundada |
-| Migrated mangrove | Célula convertida para mangue por migração |
+| Migrated mangrove | Célula convertida para mangue por migração; após o atraso de maturação, também pode propagar |
 | Flooded mangrove | Mangue atingido pela inundação |
 | Flooded natural vegetation | Vegetação natural inundada |
 
@@ -402,7 +402,22 @@ hipótese for adotada. Deixe vazio para manter a formulação padrão do modelo.
 Não confunda acreção com elevação do nível do mar: uma é mudança da superfície
 sedimentar; a outra é mudança relativa da água.
 
-### 7.6 Block size (cells)
+### 7.6 Migration maturation delay (years)
+
+Define quantos anos completos uma célula que acabou de receber mangue deve
+permanecer estabelecida antes de poder funcionar como fonte de propagação para
+as células vizinhas. O valor padrão é **3 anos**. Assim, uma célula convertida
+no ano `t` não propaga no ano seguinte; ela só pode iniciar uma nova frente
+depois de completar o período configurado.
+
+Esse parâmetro é uma aproximação ecológica, não uma idade universal do
+manguezal. Estudos com *Rhizophora mangle* registram reprodução precoce em
+algumas populações, mas também indicam maturação mais tardia dependendo da
+latitude e das condições locais. Para análise de sensibilidade, compare pelo
+menos 2, 3 e 5 anos. O valor `0` mantém a fonte ativa já no passo seguinte e
+serve apenas como controle metodológico.
+
+### 7.7 Block size (cells)
 
 É o número de células processadas por grupo no motor em blocos. Exemplos:
 
@@ -414,7 +429,7 @@ Um bloco maior nem sempre é mais rápido. A velocidade depende do processador,
 do armazenamento, do número de células válidas, da vizinhança e da exportação
 de arquivos anuais.
 
-### 7.7 Processing engine
+### 7.8 Processing engine
 
 #### Continuous
 
@@ -438,7 +453,7 @@ executável compacto nem para o funcionamento do motor principal. Use-a apenas
 se a instalação correspondente estiver disponível e se o experimento exigir
 essa comparação.
 
-### 7.8 Camada de aptidão de mangue
+### 7.9 Camada de aptidão de mangue
 
 Marque **Enable optional mangrove suitability layer** somente quando tiver um
 GeoTIFF alinhado e souber interpretar seus códigos.
@@ -493,16 +508,39 @@ MDT antes de interpretar o mapa.
 
 O gráfico acompanha, ano a ano, as contagens de mangue, mangue migrado e
 mangue inundado. Uma queda no mangue existente pode ocorrer junto com um
-aumento do mangue inundado; isso não significa automaticamente que a regra
-falhou.
+aumento do mangue migrado; isso não significa automaticamente que a extensão
+ativa diminuiu. Para medir a extensão ativa, some `Mangrove` e `Migrated
+mangrove`.
 
 ### 9.4 Mudança anual por classe
 
 O gráfico divergente usa uma linha central zero:
 
-- barras acima de zero representam acréscimo líquido;
-- barras abaixo de zero representam perda líquida;
-- a cor identifica a classe.
+- barras verdes acima de zero representam aumento líquido da extensão ativa;
+- barras vermelhas abaixo de zero representam perda líquida;
+- a linha central representa saldo zero.
+
+O saldo é calculado célula a célula: `annual_net_change = annual_gain −
+annual_loss`. Assim, a passagem de `Mangrove` para `Migrated mangrove` continua
+fazendo parte do mangue ativo e não é contada como uma perda falsa. Os ganhos e
+perdas brutos permanecem disponíveis no `trajectory.csv` para análises mais
+detalhadas.
+
+### 9.5 Área em km²
+
+Quando o raster está em um sistema projetado com unidades métricas, o Studio
+usa a resolução real do GeoTIFF para converter células em área. A fórmula é:
+
+`área da célula (km²) = largura do pixel (m) × altura do pixel (m) ÷ 1.000.000`
+
+Assim, um pixel de 30 m × 30 m equivale a 0,0009 km². O `trajectory.csv`
+recebe colunas como `mangrove_extent_km2` e `annual_net_change_km2`; o arquivo
+`simulation_data.csv` também traz as áreas anuais de cada estado. Se o CRS
+estiver em graus, reprojete os rasters para um CRS métrico antes de interpretar
+áreas.
+Para evitar poluição visual, os gráficos mostram somente o número de células.
+As equivalências em km² continuam disponíveis nas planilhas e no console do
+Live run monitor.
 
 Perda líquida não é o mesmo que área totalmente desaparecida: uma classe pode
 perder células para outra e também receber células de outra origem no mesmo
@@ -524,7 +562,7 @@ Cada execução cria uma pasta como `results/run_20260922T120000/`.
 |---|---|
 | `metadata.json` | Parâmetros, motor, contagens, caminhos, CRS, hashes e diagnóstico de desempenho |
 | `input_metadata.json` | Metadados dos rasters e do mapeamento de classes |
-| `trajectory.csv` | Contagens e indicadores para cada ano |
+| `trajectory.csv` | Contagens, extensão ativa, ganhos/perdas brutos, saldo anual e indicadores para cada ano |
 | `resource_samples.csv` | Amostras de RAM, CPU, disco e processo |
 | `initial_usos_*.tif` | Estado inicial em raster |
 | `states/` | GeoTIFF do estado de cada ano, quando habilitado |

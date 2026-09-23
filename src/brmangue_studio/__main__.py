@@ -84,6 +84,7 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
         ),
         allow_migration_without_soil=bool(params_config.get("allow_migration_without_soil", False)),
         accretion_rate_mm=accretion,
+        migration_maturity_years=int(params_config.get("migration_maturity_years", 3)),
     )
     engine = str(params_config.get("engine", "blocks"))
     block_size = int(params_config.get("block_size", 10_000))
