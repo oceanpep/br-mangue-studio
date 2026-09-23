@@ -3,20 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="BR-MANGUE Studio: spatial cellular mangrove modelling for coastal research in a modern Python desktop application.">
-  <title>BR-MANGUE Studio</title>
+  <meta name="description" content="BR-MANGUE Studio is a Windows desktop application for simulating mangrove response to sea-level rise with spatial cellular automata.">
+  <title>BR-MANGUE Studio · Coastal cellular modelling</title>
   <link rel="icon" href="assets/BR-MANGUE_BR_icon.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="site-header">
     <div class="container nav-wrap">
-      <a class="brand" href="./">
+      <a class="brand" href="./" aria-label="BR-MANGUE Studio home">
         <img src="assets/BR-MANGUE_BR_icon.png" alt="BR-MANGUE icon">
         <span>MANGUE <em>Studio</em></span>
       </a>
       <nav aria-label="Primary navigation">
-        <a href="#about">About</a>
+        <a href="#about">What it does</a>
         <a href="#performance">Performance</a>
         <a href="downloads.html">Download</a>
         <a href="guide.html">Guide</a>
@@ -29,25 +29,57 @@
   <main>
     <section class="hero">
       <div class="container hero-grid">
-        <div>
-          <p class="eyebrow">Research software</p>
-          <h1>Understand how mangroves respond to sea-level rise.</h1>
-          <p class="lead">BR-MANGUE Studio is a desktop application for spatial cellular modelling, scenario exploration, and coastal analysis. Bring your own raster data, define the rules, and see change unfold year by year.</p>
+        <div class="hero-copy">
+          <p class="eyebrow">Spatial cellular model for mangroves</p>
+          <h1>Simulate mangrove response to sea-level rise.</h1>
+          <p class="lead">Load aligned raster data, define the classes and scenario, and inspect how each cell changes year by year in BR-MANGUE Studio.</p>
           <div class="hero-actions">
-            <a class="button primary" href="downloads.html">Download version 1.0.0</a>
-            <a class="button secondary" href="guide.html">Open the guide</a>
+            <a class="button primary" href="downloads.html">Download 1.0.0 for Windows</a>
+            <a class="button secondary" href="guide.html">Read the guide</a>
           </div>
-          <p class="version-note">Research beta · Windows 10/11 (64-bit) · Python architecture</p>
+          <p class="version-note">Windows 10/11 · 64-bit · Python desktop application · No separate Python installation</p>
         </div>
-        <div class="hero-side">
-          <figure class="demo-card">
-            <div class="demo-label">Example simulation</div>
-            <img src="assets/coastal-simulation-example.gif" alt="Animated example of annual mangrove state changes">
-            <figcaption>Illustrative simulation using fictitious data from the coastal zone of Maranhão State, Brazil.</figcaption>
-          </figure>
-          <div class="hero-card">
-            <img src="assets/BR-MANGUE_STUDIO_preview_original.png" alt="BR-MANGUE Studio logo">
-            <div class="hero-card-footer"><span>Built for researchers</span><span>Use your own data</span><span>Open for review</span></div>
+
+        <div class="hero-scene-wrap">
+          <div class="hero-scene-card">
+            <div class="scene-heading"><span>Annual state transition</span><span class="scene-live"><i></i> model view</span></div>
+            <svg class="hero-scene" viewBox="0 0 620 430" role="img" aria-labelledby="scene-title scene-desc">
+              <title id="scene-title">Mangrove tree and cellular grid as the tide rises</title>
+              <desc id="scene-desc">A clean animated illustration shows a mangrove rooted in a cell grid while blue water gradually rises around it.</desc>
+              <defs>
+                <linearGradient id="scene-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8f8fb"/><stop offset="1" stop-color="#cce9e6"/></linearGradient>
+                <linearGradient id="scene-water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#23b8c7" stop-opacity=".84"/><stop offset="1" stop-color="#0878a6" stop-opacity=".98"/></linearGradient>
+                <pattern id="scene-grid" width="27" height="27" patternUnits="userSpaceOnUse"><path d="M27 0H0V27" fill="none" stroke="#1887a0" stroke-opacity=".22" stroke-width="1"/></pattern>
+                <clipPath id="scene-clip"><rect x="18" y="18" width="584" height="394" rx="22"/></clipPath>
+                <filter id="scene-shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#07517e" flood-opacity=".18"/></filter>
+              </defs>
+              <rect class="scene-backdrop" x="18" y="18" width="584" height="394" rx="22" fill="url(#scene-sky)"/>
+              <g clip-path="url(#scene-clip)">
+                <circle cx="480" cy="85" r="58" fill="#fff" opacity=".52"/><circle cx="480" cy="85" r="78" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="2"/>
+                <path class="scene-shore" d="M0 306 C100 282 180 300 256 288 C345 273 420 304 640 272 L640 430 L0 430Z" fill="#b8d68e" opacity=".96"/>
+                <rect class="scene-grid" x="18" y="18" width="584" height="394" fill="url(#scene-grid)"/>
+                <g class="scene-cells" aria-hidden="true">
+                  <rect x="76" y="234" width="18" height="18" rx="3"/><rect x="100" y="262" width="18" height="18" rx="3"/><rect x="126" y="284" width="18" height="18" rx="3"/><rect x="151" y="249" width="18" height="18" rx="3"/>
+                  <rect x="182" y="290" width="18" height="18" rx="3"/><rect x="212" y="267" width="18" height="18" rx="3"/><rect x="240" y="311" width="18" height="18" rx="3"/><rect x="271" y="283" width="18" height="18" rx="3"/>
+                  <rect x="474" y="258" width="18" height="18" rx="3"/><rect x="504" y="286" width="18" height="18" rx="3"/>
+                </g>
+                <g class="scene-tree" filter="url(#scene-shadow)">
+                  <path class="scene-trunk" d="M306 310 C302 269 306 233 314 197 C320 168 322 145 317 117 L346 117 C341 157 345 179 351 201 C361 237 371 271 371 310Z"/>
+                  <path class="scene-root" d="M328 296 C299 315 271 327 231 337 M343 300 C359 325 392 338 431 343 M337 296 C333 322 329 340 310 356 M351 299 C370 318 387 326 405 329"/>
+                  <path class="scene-branch" d="M328 183 L270 139 M337 165 L398 117 M326 151 L303 99 M344 190 L389 180"/>
+                  <g class="scene-canopy"><circle cx="264" cy="124" r="42"/><circle cx="306" cy="95" r="50"/><circle cx="354" cy="108" r="52"/><circle cx="402" cy="126" r="42"/><circle cx="290" cy="145" r="38"/><circle cx="365" cy="151" r="43"/></g>
+                  <g class="scene-canopy-light"><circle cx="288" cy="92" r="14"/><circle cx="352" cy="91" r="15"/><circle cx="402" cy="122" r="11"/></g>
+                </g>
+                <g class="hero-water-group">
+                  <rect class="hero-water" x="0" y="309" width="640" height="145"/>
+                  <path class="hero-wave" d="M0 309 C62 287 103 327 160 306 C219 285 267 327 330 306 C391 285 445 326 504 305 C559 286 596 315 640 301 L640 330 L0 330Z"/>
+                  <path class="hero-wave-line" d="M0 309 C62 287 103 327 160 306 C219 285 267 327 330 306 C391 285 445 326 504 305 C559 286 596 315 640 301"/>
+                  <g class="water-cells"><rect x="52" y="349" width="17" height="17"/><rect x="82" y="378" width="17" height="17"/><rect x="457" y="348" width="17" height="17"/><rect x="512" y="382" width="17" height="17"/></g>
+                </g>
+              </g>
+              <g class="scene-legend"><circle cx="48" cy="52" r="5"/><text x="62" y="57">cell state</text><circle cx="150" cy="52" r="5"/><text x="164" y="57">rising water</text></g>
+            </svg>
+            <p class="scene-caption">The same local rules are applied to every cell and its neighbourhood.</p>
           </div>
         </div>
       </div>
@@ -55,65 +87,69 @@
 
     <section id="about" class="section">
       <div class="container">
-        <p class="eyebrow">The Studio</p>
-        <h2>From coastal data to clear decisions.</h2>
-        <p class="section-intro">BR-MANGUE Studio turns aligned land-cover and elevation rasters into an interactive view of mangrove response to sea-level rise. Map your classes, set the scenario, run the simulation, and inspect every annual transition in one place.</p>
+        <p class="eyebrow">What the Studio does</p>
+        <h2>One workflow from raster input to annual results.</h2>
+        <p class="section-intro">The application makes the modelling decisions visible: you can inspect the source classes, coordinate reference, parameters, and transitions before interpreting a map.</p>
         <div class="feature-grid">
-          <article><span class="feature-number">01</span><h3>Bring your data</h3><p>Load aligned categorical land-cover and elevation rasters, with optional soil and study-area layers.</p></article>
-          <article><span class="feature-number">02</span><h3>Watch change unfold</h3><p>Follow annual maps, trajectories, class gains and losses, and transitions while the simulation runs.</p></article>
-          <article><span class="feature-number">03</span><h3>Choose your scale</h3><p>Use continuous processing for the fastest run when the grid fits in RAM. Choose persistent blocks when scale, recovery, and disk-backed state matter more than raw speed.</p></article>
+          <article><span class="feature-number">01</span><h3>Cellular rules</h3><p>Each cell evaluates its elevation, state, and up to eight neighbours to determine the next annual state.</p></article>
+          <article><span class="feature-number">02</span><h3>Two processing engines</h3><p>Use continuous processing when the grid fits in memory, or persistent blocks for larger domains and recoverable runs.</p></article>
+          <article><span class="feature-number">03</span><h3>Inspectable outputs</h3><p>Review annual maps, trajectories, class changes, transition tables, CSV data, GeoTIFFs, and animation frames.</p></article>
         </div>
       </div>
     </section>
 
-    <section id="download" class="section tinted">
-      <div class="container split">
-        <div><p class="eyebrow">Get started</p><h2>Download and run</h2><p>Version 1.0.0 is available for Windows 10 and Windows 11, 64-bit. Download the program directly from this site, extract it if necessary, and start <code>BRMANGUE_Studio.exe</code>. macOS and Linux builds are not available yet.</p><a class="text-link" href="downloads.html">See all versions and requirements →</a></div>
-        <div class="info-card"><strong>Current channel</strong><span>Research beta</span><small>Windows 10/11 · 64-bit · No separate Python installation required</small></div>
+    <section id="example" class="section example-section">
+      <div class="container example-grid">
+        <figure class="demo-card">
+          <div class="demo-label">Example simulation</div>
+          <img src="assets/coastal-simulation-example.gif" alt="Animated example of annual mangrove state changes">
+          <figcaption>Fictitious data from the coastal zone of Maranhão State, Brazil. This example is for illustration, not a forecast.</figcaption>
+        </figure>
+        <div class="example-copy"><p class="eyebrow">See the model in motion</p><h2>Water level, elevation, and land-cover state meet in one map.</h2><p>Use the animation to check the direction of change, then open the annual tables and figures to quantify it.</p><a class="text-link" href="guide.html#workflow">How to run a scenario →</a></div>
       </div>
     </section>
 
-    <section id="performance" class="section">
+    <section id="performance" class="section tinted">
       <div class="container">
         <p class="eyebrow">Performance</p>
-        <h2>One set of rules. Two ways to scale.</h2>
-        <p class="section-intro">This reference test uses the complete CMMA — <em>Costa de Manguezais de Macromaré da Amazônia</em>, the Amazon macro-tidal mangrove coast — mapped at 30 m. It combines a 2024 land-cover map with ANADEM elevation data, a Digital Terrain Model (MDT in Portuguese; DEM in English) used to represent the terrain height. The test has 78.007 million active cells and one annual transition to 2025. Continuous processing is faster when the active grid fits in RAM. Persistent blocks are designed for much larger domains because they save the model state between chunks. Both engines produce the same results with the same settings.</p>
+        <h2>Choose the engine for your grid.</h2>
+        <p class="section-intro">Continuous processing is usually faster when the active raster fits safely in RAM. Persistent blocks trade speed for capacity and recovery on very large coastal domains.</p>
         <div class="benchmark-grid">
-          <article class="benchmark-card"><strong>Continuous</strong><span>~0.631M updates/s</span><small>Fastest when the active grid fits in RAM: 78.01 million cell-updates in 123.6 s.</small></article>
-          <article class="benchmark-card"><strong>Blocks · 10,000 cells</strong><span>~0.164M updates/s</span><small>Capacity-oriented path for very large coastal rasters: 78.01 million cell-updates in 476.7 s using persistent chunks.</small></article>
-          <article class="benchmark-card"><strong>Output check</strong><span>Identical states</span><small>Final maps and annual trajectories matched with zero cell differences.</small></article>
+          <article class="benchmark-card"><strong>Continuous</strong><span>~0.631M updates/s</span><small>Reference run: 78.01 million cell-updates in 123.6 s, with the active grid kept in memory.</small></article>
+          <article class="benchmark-card"><strong>Persistent blocks</strong><span>~0.164M updates/s</span><small>Reference run: 78.01 million cell-updates in 476.7 s using 10,000-cell chunks and persistent state.</small></article>
+          <article class="benchmark-card"><strong>Same model state</strong><span>0 cell differences</span><small>Final maps and annual trajectories matched when both engines used the same inputs and settings.</small></article>
         </div>
-        <p class="benchmark-note">Measured on an Intel Core i3-1215U host with 19.7 GiB total RAM, using no annual GeoTIFF writes. Scaling this footprint to 80 million cells suggests about 6.1 GiB for the active state after a step and roughly 6.8 GiB while the temporary previous-state copy exists; reserve 8–10 GiB free for a continuous run. The arrays are reused at every step: a 20-step or 100-step scenario does not multiply RAM by 20 or 100. It increases elapsed time and, when enabled, the number of annual files. Exporting an annual map can create a short-lived raster buffer, so a small temporary RAM bump is possible, but those buffers are released rather than accumulated. The block runner copies the input arrays to persistent state files and releases the materialized grid while the steps run; it reopens the grid only to prepare post-run maps and figures. Blocks are therefore a capacity and recovery option for domains that do not fit safely in RAM, even though continuous remains faster when it fits. <a class="text-link" href="benchmark-cmma-anadem-20260917.html">Read the full benchmark note →</a></p>
+        <p class="benchmark-note">The reference area is the Costa de Manguezais de Macromaré da Amazônia (CMMA), at 30 m, with a 2024 land-cover map and ANADEM digital terrain model. <a class="text-link" href="benchmark-cmma-anadem-20260917.html">Read the benchmark note →</a></p>
       </div>
     </section>
 
-    <section id="origins" class="section tinted">
+    <section id="download" class="section download-band">
+      <div class="container split">
+        <div><p class="eyebrow">Current release</p><h2>Download BR-MANGUE Studio 1.0.0.</h2><p>Windows 10 and Windows 11, 64-bit. The executable includes the Python runtime and required libraries. macOS and Linux builds are not available yet.</p><a class="button primary" href="downloads.html">Open the download page</a></div>
+        <div class="info-card"><strong>Start with three files</strong><span>Land cover · elevation · optional suitability</span><small>Prepare aligned GeoTIFFs, map the classes, set the scenario, and run the model.</small></div>
+      </div>
+    </section>
+
+    <section id="origins" class="section origins-section">
       <div class="container split origin-block">
-        <div><p class="eyebrow">Where it began</p><h2>A proven idea, ready for its next chapter.</h2><p>The first BR-MANGUE version was developed between 2010 and 2014 in Lua, using TerraME and other software dependencies available through the facilities of Brazil’s National Institute for Space Research (INPE), by <strong>Dr. Denilson da Silva Bezerra</strong>.</p><p>Now the project enters a new phase. BR-MANGUE Studio brings the model to Python and an integrated desktop application developed at the Federal University of Maranhão by <strong>MSc. Felipe Martins Sousa</strong>, in partnership with the author of the first version.</p></div>
-        <div class="origin-card"><span>From research code</span><b>to an accessible tool</b><small>Built to help researchers prepare data, run scenarios, inspect change, and share results.</small></div>
+        <div><p class="eyebrow">Project context</p><h2>From a research model to a practical tool.</h2><p>The first BR-MANGUE version was developed between 2010 and 2014 in Lua with TerraME by <strong>Dr. Denilson da Silva Bezerra</strong>. BR-MANGUE Studio reimplements the model in Python as an integrated desktop application developed at the Federal University of Maranhão by <strong>MSc. Felipe Martins Sousa</strong>, in partnership with the original author.</p></div>
+        <div class="origin-card"><span>Research software</span><b>Visible inputs.<br>Reproducible outputs.</b><small>Documentation, benchmarks, and release files are available on this site.</small></div>
       </div>
     </section>
 
     <section id="documentation" class="section">
       <div class="container split">
-        <div><p class="eyebrow">Learn</p><h2>Everything you need to start a run.</h2><p>Start with the Studio guide, then review input requirements and processing-engine notes before running a scenario.</p></div>
+        <div><p class="eyebrow">Documentation</p><h2>Start with the guide.</h2><p>Find the input requirements, class mapping, coordinate reference, processing engines, outputs, and troubleshooting steps in one place.</p></div>
         <div class="link-list">
           <a href="guide.html#workflow"><span>Studio workflow</span><small>Projects, mapping, simulation, and outputs</small><b>↗</b></a>
-          <a href="guide.html#inputs"><span>Raster input requirements</span><small>Alignment, masks, and optional soil</small><b>↗</b></a>
+          <a href="guide.html#inputs"><span>Raster input requirements</span><small>Alignment, masks, and optional suitability</small><b>↗</b></a>
           <a href="guide.html#engines"><span>Processing engines</span><small>Continuous versus persistent blocks</small><b>↗</b></a>
-          <a href="guide.html#audit"><span>Parity and audit notes</span><small>Scope, assumptions, and known limits</small><b>↗</b></a>
+          <a href="guide.html#audit"><span>Audit checklist</span><small>Record inputs, rules, and scenario parameters</small><b>↗</b></a>
         </div>
-      </div>
-    </section>
-
-    <section id="research" class="section tinted">
-      <div class="container split research-block">
-        <div><p class="eyebrow">Research and community</p><h2>Connect software, evidence, and people.</h2><p>Browse studies, active applications, project materials, and news directly in this portal. New entries will be added here as the BR-MANGUE community grows.</p><a class="text-link" href="articles.html">Browse the research library →</a></div>
-        <div class="geotam-card"><span>Developed with</span><img src="assets/GEOTAM_logo.jpeg" alt="GEOTAM laboratory logo"><small>Laboratório de Geotecnologias e Ciências Ambientais</small></div>
       </div>
     </section>
   </main>
 
-  <footer class="site-footer"><div class="container footer-wrap"><span>© 2026 BR-MANGUE Studio · Software de pesquisa</span><span><a href="downloads.html">Downloads</a> · <a href="guide.html">Guide</a> · <a href="articles.html">Research</a></span></div></footer>
+  <footer class="site-footer"><div class="container footer-wrap"><span>© 2026 BR-MANGUE Studio · Research software</span><span><a href="downloads.html">Downloads</a> · <a href="guide.html">Guide</a> · <a href="articles.html">Research</a></span></div></footer>
 </body>
 </html>

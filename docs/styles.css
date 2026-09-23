@@ -280,3 +280,65 @@ code { padding: 2px 6px; color: var(--blue-deep); border-radius: 5px; background
   .timeline-item { grid-template-columns: 58px 1fr; gap: 10px; }
   .metric-grid, .benchmark-detail { grid-template-columns: 1fr; }
 }
+
+/* Homepage visual language: a quiet ocean palette, a cellular grid, and one useful animation. */
+body { background: #f5fbfc; }
+.site-header { background: rgba(247, 252, 252, .92); }
+.hero { padding: 84px 0 78px; background: linear-gradient(135deg, #e9f8fa 0%, #f9fdfc 48%, #eaf7ef 100%); }
+.hero::before { width: 460px; height: 460px; right: -155px; bottom: -245px; border-color: rgba(16, 117, 137, .14); box-shadow: 0 0 0 40px rgba(16, 117, 137, .035), 0 0 0 82px rgba(16, 117, 137, .022); }
+.hero::after { opacity: .15; background-image: linear-gradient(rgba(8, 127, 190, .2) 1px, transparent 1px), linear-gradient(90deg, rgba(8, 127, 190, .2) 1px, transparent 1px); }
+.hero-copy { padding: 5px 0 0; }
+.hero h1 { max-width: 620px; font-size: clamp(42px, 5vw, 65px); }
+.hero .lead { max-width: 580px; color: #4d7080; }
+.hero-scene-wrap { position: relative; min-width: 0; }
+.hero-scene-card { position: relative; overflow: hidden; padding: 15px 15px 13px; border: 1px solid rgba(15, 108, 126, .18); border-radius: 24px; background: rgba(255, 255, 255, .79); box-shadow: 0 22px 58px rgba(13, 86, 103, .16); }
+.scene-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 1px 7px 11px; color: #315d6c; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.scene-live { display: inline-flex; align-items: center; gap: 6px; color: #638694; font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: none; }
+.scene-live i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #1d9b76; box-shadow: 0 0 0 4px rgba(29, 155, 118, .13); }
+.hero-scene { display: block; width: 100%; height: auto; border-radius: 17px; }
+.scene-backdrop { stroke: rgba(16, 117, 137, .14); stroke-width: 1; }
+.scene-cells rect { fill: #6dbf83; opacity: .72; }
+.scene-tree .scene-trunk { fill: #654f37; }
+.scene-tree .scene-branch { fill: none; stroke: #654f37; stroke-linecap: round; stroke-width: 14; }
+.scene-tree .scene-root { fill: none; stroke: #654f37; stroke-linecap: round; stroke-width: 9; }
+.scene-canopy circle { fill: #17744d; }
+.scene-canopy-light circle { fill: #4da65e; opacity: .85; }
+.hero-water-group { transform-box: fill-box; transform-origin: center bottom; animation: water-rise 9s ease-in-out infinite; }
+.hero-water { fill: url(#scene-water); opacity: .86; }
+.hero-wave { fill: #55cfca; opacity: .7; }
+.hero-wave-line { fill: none; stroke: rgba(219, 255, 247, .85); stroke-linecap: round; stroke-width: 3; stroke-dasharray: 14 12; animation: wave-drift 6s linear infinite; }
+.water-cells rect { fill: #83e0dd; opacity: .55; }
+.scene-legend { fill: #2e6472; font: 600 12px "DM Sans", sans-serif; }
+.scene-legend circle:first-child { fill: #4da65e; }
+.scene-legend circle:nth-of-type(2) { fill: #23b8c7; }
+.scene-caption { margin: 10px 5px 0; color: #64838e; font-size: 11px; line-height: 1.45; }
+.section { padding: 82px 0; }
+.section.tinted { background: linear-gradient(135deg, #eaf7fa 0%, #eff9f2 100%); }
+.section.tinted::after { border-color: rgba(16, 117, 137, .1); }
+.feature-grid article, .benchmark-card { background: rgba(255, 255, 255, .76); }
+.feature-grid article::before, .benchmark-card::before { background: linear-gradient(90deg, #19b8c8, #2b9a65); }
+.example-section { background: #f8fcfc; }
+.example-grid { display: grid; grid-template-columns: minmax(0, .98fr) minmax(0, 1.02fr); align-items: center; gap: 62px; }
+.example-copy h2 { max-width: 520px; }
+.example-copy p:not(.eyebrow) { max-width: 500px; color: var(--muted); }
+.download-band { background: linear-gradient(135deg, #e8f7f8 0%, #f1faf3 100%); }
+.origins-section { background: #f5fbfc; }
+.hero-card { animation: none; }
+
+@keyframes water-rise {
+  0%, 100% { transform: translateY(45px); }
+  50% { transform: translateY(-22px); }
+}
+@keyframes wave-drift { to { stroke-dashoffset: -52px; } }
+
+@media (max-width: 900px) {
+  .example-grid { grid-template-columns: 1fr; gap: 32px; }
+  .example-copy { max-width: 660px; }
+}
+@media (max-width: 820px) {
+  .hero { padding: 63px 0 60px; }
+  .hero-scene-card { max-width: 660px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-water-group, .hero-wave-line { animation: none; }
+}
