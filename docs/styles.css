@@ -295,6 +295,7 @@ body { background: #f5fbfc; }
 .scene-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 1px 7px 11px; color: #315d6c; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .scene-live { display: inline-flex; align-items: center; gap: 6px; color: #638694; font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: none; }
 .scene-live i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #1d9b76; box-shadow: 0 0 0 4px rgba(29, 155, 118, .13); }
+.hero-demo-gif { display: block; width: 100%; height: auto; border: 1px solid rgba(15, 108, 126, .12); border-radius: 17px; }
 .hero-scene { display: block; width: 100%; height: auto; border-radius: 17px; }
 .scene-backdrop { stroke: rgba(16, 117, 137, .14); stroke-width: 1; }
 .scene-cells rect { fill: #6dbf83; opacity: .72; }
