@@ -3,14 +3,17 @@
 ## Como usar este manual
 
 Este manual foi escrito para quem nunca trabalhou com um autômato celular ou
-com dados raster. Leia as seções 1 a 5 na primeira utilização. Depois, use as
-seções de resultados e solução de problemas como consulta rápida.
+com mapas digitais. Ele explica o programa com palavras simples, desde a
+escolha dos arquivos até a leitura dos mapas, gráficos e tabelas.
 
-O BR-MANGUE Studio é uma ferramenta de pesquisa. Ele ajuda a explorar cenários
-de elevação do nível do mar e não substitui medições de campo, calibração
-local, análise de incerteza ou avaliação de um especialista. Um mapa produzido
-pelo programa é uma simulação condicionada aos dados e às regras escolhidas,
-não uma previsão garantida do futuro.
+O BR-MANGUE Studio ajuda a explorar como os manguezais podem mudar quando o
+nível do mar sobe. Ele divide a área de estudo em pequenos quadrados, chamados
+de células. Em cada célula, observa a altura do terreno, o tipo de cobertura da
+terra e as células vizinhas. Depois aplica as mesmas regras ano a ano.
+
+O resultado é um cenário, não uma previsão garantida. Ele depende dos dados e
+dos parâmetros informados e deve ser comparado com observações, literatura,
+calibração local e avaliação de especialistas.
 
 ---
 
@@ -18,7 +21,8 @@ não uma previsão garantida do futuro.
 
 O Studio transforma dois mapas digitais — um mapa de uso e cobertura da terra
 e um mapa de elevação — em uma grade de células. Em seguida, atualiza essa
-grade ano a ano para representar, sob um cenário escolhido, processos como:
+grade uma vez por ano, de acordo com o cenário escolhido. Assim, ele pode
+representar situações como:
 
 - inundação de áreas baixas à medida que o nível do mar sobe;
 - mudança do estado de células de mangue inundadas;
@@ -28,9 +32,8 @@ grade ano a ano para representar, sob um cenário escolhido, processos como:
   classes que o usuário marcar como impedimento.
 
 O Studio possui uma interface gráfica para Windows. O usuário não precisa
-programar para fazer uma simulação comum: seleciona os arquivos, confere as
-classes, informa os parâmetros, executa e examina mapas, gráficos, tabelas e
-animações.
+programar: seleciona os arquivos, confere as classes, informa os parâmetros,
+executa e examina mapas, gráficos, tabelas e animações.
 
 ### O que o Studio não faz
 
