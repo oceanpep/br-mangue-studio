@@ -52,8 +52,8 @@
   <text x="700" y="758" text-anchor="middle" class="section">propagação na vizinhança?</text>
   <text x="700" y="793" text-anchor="middle" class="small">Mangrove original ou Migrated mangrove maduro</text>
 
-  <path d="M490 742 H250 V1770 H410" class="branch"/>
-  <text x="455" y="722" text-anchor="end" class="no">Não · passa à próxima célula</text>
+  <path d="M490 742 H230 V1460 H1020" class="branch"/>
+  <text x="455" y="722" text-anchor="end" class="no">Não · próxima célula</text>
   <path d="M700 862 V922" class="arrow"/>
   <text x="728" y="901" class="yes">Sim</text>
 
@@ -67,16 +67,16 @@
   <polygon points="700,922 910,1042 700,1162 490,1042" class="decision"/>
   <text x="700" y="1026" text-anchor="middle" class="section">A célula candidata é elegível?</text>
   <text x="700" y="1061" text-anchor="middle" class="small">Vegetação natural ou outra classe permitida</text>
-  <path d="M490 1042 H250 V1770 H410" class="branch"/>
-  <text x="455" y="1022" text-anchor="end" class="no">Não · mantém o estado atual</text>
+  <path d="M490 1042 H230 V1460 H1020" class="branch"/>
+  <text x="455" y="1022" text-anchor="end" class="no">Não · próxima célula</text>
   <path d="M700 1162 V1222" class="arrow"/>
   <text x="728" y="1201" class="yes">Sim</text>
 
   <polygon points="700,1222 910,1342 700,1462 490,1342" class="decision"/>
   <text x="700" y="1326" text-anchor="middle" class="section">Elevação e aptidão permitem?</text>
   <text x="700" y="1361" text-anchor="middle" class="small">A regra ambiental precisa ser atendida</text>
-  <path d="M490 1342 H250 V1770 H410" class="branch"/>
-  <text x="455" y="1322" text-anchor="end" class="no">Não · mantém o estado atual</text>
+  <path d="M490 1342 H230 V1460 H1020" class="branch"/>
+  <text x="455" y="1322" text-anchor="end" class="no">Não · próxima célula</text>
   <path d="M700 1462 V1522" class="arrow"/>
   <text x="728" y="1501" class="yes">Sim</text>
 
@@ -84,28 +84,36 @@
   <text x="700" y="1565" text-anchor="middle" class="section">3. Registrar a migração</text>
   <text x="700" y="1602" text-anchor="middle" class="body">A célula recebe o estado Migrated mangrove</text>
   <text x="700" y="1633" text-anchor="middle" class="body">e começa com idade 0. Ela ainda não propaga.</text>
-  <path d="M700 1667 V1727" class="arrow"/>
+  <path d="M990 1595 H1020" class="arrow"/>
 
-  <rect x="410" y="1727" width="580" height="120" rx="22" class="source"/>
-  <text x="700" y="1770" text-anchor="middle" class="section">4. Envelhecer as células migradas</text>
-  <text x="700" y="1808" text-anchor="middle" class="body">A idade aumenta a cada ano de simulação.</text>
-  <path d="M700 1847 V1907" class="arrow"/>
+  <rect x="1030" y="1400" width="300" height="180" rx="20" class="hold"/>
+  <text x="1180" y="1445" text-anchor="middle" class="section">Próxima célula</text>
+  <text x="1180" y="1482" text-anchor="middle" class="small">Repete as decisões para</text>
+  <text x="1180" y="1510" text-anchor="middle" class="small">todas as células da área.</text>
+  <text x="1180" y="1545" text-anchor="middle" class="small">Ao terminar, fecha o ano.</text>
+  <path d="M1180 1580 V1667 H990" class="arrow"/>
 
-  <polygon points="700,1907 895,2016 700,2125 505,2016" class="decision"/>
-  <text x="700" y="2002" text-anchor="middle" class="section">Idade ≥ atraso configurado?</text>
-  <text x="700" y="2035" text-anchor="middle" class="small">Padrão: 3 anos</text>
+  <rect x="410" y="1667" width="580" height="145" rx="22" class="source"/>
+  <text x="700" y="1710" text-anchor="middle" class="section">5. Fechar o ano e envelhecer os migrados</text>
+  <text x="700" y="1748" text-anchor="middle" class="body">A idade das células migradas aumenta um ano.</text>
+  <text x="700" y="1779" text-anchor="middle" class="body">Depois o modelo verifica quais já podem ser fontes.</text>
+  <path d="M700 1812 V1862" class="arrow"/>
 
-  <path d="M895 2016 H1110 V1770 H1000" class="dash"/>
-  <text x="1030" y="1994" class="yes">Sim · vira fonte</text>
-  <text x="1030" y="2025" class="small">e pode propagar nos próximos anos</text>
-  <path d="M505 2016 H300 V1770 H410" class="branch"/>
-  <text x="465" y="1994" text-anchor="end" class="no">Não · continua migrado</text>
-  <text x="465" y="2025" text-anchor="end" class="small">mas ainda não é fonte</text>
+  <polygon points="700,1862 895,1971 700,2080 505,1971" class="decision"/>
+  <text x="700" y="1957" text-anchor="middle" class="section">Idade ≥ atraso configurado?</text>
+  <text x="700" y="1990" text-anchor="middle" class="small">Padrão: 3 anos</text>
 
-  <rect x="1030" y="1630" width="300" height="105" rx="18" class="source"/>
-  <text x="1180" y="1670" text-anchor="middle" class="section">Fonte madura</text>
-  <text x="1180" y="1705" text-anchor="middle" class="small">Pode participar da</text>
-  <text x="1180" y="1730" text-anchor="middle" class="small">propagação a partir daqui.</text>
+  <path d="M895 1971 H1110 V1640 H1000" class="dash"/>
+  <text x="1030" y="1949" class="yes">Sim · vira fonte</text>
+  <text x="1030" y="1980" class="small">e pode propagar nos próximos anos</text>
+  <path d="M505 1971 H300 V1640 H410" class="branch"/>
+  <text x="465" y="1949" text-anchor="end" class="no">Não · continua migrado</text>
+  <text x="465" y="1980" text-anchor="end" class="small">mas ainda não é fonte</text>
 
-  <text x="700" y="2075" text-anchor="middle" class="small">No ano seguinte, o ciclo recomeça com o novo mapa.</text>
+  <rect x="1030" y="1550" width="300" height="105" rx="18" class="source"/>
+  <text x="1180" y="1590" text-anchor="middle" class="section">Fonte madura</text>
+  <text x="1180" y="1625" text-anchor="middle" class="small">Pode participar da</text>
+  <text x="1180" y="1650" text-anchor="middle" class="small">propagação a partir daqui.</text>
+
+  <text x="700" y="2140" text-anchor="middle" class="small">No ano seguinte, o ciclo recomeça com o novo mapa.</text>
 </svg>
