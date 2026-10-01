@@ -1,0 +1,39 @@
+name: Build Linux desktop executable
+
+on:
+  push:
+    branches: ["linux-*"]
+    paths:
+      - ".github/workflows/build-linux.yml"
+      - "packaging/BRMANGUE_Studio_Linux.spec"
+      - "src/**"
+      - "pyproject.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux-x86-64:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux desktop and Python build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes python3-tk python3-venv
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -e . pyinstaller
+      - name: Build one-file executable
+        run: .venv/bin/pyinstaller packaging/BRMANGUE_Studio_Linux.spec --clean
+      - name: Create SHA-256 checksum
+        run: cd dist && sha256sum BRMANGUE_Studio_Linux_x86_64 > BRMANGUE_Studio_Linux_x86_64.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BRMANGUE_Studio-Linux-x86_64
+          path: |
+            dist/BRMANGUE_Studio_Linux_x86_64
+            dist/BRMANGUE_Studio_Linux_x86_64.sha256
+          if-no-files-found: error
+          retention-days: 30
