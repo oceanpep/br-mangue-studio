@@ -2,7 +2,7 @@ name: Build Linux desktop executable
 
 on:
   push:
-    branches: ["linux-*"]
+    branches: ["main", "linux-*"]
     paths:
       - ".github/workflows/build-linux.yml"
       - "packaging/BRMANGUE_Studio_Linux.spec"
