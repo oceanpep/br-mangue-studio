@@ -4,146 +4,141 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Citation](https://img.shields.io/badge/citation-CITATION.cff-blue.svg)](CITATION.cff)
 
-BR-MANGUE Studio is a desktop application for running and inspecting the
-BR-MANGUE spatial cellular model. It provides the reference model logic in a
-modern Python implementation, with continuous and persistent block processing,
-interactive maps, annual outputs, trajectory charts, and reproducible run
-metadata.
+**BR-MANGUE Studio** is a desktop application for running and inspecting
+spatial cellular-automaton scenarios of mangrove response to sea-level rise.
+Use aligned land-cover and elevation rasters, set the scenario, and inspect
+annual maps, trajectories, transitions, and reproducibility metadata.
 
-This repository is maintained as the development and research record for the
-BR-MANGUE Studio project. The model rules are preserved from the reference
-implementation; the Python architecture improves execution, portability, and
-inspection without requiring a specific data provider.
+![Annual-state simulation example for Ilha de São Luís](docs/assets/demo/simulation-ilha-sao-luis.gif)
 
-## Features
-
-- Windows and Linux desktop applications with a simple project workflow.
-- Any aligned categorical land-cover raster and elevation raster can be used.
-- Optional mangrove-suitability and study-area mask rasters.
-- User-defined mapping from source raster classes to model roles.
-- Continuous and memory-efficient block processing engines.
-- Optional soil layer, with normal operation when no soil raster is supplied.
-- Annual state GeoTIFFs, trajectory tables, transition reports, and metadata.
-- Independent visualization and animation panels.
-- Reproducible run configuration saved with each simulation.
-- Per-year timing, throughput, process memory, system memory, CPU, disk, and
-  process-I/O diagnostics saved with each raster run.
+*Software demonstration with raster data from Ilha de São Luís. This run has no
+island boundary mask and is not a forecast or ecological validation.*
 
 ## Download
 
-Windows stable builds and the Linux x86_64 research preview are available on
-the [BR-MANGUE Studio download page](https://oceanpep.github.io/br-mangue-studio-site/downloads.html).
-The packaged applications include Python and project dependencies; input
-rasters, projects, and results remain external files.
+Choose a ready-to-run desktop build on the
+[BR-MANGUE Studio download page](https://oceanpep.github.io/br-mangue-studio-site/downloads.html).
+The executables include Python and the project's Python libraries. Your input
+rasters, project files, and simulation results remain on your computer.
 
-## Run from source
+| Platform | Availability | Verified environment |
+| --- | --- | --- |
+| Windows 10/11, 64-bit | Stable 1.0.0 | Windows desktop release |
+| Linux x86_64 | Research preview 1.0.0 | Built on Ubuntu 22.04 LTS; application startup verified on Ubuntu 26.04.1 LTS |
 
-Python 3.10 or newer is required. From the repository root:
+The Linux build needs a graphical desktop, compatible glibc libraries, and
+`xdg-open` to open generated files and folders. Ubuntu 24.04, Linux Mint 22,
+and Debian 13 are expected to work but have not been individually tested.
+Alpine Linux and ARM64 are not supported by this build. See the download page
+for the complete compatibility notes and checksums.
 
-```powershell
-python -m pip install -e .
-python -m brmangue_studio
-```
+## What it does
 
-To run from source on Debian or Ubuntu, install Tkinter and virtual-environment
-support, then use an isolated Python environment:
+- Reads categorical land-cover and elevation GeoTIFFs; soil-suitability and
+  study-area mask rasters are optional.
+- Lets you map source raster codes to model classes and record scenario
+  parameters in a project.
+- Provides continuous and persistent-block processing for different raster
+  sizes and memory constraints.
+- Exports annual state rasters, trajectory and transition tables, figures, and
+  run metadata.
+- Records timing and resource measurements to support repeatable analysis.
+
+The standard desktop workflow uses the continuous or persistent-block engine.
+DissModel is not required. The software supports scenario exploration; it does
+not replace field data, calibration, or independent ecological validation.
+
+## Quick start
+
+1. Download the build for your operating system and open it. No separate
+   Python installation is required for the packaged application.
+2. Load a categorical land-cover raster and an elevation raster on the same
+   grid. Add a suitability raster or study-area mask only when needed.
+3. Review class mapping and scenario parameters, choose an engine, and run.
+4. Inspect the annual maps, CSV tables, and `metadata.json` in the results
+   folder.
+
+The [quick-start guide](https://oceanpep.github.io/br-mangue-studio-site/guide.html)
+explains the workflow and raster requirements.
+
+## Install from source
+
+Python 3.10 or newer is required. On Debian or Ubuntu, install Tk support and
+create an isolated environment before installing the project:
 
 ```bash
 sudo apt-get install python3-tk python3-venv
 python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -e .
 .venv/bin/python -m brmangue_studio
 ```
 
-The Linux preview was built and packaged on Ubuntu 22.04 LTS (x86_64), and its
-startup was verified on Ubuntu 26.04.1 LTS (x86_64). Ubuntu 22.04 or newer is
-recommended. Ubuntu 24.04, Linux Mint 22, and Debian 13 are expected to work,
-but have not been individually tested. Other x86_64 distributions with glibc
-2.35 or newer may work. Alpine Linux (musl) and ARM64 are not supported by
-this build. Give the file
-execute permission and run it from a graphical desktop session:
+The raster command-line runner is also available from the installed package.
+For example:
 
 ```bash
-chmod +x BRMANGUE_Studio_Linux_x86_64
-./BRMANGUE_Studio_Linux_x86_64
+python -m brmangue_lua.raster_cli \
+  --mapbiomas /data/land_cover.tif \
+  --elevation /data/elevation.tif \
+  --initial-year 2025 --final-year 2050 \
+  --engine blocks --block-size 10000 \
+  --output outputs/example_run
 ```
 
-The Linux application uses `xdg-open` to open generated files and folders in
-the desktop's default applications.
+Input names above are examples; data from any provider can be used when the
+rasters are aligned and land-cover classes are categorical.
 
-The command-line raster runner is also available:
+## Project map
 
-```powershell
-python -m brmangue_lua.raster_cli `
-  --mapbiomas "C:\data\land_cover.tif" `
-  --elevation "C:\data\elevation.tif" `
-  --initial-year 2025 --final-year 2050 `
-  --engine blocks --block-size 10000 `
-  --output outputs\example_run
+| Path | Contents |
+| --- | --- |
+| `src/brmangue_studio/` | Desktop application and user interface |
+| `src/brmangue_lua/` | Model rules, raster processing, and command-line runner |
+| `tests/` | Automated checks for the model and raster workflow |
+| `packaging/` | Windows and Linux executable build specifications |
+| `.github/workflows/` | Continuous integration and Linux build workflow |
+| `docs/` | User guide, API, benchmark records, and reproducibility notes |
+| `paper.md`, `paper.bib` | JOSS-format software paper draft and references |
+
+The documentation index at [`docs/README.md`](docs/README.md) points to the
+right guide for each task.
+
+## Research and reproducibility
+
+Each run can include annual GeoTIFFs, `trajectory.csv`, transition tables,
+resource samples, and `metadata.json`. The metadata records the input
+configuration, engine, timing, and available resource measurements. Local
+rasters and generated simulation products should not be committed unless their
+license permits redistribution.
+
+Benchmark records describe what was measured and its limits. In particular,
+the archived Windows CMMA runs to 2100 used different class mappings, so their
+runtime figures are separate observations rather than a controlled comparison
+of engines.
+
+- [Benchmark and test records](docs/benchmarks/)
+- [Reproducibility and benchmarking protocol](docs/REPRODUCIBILITY_AND_BENCHMARKING.md)
+- [JOSS paper draft](paper.md) and [submission readiness audit](docs/JOSS_READINESS.md)
+- [Release and Zenodo checklist](docs/ZENODO_RELEASE.md)
+
+## Development
+
+Install in editable mode and run the existing test suite with:
+
+```bash
+python -m pip install -e . pytest
+python -m pytest tests -q
 ```
 
-The input names above are examples only. The application accepts data from any
-provider, provided that the rasters are aligned and the land-cover raster is
-categorical.
+The GitHub Actions workflow also runs the suite on Python 3.10, 3.11, and 3.12.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before proposing changes to
+model rules, outputs, or performance measurements.
 
-## Output structure
+## Citation, license, and support
 
-Each run is written to its own results directory. Typical products include:
-
-- one state raster per simulated calendar year;
-- `trajectory.csv` with annual class counts and mangrove indicators;
-- per-year duration, RSS, and cell-throughput columns in `trajectory.csv`;
-- `resource_samples.csv` with periodic process-RAM, system-memory, CPU, and
-  free-disk observations when the optional `psutil` monitor is available;
-- transition tables describing source and destination classes;
-- `metadata.json` with measured simulation duration, preparation and total
-  timings, peak process RSS, system-memory snapshots, free disk space,
-  process CPU/I/O counters, and output size;
-- input and run metadata for reproducibility;
-- annual figures and an optional animation generated by the desktop app.
-
-Flooded non-mangrove states are reported explicitly in the trajectory and
-metadata (`flooded_natural`, `flooded_anthropized`, and `flooded_bare`). For a
-clear six-class map, those internal states use the colour of their parent
-land-cover class; red is reserved for flooded mangrove. The detailed state
-codes remain available in the annual rasters and tables.
-
-Generated rasters, animations, and local test data are intentionally excluded
-from version control. They should be archived with the relevant research
-record or release when redistribution is permitted.
-
-## Documentation
-
-Detailed notes are available in [`docs/`](docs/), including the Studio workflow,
-the complete [user manual](docs/MANUAL_USUARIO_BR_MANGUE_STUDIO.md), engine
-comparison, raster input requirements, and parity audits.
-The programmatic interface is summarized in the [API reference](docs/API.md).
-The release procedure for a citable [Zenodo archive](docs/ZENODO_RELEASE.md)
-is documented separately.
-The proposed structure and evidence plan for the software article is in the
-[article outline](docs/ARTICLE_1_SOFTWARE_PAPER_OUTLINE.md).
-The JOSS-format draft is in [`paper.md`](paper.md), with the current readiness
-audit in [`docs/JOSS_READINESS.md`](docs/JOSS_READINESS.md).
-
-## License and citation
-
-BR-MANGUE Studio is distributed under the MIT License. Please cite the
-specific release used in a study using [`CITATION.cff`](CITATION.cff). A Zenodo
-DOI will be added after the first archived release.
-
-## Research context
-
-BR-MANGUE Studio is associated with the GEOTAM laboratory and is being
-developed for reproducible coastal-mangrove modelling. Cite the specific
-software release used in an analysis. `CITATION.cff` contains the release
-metadata and repository identifiers; a Zenodo record should be created for
-each citable public release.
-
-## Development status
-
-Version 1.0.0 is the stable public release line for Windows. A Linux x86_64
-research preview is available from the project download page while
-compatibility and the full workflow are evaluated across distributions.
-Scientific interpretation, parameter choice, and ecological validation remain
-the responsibility of each study. The software does not replace field data,
-elevation validation, or scenario calibration.
+Cite the software release listed in [`CITATION.cff`](CITATION.cff). The
+repository is distributed under the [MIT License](LICENSE). For reproducible
+software issues, use the [issue tracker](https://github.com/oceanpep/br-mangue-studio/issues)
+and follow the [support checklist](SUPPORT.md). Contributions follow the
+[Code of Conduct](CODE_OF_CONDUCT.md).
