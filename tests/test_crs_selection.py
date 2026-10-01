@@ -15,7 +15,9 @@ def test_default_albers_choice_uses_the_supplied_wkt():
     crs = _resolve_target_crs(DEFAULT_TARGET_CRS_LABEL)
 
     assert "Conica_Equivalente_de_Albers_Brasil" in crs.to_wkt()
-    assert crs.to_epsg() is None
+    # Recent PROJ databases identify this WKT as EPSG:10857; older databases
+    # may leave the equivalent user-supplied WKT without an authority code.
+    assert crs.to_epsg() in (None, 10857)
 
 
 def test_search_catalog_contains_common_brazilian_crs():
