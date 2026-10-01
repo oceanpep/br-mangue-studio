@@ -17,6 +17,9 @@ hiddenimports = [
     "brmangue_lua.raster_inputs",
     "brmangue_lua.raster_runner",
     "brmangue_studio",
+    # Pillow loads these Tk integration modules dynamically at runtime.
+    "PIL._imagingtk",
+    "PIL._tkinter_finder",
 ] + collect_submodules("rasterio") + collect_submodules("pyproj")
 
 datas = [
