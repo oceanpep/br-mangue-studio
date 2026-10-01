@@ -17,6 +17,13 @@ dependencies = [
     "psutil>=5.9",
 ]
 
+[project.urls]
+Homepage = "https://oceanpep.github.io/br-mangue-studio-site/"
+Documentation = "https://oceanpep.github.io/br-mangue-studio-site/guide.html"
+Repository = "https://github.com/oceanpep/br-mangue-studio"
+Issues = "https://github.com/oceanpep/br-mangue-studio/issues"
+Changelog = "https://github.com/oceanpep/br-mangue-studio/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
 dissmodel = ["dissmodel>=0.3.0"]
 

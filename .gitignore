@@ -22,6 +22,14 @@ estudos_caso/*/resultados/
 *.mp4
 *.zip
 
+# Local previews and QA exports; published documentation assets are tracked
+/tmp/
+/output/
+docs/downloads/*-km2.exe
+docs/downloads/*-updated*.exe
+docs/downloads/*-km2.exe.sha256
+docs/downloads/*-updated*.exe.sha256
+
 # Local environment and editor files
 .venv/
 venv/
