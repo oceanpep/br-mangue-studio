@@ -31,9 +31,10 @@ representar situações como:
 - bloqueio da migração por áreas antropizadas, infraestrutura e outras
   classes que o usuário marcar como impedimento.
 
-O Studio possui uma interface gráfica para Windows. O usuário não precisa
-programar: seleciona os arquivos, confere as classes, informa os parâmetros,
-executa e examina mapas, gráficos, tabelas e animações.
+O Studio possui uma interface gráfica para Windows e uma versão de pesquisa
+para Linux x86_64. O usuário não precisa programar nem instalar Python para
+usar os executáveis: seleciona os arquivos, confere as classes, informa os
+parâmetros, executa e examina mapas, gráficos, tabelas e animações.
 
 ### O que o Studio não faz
 
@@ -290,7 +291,21 @@ continuam em arquivos externos.
 4. Se o Windows exibir um aviso de segurança para um programa novo, confirme
    a origem do arquivo e o checksum antes de abrir.
 
-### 5.2 Instalação a partir do código-fonte
+### 5.2 Executável Linux x86_64 (versão de pesquisa)
+
+O executável Linux inclui o runtime Python e as bibliotecas do projeto. Ele foi
+compilado no Ubuntu 22.04 e teve a abertura confirmada no Ubuntu 26.04.1 LTS.
+Ubuntu 24.04, Linux Mint 22 e Debian 13 são esperados como compatíveis, mas
+ainda não foram verificados individualmente. Outras distribuições x86_64 com
+glibc 2.35 ou mais recente podem funcionar; Alpine Linux (musl) e ARM64 não
+são compatíveis com esta compilação.
+
+Use uma sessão gráfica X11 ou Wayland. O comando `xdg-open` precisa estar
+disponível para abrir arquivos e pastas no aplicativo padrão. Os rasters de
+entrada, projetos e resultados não vêm dentro do executável. Consulte a página
+de downloads para obter o arquivo e conferir o checksum.
+
+### 5.3 Instalação a partir do código-fonte
 
 Para desenvolvimento ou uso do núcleo Python:
 
@@ -302,7 +317,7 @@ python -m brmangue_studio
 Python 3.10 ou mais recente é necessário. O executável é recomendado para
 usuários que não precisam modificar o código.
 
-### 5.3 Criando um projeto
+### 5.4 Criando um projeto
 
 1. Abra **Project > New project**.
 2. Escolha uma pasta para o experimento.
@@ -448,13 +463,6 @@ de apoio. O domínio é percorrido por blocos, e o estado é preservado entre os
 blocos e entre os anos. Esse modo é indicado para grades muito grandes, como
 domínios costeiros com milhões de células, mesmo que uma execução contínua
 seja mais rápida em uma máquina específica.
-
-#### DissModel
-
-É uma integração opcional para compatibilidade. Ela não é necessária para o
-executável compacto nem para o funcionamento do motor principal. Use-a apenas
-se a instalação correspondente estiver disponível e se o experimento exigir
-essa comparação.
 
 ### 7.9 Camada de aptidão de mangue
 
