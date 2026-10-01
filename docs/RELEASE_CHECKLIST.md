@@ -11,6 +11,9 @@ Use this checklist before creating a citable BR-MANGUE Studio release.
 - [ ] Run the full test suite on a clean environment.
 - [ ] Build the Windows executable from the tagged source commit.
 - [ ] Test the executable on a second Windows computer.
+- [ ] Build the Linux x86_64 executable on Ubuntu 22.04 LTS.
+- [ ] Verify Linux startup on Ubuntu 22.04 and a second supported distribution.
+- [ ] Regenerate and verify the Linux SHA-256 file, then update the public download page.
 - [ ] Confirm that a new project runs without the developer's local paths.
 
 ## Scientific evidence

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Download BR-MANGUE Studio for Windows and browse available versions.">
+  <meta name="description" content="Download BR-MANGUE Studio for Windows and Linux, with platform requirements and checksums.">
   <title>Downloads · BR-MANGUE Studio</title>
   <link rel="icon" href="assets/BR-MANGUE_BR_icon.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
@@ -21,8 +21,8 @@
   <main>
     <section class="page-hero">
       <div class="container page-hero-grid">
-        <div><p class="eyebrow">Download center</p><h1>Start your next coastal scenario.</h1><p class="page-lead">Get the complete BR-MANGUE Studio desktop application directly from this site.</p></div>
-        <div class="page-hero-badge"><span>Current release</span><b>1.0.0</b><small>Windows 10/11 · 64-bit</small></div>
+        <div><p class="eyebrow">Download center</p><h1>Start your next coastal scenario.</h1><p class="page-lead">Choose the BR-MANGUE Studio desktop build for your computer.</p></div>
+        <div class="page-hero-badge"><span>Desktop builds</span><b>1.0.0</b><small>Windows stable · Linux preview · 64-bit</small></div>
       </div>
     </section>
 
@@ -44,8 +44,15 @@
 
     <section class="section tinted">
       <div class="container split">
-        <div><p class="eyebrow">Version history</p><h2>One clear release line.</h2><p>Version 1.0.0 is the public release line for BR-MANGUE Studio. Future builds will be listed on this page with their release notes and direct download buttons.</p></div>
-        <div class="release-list"><div><span>1.0.0</span><b>Current public release</b><small>Windows 10/11 · 64-bit · Python desktop application</small></div><div class="release-next"><span>Next</span><b>Updates will appear here</b><small>Release notes, compatibility, and a new direct download</small></div></div>
+        <div><p class="eyebrow">Linux research preview</p><h2>BR-MANGUE Studio 1.0.0 for Linux.</h2><p>The x86_64 build was created on Ubuntu 22.04 LTS and launched successfully on Ubuntu 26.04.1 LTS. Ubuntu 24.04 and Linux Mint 22 are expected to work, but have not been individually tested. Debian 13 and other glibc-based distributions remain unverified; Alpine Linux (musl) and ARM64 are not supported by this build.</p><p>Use a graphical desktop session (X11 or Wayland). The application bundles Python and project libraries; `xdg-open` is needed to open result files and folders.</p></div>
+        <div class="info-card"><strong>Linux x86_64 · Research preview</strong><span>94.8 MiB</span><small>SHA-256: <code>5C73EC112639013350EF90F546BEB7DAA660B02AEB2071111995D688794CD8BF</code></small><a class="button primary" href="https://oceanpep.github.io/br-mangue-studio-site/downloads/BRMANGUE_Studio_Linux_x86_64" download>Download for Linux</a><small><a href="https://oceanpep.github.io/br-mangue-studio-site/downloads/BRMANGUE_Studio_Linux_x86_64.sha256">Download checksum file</a></small></div>
+      </div>
+    </section>
+
+    <section class="section tinted">
+      <div class="container split">
+        <div><p class="eyebrow">Version history</p><h2>One clear release line.</h2><p>Windows 1.0.0 is the stable public release. Linux x86_64 is available as a research preview while compatibility is evaluated across distributions.</p></div>
+        <div class="release-list"><div><span>1.0.0</span><b>Windows stable release</b><small>Windows 10/11 · 64-bit · Python desktop application</small></div><div><span>1.0.0</span><b>Linux research preview</b><small>Ubuntu 22.04 build · x86_64 · other distributions not yet verified</small></div></div>
       </div>
     </section>
   </main>

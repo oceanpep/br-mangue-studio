@@ -187,11 +187,16 @@ python -m pip install pyinstaller
 pyinstaller packaging/BRMANGUE_Studio_Linux.spec --clean
 ```
 
-O resultado é `dist/BRMANGUE_Studio_Linux_x86_64`. Também é possível obter o
-arquivo e seu checksum SHA-256 no artefato da ação [Build Linux desktop
-executable](https://github.com/oceanpep/br-mangue-studio/actions/workflows/build-linux.yml)
-no GitHub. O artefato de desenvolvimento expira após 30 dias.
+O resultado é `dist/BRMANGUE_Studio_Linux_x86_64`. O executável Linux x86_64
+está disponível como versão de pesquisa na [página pública de downloads](https://oceanpep.github.io/br-mangue-studio-site/downloads.html),
+junto com o checksum SHA-256. A compilação foi feita no Ubuntu 22.04 LTS; a
+abertura do aplicativo foi confirmada no Ubuntu 26.04.1 LTS. Ubuntu 24.04 e
+Linux Mint 22 são esperados como compatíveis, mas ainda não foram testados
+individualmente. Debian 13 e outras distribuições baseadas em glibc também não
+foram verificadas; Alpine Linux (musl) e ARM64 não são suportados por esta
+compilação.
+
 Para iniciar, torne o arquivo executável (`chmod +x`) e abra-o em uma sessão
-gráfica Linux. O Python e as dependências do projeto são empacotados; o sistema
-precisa oferecer uma sessão gráfica e `xdg-open` para abrir arquivos e pastas.
-Os rasters, projetos e resultados não são incluídos no executável.
+gráfica X11 ou Wayland. O Python e as dependências do projeto são empacotados;
+`xdg-open` é necessário para abrir arquivos e pastas no aplicativo padrão. Os
+rasters, projetos e resultados não são incluídos no executável.

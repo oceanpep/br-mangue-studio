@@ -31,9 +31,8 @@ inspection without requiring a specific data provider.
 
 ## Download
 
-Stable Windows builds are published on the [BR-MANGUE Studio download page](https://oceanpep.github.io/br-mangue-studio/downloads.html).
-The Linux x86_64 executable is being prepared as a development build and is
-available as a temporary artifact from the repository's [Linux build workflow](https://github.com/oceanpep/br-mangue-studio/actions/workflows/build-linux.yml).
+Windows stable builds and the Linux x86_64 research preview are available on
+the [BR-MANGUE Studio download page](https://oceanpep.github.io/br-mangue-studio-site/downloads.html).
 The packaged applications include Python and project dependencies; input
 rasters, projects, and results remain external files.
 
@@ -56,7 +55,11 @@ python3 -m venv .venv
 .venv/bin/python -m brmangue_studio
 ```
 
-The packaged Linux binary is built for Ubuntu 22.04 or newer on x86_64. Give it
+The Linux preview was built and packaged on Ubuntu 22.04 LTS (x86_64), and its
+startup was verified on Ubuntu 26.04.1 LTS (x86_64). Ubuntu 22.04 or newer is
+recommended. Ubuntu 24.04 and Linux Mint 22 are expected to work, but have not
+been individually tested. Other glibc-based x86_64 distributions may work;
+Alpine Linux (musl) and ARM64 are not supported by this build. Give the file
 execute permission and run it from a graphical desktop session:
 
 ```bash
@@ -137,9 +140,9 @@ each citable public release.
 
 ## Development status
 
-Version 1.0.0 is the stable public release line for Windows. The Linux x86_64
-build is in development and is distributed through temporary CI artifacts
-while compatibility is being evaluated.
+Version 1.0.0 is the stable public release line for Windows. A Linux x86_64
+research preview is available from the project download page while
+compatibility and the full workflow are evaluated across distributions.
 Scientific interpretation, parameter choice, and ecological validation remain
 the responsibility of each study. The software does not replace field data,
 elevation validation, or scenario calibration.
