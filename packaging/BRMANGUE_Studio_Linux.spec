@@ -8,7 +8,7 @@ import pyproj
 
 from PyInstaller.utils.hooks import collect_submodules
 
-project_root = Path(SPECPATH).resolve().parent.parent
+project_root = Path(SPECPATH).resolve().parent
 source_root = project_root / "src"
 assets_root = source_root / "brmangue_studio" / "assets"
 
