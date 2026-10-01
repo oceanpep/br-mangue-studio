@@ -174,3 +174,24 @@ funciona na instalação Python. Para gerar uma versão executável que também
 leve o DissModel, use `packaging/BRMANGUE_Studio_DissModel.spec` em um ambiente
 onde o pacote esteja instalado; o resultado será
 `dist/BRMANGUE_Studio_DissModel.exe`.
+
+## Gerar um executável Linux x86_64
+
+O executável Linux é gerado no Ubuntu 22.04 com Python 3.10 para ampliar a
+compatibilidade entre distribuições recentes. Em um ambiente de compilação
+Linux com Tkinter instalado, execute na raiz do repositório:
+
+```bash
+python -m pip install -e .
+python -m pip install pyinstaller
+pyinstaller packaging/BRMANGUE_Studio_Linux.spec --clean
+```
+
+O resultado é `dist/BRMANGUE_Studio_Linux_x86_64`. Também é possível obter o
+arquivo e seu checksum SHA-256 no artefato da ação [Build Linux desktop
+executable](https://github.com/oceanpep/br-mangue-studio/actions/workflows/build-linux.yml)
+no GitHub. O artefato de desenvolvimento expira após 30 dias.
+Para iniciar, torne o arquivo executável (`chmod +x`) e abra-o em uma sessão
+gráfica Linux. O Python e as dependências do projeto são empacotados; o sistema
+precisa oferecer uma sessão gráfica e `xdg-open` para abrir arquivos e pastas.
+Os rasters, projetos e resultados não são incluídos no executável.

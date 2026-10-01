@@ -14,6 +14,7 @@ from pathlib import Path
 import queue
 import re
 import shutil
+import subprocess
 import sys
 import threading
 import time
@@ -225,6 +226,26 @@ def _resource_path(name: str) -> Path:
     if frozen_root:
         return Path(frozen_root) / "brmangue_studio" / "assets" / name
     return Path(__file__).resolve().parent / "assets" / name
+
+
+def _open_path_with_desktop_application(path: Path) -> None:
+    """Open a file or folder with the operating system's default application."""
+    target = path.expanduser().resolve()
+    if sys.platform == "win32":
+        os.startfile(str(target))  # type: ignore[attr-defined]
+        return
+
+    opener = "open" if sys.platform == "darwin" else "xdg-open"
+    opener_path = shutil.which(opener)
+    if opener_path is None:
+        raise FileNotFoundError(f"The desktop utility '{opener}' is not installed.")
+    subprocess.Popen(
+        [opener_path, str(target)],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
 
 
 def _center_window(window: tk.Misc, width: int, height: int) -> None:
@@ -2117,7 +2138,7 @@ class BRMangueStudio(tk.Tk):
         if self.animation_path is None or not self.animation_path.exists():
             messagebox.showinfo("Animation", "Run a simulation first to generate the GIF.")
             return
-        os.startfile(str(self.animation_path))  # type: ignore[attr-defined]
+        self._open_desktop_path(self.animation_path, "Animation")
 
     def export_animation(self) -> None:
         if self.animation_path is None or not self.animation_path.exists():
@@ -2136,14 +2157,14 @@ class BRMangueStudio(tk.Tk):
         if folder is None or not folder.exists():
             messagebox.showinfo("Animations", "Run a simulation first to generate the animations.")
             return
-        os.startfile(str(folder))  # type: ignore[attr-defined]
+        self._open_desktop_path(folder, "Animations")
 
     def open_figures_folder(self) -> None:
         folder = self.run_dir / "figures" if self.run_dir else None
         if folder is None or not folder.exists():
             messagebox.showinfo("Annual figures", "Run a simulation first to generate annual figures.")
             return
-        os.startfile(str(folder))  # type: ignore[attr-defined]
+        self._open_desktop_path(folder, "Annual figures")
 
     def open_simulation_table(self) -> None:
         path = self.simulation_table_path
@@ -2153,7 +2174,13 @@ class BRMangueStudio(tk.Tk):
         if path is None or not path.exists():
             messagebox.showinfo("Simulation table", "Run a simulation first to generate the simulation table.")
             return
-        os.startfile(str(path))  # type: ignore[attr-defined]
+        self._open_desktop_path(path, "Simulation table")
+
+    def _open_desktop_path(self, path: Path, purpose: str) -> None:
+        try:
+            _open_path_with_desktop_application(path)
+        except Exception as exc:
+            messagebox.showerror(purpose, f"Unable to open {path}:\n{exc}", parent=self)
 
     def _redraw_class_chart(self) -> None:
         """Draw a compact vertical gain/loss chart with one bar per class."""
@@ -2421,7 +2448,7 @@ class BRMangueStudio(tk.Tk):
             messagebox.showinfo("Results", "No project or simulation output exists yet.")
             return
         folder.mkdir(parents=True, exist_ok=True)
-        os.startfile(str(folder))  # type: ignore[attr-defined]
+        self._open_desktop_path(folder, "Results")
 
 
 def main() -> None:

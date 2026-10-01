@@ -17,7 +17,7 @@ inspection without requiring a specific data provider.
 
 ## Features
 
-- Windows desktop application with a simple project workflow.
+- Windows and Linux desktop applications with a simple project workflow.
 - Any aligned categorical land-cover raster and elevation raster can be used.
 - Optional mangrove-suitability and study-area mask rasters.
 - User-defined mapping from source raster classes to model roles.
@@ -32,11 +32,10 @@ inspection without requiring a specific data provider.
 ## Download
 
 Stable Windows builds are published on the [BR-MANGUE Studio download page](https://oceanpep.github.io/br-mangue-studio/downloads.html).
-Download the latest package, save it in a writable folder, and start
-`BRMANGUE_Studio.exe`. The application does not require a separate Python
-installation when using the packaged Windows build. The repository also keeps
-the source, checksum, release notes, and reproducibility record for each
-version.
+The Linux x86_64 executable is being prepared as a development build and is
+available as a temporary artifact from the repository's [Linux build workflow](https://github.com/oceanpep/br-mangue-studio/actions/workflows/build-linux.yml).
+The packaged applications include Python and project dependencies; input
+rasters, projects, and results remain external files.
 
 ## Run from source
 
@@ -46,6 +45,27 @@ Python 3.10 or newer is required. From the repository root:
 python -m pip install -e .
 python -m brmangue_studio
 ```
+
+To run from source on Debian or Ubuntu, install Tkinter and virtual-environment
+support, then use an isolated Python environment:
+
+```bash
+sudo apt-get install python3-tk python3-venv
+python3 -m venv .venv
+.venv/bin/python -m pip install -e .
+.venv/bin/python -m brmangue_studio
+```
+
+The packaged Linux binary is built for Ubuntu 22.04 or newer on x86_64. Give it
+execute permission and run it from a graphical desktop session:
+
+```bash
+chmod +x BRMANGUE_Studio_Linux_x86_64
+./BRMANGUE_Studio_Linux_x86_64
+```
+
+The Linux application uses `xdg-open` to open generated files and folders in
+the desktop's default applications.
 
 The command-line raster runner is also available:
 
@@ -117,7 +137,9 @@ each citable public release.
 
 ## Development status
 
-Version 1.0.0 is the public release line for the Windows application.
+Version 1.0.0 is the stable public release line for Windows. The Linux x86_64
+build is in development and is distributed through temporary CI artifacts
+while compatibility is being evaluated.
 Scientific interpretation, parameter choice, and ecological validation remain
 the responsibility of each study. The software does not replace field data,
 elevation validation, or scenario calibration.
