@@ -10,8 +10,8 @@ cellular model that preserves the model rules while providing a reproducible
 workflow for raster preparation, class mapping, simulation, monitoring and
 annual outputs. Its technical contribution is the combination of a
 provider-independent input pipeline, continuous and persistent-block engines,
-resource diagnostics, and a Windows executable for researchers who do not
-need to install Python.
+resource diagnostics, and standalone Windows and Linux x86_64 executables for
+researchers who do not need to install Python.
 
 ## Sections and evidence
 
@@ -39,7 +39,8 @@ need to install Python.
 - Explain CRS inspection and optional reprojection/alignment.
 - Explain why the block engine exists and which state is preserved between
   blocks.
-- Describe the Windows packaging and versioned release process.
+- Describe the Windows packaging and Linux x86_64 research-preview build,
+  including the bundled Python runtime and platform-specific requirements.
 - State the supported input assumptions and known limitations.
 
 ### 4. Reproducibility and provenance
@@ -117,13 +118,16 @@ Recommended tables and figures:
 
 ## Claims that require evidence before submission
 
-- Do not claim that the two engines are equivalent until a cell-wise comparison
-  has been recorded for the final CMMA configuration.
+- Report the archived one-step CMMA parity result separately from the two
+  Windows runs to 2100. The Windows archives verify timings and sampled output
+  counts, but the class mappings differ (codes 3/4 and 23/32), so those runs do
+  not establish engine equivalence. Repeat both modes with one identical setup
+  before making a long-horizon parity claim.
 - Do not claim ecological validation from a performance benchmark or usability
   test.
 - Do not publish a capacity number such as “millions of cells” without naming
   the computer, active-cell count, number of annual steps, output settings and
   repetition summary.
-- Do not call the executable cross-platform; the current public package is a
-  Windows 64-bit build.
-
+- Do not claim broad Linux compatibility from the single Ubuntu 26.04.1 smoke
+  test; the Linux x86_64 build is a research preview, and other distributions
+  require individual verification.

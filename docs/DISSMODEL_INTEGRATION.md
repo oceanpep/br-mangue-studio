@@ -1,5 +1,11 @@
 # Integração com DissModel
 
+> **Registro histórico de desenvolvimento.** Esta integração pertence a uma
+> versão anterior do BR-MANGUE Studio. As distribuições desktop atuais usam
+> somente os motores contínuo e em blocos e não dependem de DissModel.
+> O conteúdo abaixo descreve a integração legada que permanece no código-fonte
+> para referência; não descreve o fluxo de uso ou de publicação atual.
+
 O DissModel foi integrado como camada de coordenação da simulação. Ele fornece o relógio de execução (`Environment`), o componente do modelo (`Model`) e o registro de séries (`track_plot`). A regra do autômato permanece no núcleo Python traduzido do Lua.
 
 ## Modos

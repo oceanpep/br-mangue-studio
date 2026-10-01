@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-01",
+  "scope": "computational demonstration; no study mask or soil data",
+  "valid_cells": 2337998,
+  "input_year": 2025,
+  "final_year": 2100,
+  "annual_steps": 75,
+  "annual_rasters_per_engine": 75,
+  "cell_updates_per_engine": 175349850,
+  "same_parameters": true,
+  "same_input_metadata": true,
+  "same_initial_class_counts": true,
+  "pixelwise_identical_annual_states": true,
+  "annual_state_pixel_differences": 0,
+  "trajectory_state_and_transition_metrics_identical": true,
+  "trajectory_metric_differences": 0,
+  "engines": {
+    "continuous": {
+      "elapsed_total_s": 567.499004,
+      "elapsed_simulation_s": 567.459891,
+      "annual_steps": 75,
+      "cell_updates": 175349850,
+      "cell_updates_per_second": 309008.36,
+      "peak_rss_bytes": 545349632,
+      "output_size_bytes": 10116819,
+      "block_size": null
+    },
+    "blocks": {
+      "elapsed_total_s": 1417.143314,
+      "elapsed_simulation_s": 1414.315342,
+      "annual_steps": 75,
+      "cell_updates": 175349850,
+      "cell_updates_per_second": 123982.145,
+      "peak_rss_bytes": 567394304,
+      "output_size_bytes": 150409818,
+      "block_size": 10000
+    }
+  },
+  "interpretation": "The 75 annual state rasters (2026–2100) and state/transition trajectory metrics matched exactly between engines for this unmasked raster extent. This verifies computational parity for these inputs and parameters; it is not ecological validation.",
+  "annual_output_first_year": 2026,
+  "annual_output_last_year": 2100,
+  "initial_state_year": 2025,
+  "initial_state_pixel_differences": 0,
+  "code_commit": "e30b1e3268b78096ae51243bfd7fc8f93f3c8229",
+  "environment": {
+    "os": "Ubuntu 26.04.1 LTS x86_64",
+    "kernel": "7.0.0-34-generic",
+    "cpu": "Intel Core i3-1215U",
+    "logical_cpus": 8,
+    "physical_ram_bytes": 20116140032,
+    "python": "3.12.14",
+    "rasterio": "1.5.2",
+    "gdal": "3.12.2",
+    "pyproj": "3.8.0",
+    "proj": "9.8.1",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6"
+  },
+  "inputs_sha256": {
+    "mapbiomas_c11_1985_2025.tif": "03290e77425751c8efe86b10e35609ec075b581d02d03cb48168701ce82839eb",
+    "elevacao_anadem_30m.tif": "3d053dda13c1e4740aae9e42b081ae947ea896844af6064555e15822762f11d1"
+  },
+  "gui_executable_sha256": "369a4f8a296eb61bcf5a53d6ec63042b3d6a7111f298731f40ffec4fa47a2ab9"
+}

@@ -26,8 +26,8 @@ Nesta versão, a interface já oferece:
   corrente e trajetória; os divisores podem ser arrastados para redimensionar
   cada linha e o botão **Reset layout** restaura a distribuição equilibrada;
 - parâmetros de anos, maré, elevação relativa, acreção constante opcional,
-  atraso de maturação da migração, tamanho de bloco e executor contínuo, em
-  blocos ou DissModel;
+  atraso de maturação da migração, tamanho de bloco e executor contínuo ou em
+  blocos;
 - mapa inicial, mapa corrente, trajetória e barras divergentes de mudança líquida
   por classe, com zero central, perdas à esquerda e ganhos à direita;
 - trajetória com linha de células e saldo anual da extensão ativa de mangue;
@@ -111,8 +111,7 @@ executável e não depende de um caminho fixo no computador do usuário.
 6. Ajuste os parâmetros e clique em **Run simulation**. A execução ocorre em
   uma thread separada, permitindo acompanhar o mapa, o DEM, o gráfico e as
   contagens por classe. O painel visual é atualizado a cada ano do calendário;
-  a execução longa não reduz a frequência dos rasters anuais. Isso vale também para a distribuição estendida com
-  DissModel.
+  a execução longa não reduz a frequência dos rasters anuais.
 7. Os resultados ficam em `results/run_AAAAMMDDTHHMMSS` dentro da pasta do
    projeto. O projeto JSON registra todos os caminhos, associações e opções;
    quando os rasters estão no mesmo volume, os caminhos são gravados relativos
@@ -152,11 +151,11 @@ está reduzida ou o monitor tem pouca altura.
 
 ## Gerar um executável Windows
 
-Para pesquisadores e usuários finais, use preferencialmente o executável
-compacto `BRMANGUE_Studio.exe`. Ele já contém o motor contínuo, o motor em
-blocos, a interface visual, a geração de figuras anuais e o GIF. O DissModel é
-uma integração opcional para testes de compatibilidade e não é necessário para
-executar o modelo.
+Para pesquisadores e usuários finais, use o executável `BRMANGUE_Studio.exe`.
+Ele contém os motores contínuo e em blocos, a interface visual, a geração de
+figuras anuais e o GIF. O usuário não precisa instalar Python nem bibliotecas
+do projeto para executar esse arquivo; rasters, projetos e resultados são
+arquivos externos.
 
 O repositório inclui `packaging/BRMANGUE_Studio.spec`. Depois de instalar o
 PyInstaller no ambiente (`python -m pip install pyinstaller`), gere o
@@ -168,12 +167,8 @@ pyinstaller packaging/BRMANGUE_Studio.spec --clean
 
 A distribuição deve ser gerada no mesmo tipo de Windows em que será usada.
 Rasters, projetos e resultados continuam sendo arquivos externos e não são
-embutidos no executável. O executável compacto não embute o pacote opcional
-DissModel para evitar dependências gráficas desnecessárias; a opção DissModel
-funciona na instalação Python. Para gerar uma versão executável que também
-leve o DissModel, use `packaging/BRMANGUE_Studio_DissModel.spec` em um ambiente
-onde o pacote esteja instalado; o resultado será
-`dist/BRMANGUE_Studio_DissModel.exe`.
+embutidos no executável. O código-fonte mantém um adaptador legado opcional
+para DissModel, mas ele não integra o fluxo das distribuições desktop atuais.
 
 ## Gerar um executável Linux x86_64
 
