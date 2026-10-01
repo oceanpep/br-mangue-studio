@@ -57,9 +57,10 @@ python3 -m venv .venv
 
 The Linux preview was built and packaged on Ubuntu 22.04 LTS (x86_64), and its
 startup was verified on Ubuntu 26.04.1 LTS (x86_64). Ubuntu 22.04 or newer is
-recommended. Ubuntu 24.04 and Linux Mint 22 are expected to work, but have not
-been individually tested. Other glibc-based x86_64 distributions may work;
-Alpine Linux (musl) and ARM64 are not supported by this build. Give the file
+recommended. Ubuntu 24.04, Linux Mint 22, and Debian 13 are expected to work,
+but have not been individually tested. Other x86_64 distributions with glibc
+2.35 or newer may work. Alpine Linux (musl) and ARM64 are not supported by
+this build. Give the file
 execute permission and run it from a graphical desktop session:
 
 ```bash
