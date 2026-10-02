@@ -43,11 +43,11 @@ that the software is ready for immediate submission.
    all by one contributor and concentrated in about two weeks. The conservative
    earliest submission date is 17 March 2027, and JOSS requires more than
    elapsed time: continue iterative development in public across that period.
-   Three public issues now track Linux compatibility, reproducible benchmark
-   inputs, and controlled engine-parity measurements. A manuscript pull
-   request is being prepared; maintain substantive public discussion and
-   contributions over time. The historical Windows 1.0.0 release/tag is being
-   prepared; the Linux build remains a research preview.
+   Three public issues (#1–#3) track Linux compatibility, reproducible
+   benchmark inputs, and controlled engine-parity measurements. The public
+   draft manuscript is PR #4. Continue substantive public discussion and
+   contributions over time. The historical Windows 1.0.0 release and tag are
+   published; the Linux build remains a separate research preview.
 2. **Research significance.** The software is used in an ongoing graduate
    research project, but no external adoption or peer-reviewed publication is
    documented. JOSS asks for demonstrated research use and significance beyond
@@ -91,10 +91,10 @@ that the software is ready for immediate submission.
    and engine agreement, not ecological validity. Define independent data,
    calibration and evaluation periods, a persistence baseline, and spatial
    metrics if the article is to make ecological-performance claims.
-11. **PDF compilation.** This environment has no local Pandoc or Docker
-   executable. The workflow will build a draft PDF in GitHub Actions when the
-   manuscript branch is pushed. Confirm that first hosted compilation before
-   submission.
+11. **PDF compilation.** The first hosted JOSS draft build completed
+   successfully in GitHub Actions on PR #4. Review the generated PDF artifact
+   for final typesetting before submission; this environment has no local
+   Pandoc or Docker executable.
 12. **Conflicts and final article metadata.** Ask all authors to disclose any
    potential conflicts of interest and add the required statement. Confirm the
    final article date and affiliation format before submission.
