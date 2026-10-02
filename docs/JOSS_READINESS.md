@@ -60,14 +60,18 @@ that the software is ready for immediate submission.
    named lab and institution.
 4. **Author review and AI-assisted work.** The manuscript records Consensus
    for article discovery and ChatGPT/Codex GPT-6 models in the Sol, Luna, and
-   Astra families for software development and Python model structuring. JOSS
-   asks for exact model versions and where they were used. Confirm exact model
-   identifiers and dates, then have all authors verify the disclosure, review
-   AI-assisted text, sources, code, and claims, and confirm scientific and
-   architectural decisions.
+   Astra families for software development and Python model structuring;
+   Codex also assisted with documentation and this manuscript. JOSS asks for
+   exact tool/model versions and where they were used. The Consensus version
+   and exact model identifiers and dates are not yet recorded. Confirm them,
+   then have all authors verify the disclosure, review AI-assisted text,
+   sources, code, and claims, and confirm scientific and architectural
+   decisions.
 5. **Author metadata and consent.** Names, order, and the supplied official
    affiliation are recorded. Confirm authorship agreement and final metadata
-   with all four authors before submission.
+   with all four authors before submission. `CITATION.cff` still lists only
+   Felipe Martins Sousa and Denilson da Silva Bezerra; confirm software
+   authorship and align its metadata if needed.
 6. **Reproducible benchmark inputs.** The paper intentionally uses generic
    terms for land cover and elevation, but a reviewer must be able to identify
    or obtain the exact benchmark inputs. Record stable source/version details,

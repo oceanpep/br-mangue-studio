@@ -57,7 +57,7 @@ Historical Windows archives record 76 transitions from 2024 to 2100 on 78,007,30
 
 # AI usage disclosure
 
-Consensus was used to discover scholarly articles relevant to the research. ChatGPT and Codex, using GPT-6 models from the Sol, Luna, and Astra families, assisted with software development and structuring the model in Python. The authors are responsible for checking the sources, code, analyses, and text, and for the final content of the manuscript and software. Before submission, all authors must confirm that they reviewed, edited, and validated AI-assisted outputs and made the core scientific and architectural decisions; exact model identifiers and dates of use should also be confirmed.
+Consensus was used to discover scholarly articles relevant to the research. ChatGPT and Codex, using GPT-6 models from the Sol, Luna, and Astra families, assisted with software development and structuring the model in Python. Codex also assisted with editing the software documentation and this manuscript. Benchmark descriptions were checked against archived run records, and bibliographic details against publisher or software-maintainer sources. The authors are responsible for checking the sources, code, analyses, and text, and for the final content of the manuscript and software. Before submission, all authors must confirm that they reviewed, edited, and validated AI-assisted outputs and made the core scientific and architectural decisions; exact model identifiers and dates of use should also be confirmed.
 
 # Acknowledgements
 
