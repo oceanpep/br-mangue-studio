@@ -33,6 +33,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+
 from rasterio.crs import CRS
 from rasterio.enums import Resampling
 from rasterio.vrt import WarpedVRT
@@ -131,7 +132,7 @@ FIGURE_COMPONENT_LABELS = {
     "change": "Net annual change",
 }
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -258,6 +259,18 @@ def _center_window(window: tk.Misc, width: int, height: int) -> None:
     window.geometry(f"{width}x{height}+{x}+{y}")
 
 
+def _require_transformable_crs(crs: CRS, raster_name: str) -> None:
+    """Reject local engineering CRS metadata with a concise corrective hint."""
+    wkt = crs.to_wkt().lstrip().upper()
+    if wkt.startswith(("ENGCRS[", "LOCAL_CS[")):
+        raise ValueError(
+            f"{raster_name} is tagged with a local/engineering CRS ({crs.to_string()}), "
+            "which has no geodetic datum or projection definition. Its coordinates "
+            "cannot be transformed automatically. Verify the CRS recorded in the "
+            "source GeoTIFF and use its authoritative CRS definition."
+        )
+
+
 def _format_duration(seconds: float | int | None) -> str:
     """Format elapsed seconds for the live monitor and final run summary."""
     if seconds is None:
@@ -309,6 +322,7 @@ def _reproject_raster_to_grid(
     with rasterio.open(source_path) as source:
         if source.crs is None:
             raise ValueError(f"The raster has no CRS metadata: {source_path.name}")
+        _require_transformable_crs(source.crs, source_path.name)
         if band < 1 or band > source.count:
             raise ValueError(f"Band {band} is not available in {source_path.name}.")
         source_dtype = np.dtype(source.dtypes[band - 1])
@@ -1467,6 +1481,7 @@ class BRMangueStudio(tk.Tk):
             with rasterio.open(land_cover) as source:
                 if source.crs is None:
                     raise ValueError(f"The land-cover raster has no CRS metadata: {land_cover.name}")
+                _require_transformable_crs(source.crs, land_cover.name)
                 transform_kwargs: dict[str, Any] = {}
                 if resolution is not None:
                     transform_kwargs["resolution"] = (resolution, resolution)

@@ -5,6 +5,7 @@
 from pathlib import Path
 
 import pyproj
+import rasterio
 
 from PyInstaller.utils.hooks import collect_submodules
 
@@ -32,6 +33,11 @@ datas = [
     (str(assets_root / "GEOTAM_logo.jpeg"), "brmangue_studio/assets"),
     (pyproj.datadir.get_data_dir(), "pyproj/proj_dir/share/proj"),
 ]
+rasterio_data = Path(rasterio.__file__).resolve().parent
+for data_name in ("proj_data", "gdal_data"):
+    data_path = rasterio_data / data_name
+    if data_path.is_dir():
+        datas.append((str(data_path), f"rasterio/{data_name}"))
 
 a = Analysis(
     [str(source_root / "brmangue_studio" / "__main__.py")],
