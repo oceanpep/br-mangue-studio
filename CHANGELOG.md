@@ -2,6 +2,14 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [1.1.0] — 2026-10-06
+
+- Added a Portuguese (Brazil) interface alongside English, which remains the
+  default language for new installations.
+- Added an in-app language selector and saved the preference between sessions.
+- Localized the desktop workflow, status messages, simulation charts, and
+  annual figure labels without changing project-file values or data columns.
+
 ## [1.0.1] — 2026-10-06
 
 - Frozen desktop builds now prefer their bundled, version-matched GDAL/PROJ
