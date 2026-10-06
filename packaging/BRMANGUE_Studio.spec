@@ -3,7 +3,10 @@
 #   pyinstaller packaging/BRMANGUE_Studio.spec --clean
 
 import os
+from pathlib import Path
+
 import pyproj
+import rasterio
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
@@ -26,6 +29,11 @@ datas = [
 ]
 pyproj_data = os.path.join(os.path.dirname(pyproj.__file__), "proj_dir", "share", "proj")
 datas += [(pyproj_data, "pyproj/proj_dir/share/proj")]
+rasterio_data = Path(rasterio.__file__).resolve().parent
+for data_name in ("proj_data", "gdal_data"):
+    data_path = rasterio_data / data_name
+    if data_path.is_dir():
+        datas.append((str(data_path), f"rasterio/{data_name}"))
 
 a = Analysis(
     ["../src/brmangue_studio/__main__.py"],

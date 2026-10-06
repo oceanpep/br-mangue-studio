@@ -8,6 +8,10 @@ from datetime import datetime
 from pathlib import Path
 import sys
 
+from brmangue_studio.geospatial_runtime import configure_geospatial_runtime
+
+configure_geospatial_runtime()
+
 
 def _resolve_input(project_dir: Path, value: str | None) -> Path | None:
     if not value:

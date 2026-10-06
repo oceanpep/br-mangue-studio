@@ -4,6 +4,8 @@ All notable changes to BR-MANGUE Studio are recorded here.
 
 ## [Unreleased]
 
+- Frozen desktop builds now prefer their bundled, version-matched GDAL/PROJ
+  databases over coordinate-library paths inherited from the host computer.
 - Added a configurable maturation delay for migrated mangrove cells. The
   default is three complete annual steps before a migrated cell can propagate;
   continuous and persistent-block engines preserve the same age state.
