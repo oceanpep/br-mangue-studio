@@ -61,6 +61,15 @@ from brmangue_lua.engine import (
 )
 from brmangue_lua.raster_inputs import DEFAULT_LAND_COVER_MAPPING, RasterInputSet, load_raster_inputs
 from brmangue_lua.raster_runner import run_raster_simulation
+from brmangue_studio.localization import (
+    LANGUAGES,
+    LANGUAGE_CODES,
+    CODE_TO_LANGUAGE,
+    load_language,
+    save_language,
+    translate,
+    translate_runtime,
+)
 
 try:
     from brmangue_lua.dissmodel_adapter import DISSMODEL_AVAILABLE
@@ -132,7 +141,7 @@ FIGURE_COMPONENT_LABELS = {
     "change": "Net annual change",
 }
 
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.1.0"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -404,9 +413,10 @@ def _show_splash(app: tk.Tk) -> tk.Toplevel:
 
     geotam_row = tk.Frame(content, bg="#ffffff")
     geotam_row.pack(pady=(0, 12))
+    language_code = getattr(app, "language_code", "en")
     tk.Label(
         geotam_row,
-        text="by",
+        text=translate("by", language_code),
         font=("Segoe UI", 9),
         foreground="#687786",
         bg="#ffffff",
@@ -430,14 +440,14 @@ def _show_splash(app: tk.Tk) -> tk.Toplevel:
 
     tk.Label(
         content,
-        text="Spatial cellular model for coastal change",
+        text=translate("Spatial cellular model for coastal change", language_code),
         font=("Segoe UI", 10),
         foreground="#53616f",
         bg="#ffffff",
     ).pack(pady=(0, 12))
     tk.Label(
         content,
-        text=f"Version {APP_VERSION}",
+        text=f"{translate('Version', language_code)} {APP_VERSION}",
         font=("Segoe UI", 10, "bold"),
         foreground="#17324d",
         bg="#ffffff",
@@ -469,7 +479,7 @@ def _show_splash(app: tk.Tk) -> tk.Toplevel:
     progress.start(9)
     tk.Label(
         content,
-        text="Loading workspace…",
+        text=translate("Loading workspace…", language_code),
         font=("Segoe UI", 8),
         foreground="#7a8792",
         bg="#ffffff",
@@ -611,6 +621,7 @@ def _save_annual_figure_file(
     state: np.ndarray,
     trajectory: pd.DataFrame,
     year: int,
+    language_code: str = "en",
 ) -> Path:
     """Write four independent annual figures and return the state-map path."""
     figure_root = run_dir / "figures"
@@ -636,11 +647,11 @@ def _save_annual_figure_file(
         bbox={"facecolor": "white", "alpha": 0.78, "pad": 2, "edgecolor": "none"},
     )
     state_ax.set_title("")
-    state_ax.set_xlabel("Raster columns")
-    state_ax.set_ylabel("Raster rows")
+    state_ax.set_xlabel(translate("Raster columns", language_code))
+    state_ax.set_ylabel(translate("Raster rows", language_code))
     state_fig.legend(
-        handles=[Patch(facecolor=MODEL_COLORS[code], label=label) for code, label in MODEL_LABELS.items()],
-        loc="lower center", bbox_to_anchor=(0.5, 0.01), ncol=3, fontsize=8, title="Model states",
+        handles=[Patch(facecolor=MODEL_COLORS[code], label=translate(label, language_code)) for code, label in MODEL_LABELS.items()],
+        loc="lower center", bbox_to_anchor=(0.5, 0.01), ncol=3, fontsize=8, title=translate("Model states", language_code),
     )
     state_fig.subplots_adjust(left=0.09, right=0.98, top=0.91, bottom=0.24)
     FigureCanvasAgg(state_fig).print_figure(paths["state"], dpi=150, bbox_inches="tight")
@@ -654,12 +665,12 @@ def _save_annual_figure_file(
         if np.isclose(vmin, vmax):
             vmax = vmin + 1e-9
         elev_im = elev_ax.imshow(elev_image, cmap="terrain", interpolation="nearest", vmin=vmin, vmax=vmax)
-        elev_fig.colorbar(elev_im, ax=elev_ax, fraction=0.046, pad=0.04, label="Relative elevation")
+        elev_fig.colorbar(elev_im, ax=elev_ax, fraction=0.046, pad=0.04, label=translate("Relative elevation", language_code))
     else:
         elev_ax.imshow(elev_image, cmap="terrain", interpolation="nearest")
     elev_ax.set_title("")
-    elev_ax.set_xlabel("Raster columns")
-    elev_ax.set_ylabel("Raster rows")
+    elev_ax.set_xlabel(translate("Raster columns", language_code))
+    elev_ax.set_ylabel(translate("Raster rows", language_code))
     elev_fig.subplots_adjust(left=0.09, right=0.90, top=0.91, bottom=0.14)
     FigureCanvasAgg(elev_fig).print_figure(paths["elevation"], dpi=150, bbox_inches="tight")
 
@@ -669,16 +680,16 @@ def _save_annual_figure_file(
     trajectory_ax = trajectory_fig.add_subplot(111)
     if not visible.empty:
         for column, label, color in [
-            ("mangrove", "Mangrove cells", "#006d2c"),
-            ("migrated_mangrove", "Migrated mangrove", "#7b3294"),
-            ("flooded_mangrove", "Flooded mangrove", "#e34a33"),
+            ("mangrove", translate("Mangrove cells", language_code), "#006d2c"),
+            ("migrated_mangrove", translate("Migrated mangrove", language_code), "#7b3294"),
+            ("flooded_mangrove", translate("Flooded mangrove", language_code), "#e34a33"),
         ]:
             if column in visible:
                 trajectory_ax.plot(visible["calendar_year"], visible[column], label=label, color=color, linewidth=2)
         trajectory_ax.legend(loc="best", fontsize=8)
     trajectory_ax.set_title("")
-    trajectory_ax.set_xlabel("Calendar year")
-    trajectory_ax.set_ylabel("Cells")
+    trajectory_ax.set_xlabel(translate("Calendar year", language_code))
+    trajectory_ax.set_ylabel(translate("Cells", language_code))
     trajectory_ax.grid(alpha=0.25)
     trajectory_fig.subplots_adjust(left=0.10, right=0.98, top=0.90, bottom=0.16)
     FigureCanvasAgg(trajectory_fig).print_figure(paths["trajectory"], dpi=150, bbox_inches="tight")
@@ -693,13 +704,13 @@ def _save_annual_figure_file(
             losses = visible.get("annual_loss", pd.Series(np.zeros(len(visible)))).to_numpy()
             net_change = gains - losses
         years = visible["calendar_year"].to_numpy()
-        change_ax.bar(years, np.maximum(net_change, 0), color="#72b66b", label="Net annual gain", width=0.72)
-        change_ax.bar(years, np.minimum(net_change, 0), color="#ef3b2c", label="Net annual loss", width=0.72)
+        change_ax.bar(years, np.maximum(net_change, 0), color="#72b66b", label=translate("Net annual gain", language_code), width=0.72)
+        change_ax.bar(years, np.minimum(net_change, 0), color="#ef3b2c", label=translate("Net annual loss", language_code), width=0.72)
         change_ax.legend(loc="best", fontsize=8)
     change_ax.axhline(0, color="#333333", linewidth=0.8)
     change_ax.set_title("")
-    change_ax.set_xlabel("Calendar year")
-    change_ax.set_ylabel("Net annual change (cells)")
+    change_ax.set_xlabel(translate("Calendar year", language_code))
+    change_ax.set_ylabel(translate("Net annual change (cells)", language_code))
     change_ax.grid(alpha=0.2, axis="y")
     change_fig.subplots_adjust(left=0.10, right=0.98, top=0.90, bottom=0.16)
     FigureCanvasAgg(change_fig).print_figure(paths["change"], dpi=150, bbox_inches="tight")
@@ -710,6 +721,7 @@ def _generate_annual_figures(
     inputs: RasterInputSet,
     run_dir: Path,
     trajectory: pd.DataFrame,
+    language_code: str = "en",
 ) -> list[Path]:
     """Generate annual figures from saved rasters outside the UI thread."""
     states_dir = run_dir / "states"
@@ -720,7 +732,7 @@ def _generate_annual_figures(
             continue
         with rasterio.open(state_path) as src:
             state = src.read(1)[inputs.valid_rows, inputs.valid_cols]
-        paths.append(_save_annual_figure_file(inputs, run_dir, state, trajectory, int(year)))
+        paths.append(_save_annual_figure_file(inputs, run_dir, state, trajectory, int(year), language_code))
     index = []
     for state_path in paths:
         year = int(state_path.stem.rsplit("_", 1)[-1])
@@ -827,6 +839,11 @@ class BRMangueStudio(tk.Tk):
 
     def __init__(self) -> None:
         super().__init__()
+        self.language_code = load_language()
+        self._widget_text_defaults: dict[tk.Misc, str] = {}
+        self._notebook_tab_defaults: dict[tuple[ttk.Notebook, str], str] = {}
+        self._menu_label_defaults: dict[tuple[tk.Menu, int], str] = {}
+        self._class_combos: dict[int, ttk.Combobox] = {}
         self.title("BR-MANGUE Studio")
         self.geometry("1500x930")
         self.minsize(1120, 720)
@@ -872,6 +889,9 @@ class BRMangueStudio(tk.Tk):
         self._build_variables()
         self._build_menu()
         self._build_layout()
+        self._capture_static_ui_text()
+        self._watch_status_variables()
+        self._apply_language()
         self.after(100, self._poll_messages)
         self.after(1000, self._update_resources)
 
@@ -895,6 +915,7 @@ class BRMangueStudio(tk.Tk):
         self.migration_maturity_var = tk.StringVar(value="3")
         self.block_size_var = tk.StringVar(value="10000")
         self.engine_var = tk.StringVar(value="blocks")
+        self.engine_choice_var = tk.StringVar(value="")
         self.soil_enabled_var = tk.BooleanVar(value=False)
         self.migration_without_soil_var = tk.BooleanVar(value=True)
         self.source_crs_var = tk.StringVar(value="Not loaded")
@@ -911,9 +932,11 @@ class BRMangueStudio(tk.Tk):
         self.progress_var = tk.DoubleVar(value=0.0)
         self.cells_var = tk.StringVar(value="Cells processed: 0")
         self.speed_var = tk.StringVar(value="Speed: —")
+        self.language_var = tk.StringVar(value=CODE_TO_LANGUAGE[self.language_code])
 
     def _build_menu(self) -> None:
         menu = tk.Menu(self)
+        self.main_menu = menu
         project = tk.Menu(menu, tearoff=False)
         project.add_command(label="New project", command=self.new_project)
         project.add_command(label="Open project", command=self.open_project)
@@ -927,12 +950,14 @@ class BRMangueStudio(tk.Tk):
         data.add_command(label="Refresh land-cover classes", command=self.inspect_mapbiomas)
         menu.add_cascade(label="Data", menu=data)
         help_menu = tk.Menu(menu, tearoff=False)
-        help_menu.add_command(label="About", command=lambda: messagebox.showinfo(
+        help_menu.add_command(label="About", command=lambda: self._show_message(
+            "showinfo",
             "BR-MANGUE Studio",
             "Desktop interface for the BR-MANGUE cellular model.\n"
             "The model accepts aligned user-provided rasters; inputs are read-only and products are saved in the project results folder.",
         ))
         menu.add_cascade(label="Help", menu=help_menu)
+        self._menus = (menu, project, data, help_menu)
         self.config(menu=menu)
 
     def _build_layout(self) -> None:
@@ -967,7 +992,17 @@ class BRMangueStudio(tk.Tk):
         header = ttk.Frame(self, padding=(14, 10))
         header.pack(fill="x")
         ttk.Label(header, textvariable=self.project_status_var, style="Subtitle.TLabel").pack(side="left")
-        ttk.Label(header, textvariable=self.resource_var, style="Subtitle.TLabel").pack(side="right")
+        ttk.Label(header, textvariable=self.resource_var, style="Subtitle.TLabel").pack(side="right", padx=(8, 0))
+        ttk.Label(header, text="Language").pack(side="right", padx=(10, 5))
+        self.language_combo = ttk.Combobox(
+            header,
+            textvariable=self.language_var,
+            values=LANGUAGES,
+            state="readonly",
+            width=18,
+        )
+        self.language_combo.pack(side="right")
+        self.language_combo.bind("<<ComboboxSelected>>", self._on_language_selected)
         ttk.Separator(self).pack(fill="x", padx=10)
 
         main = ttk.PanedWindow(self, orient="horizontal")
@@ -982,6 +1017,152 @@ class BRMangueStudio(tk.Tk):
         self._build_left(left)
         self._build_center(center)
         self._build_right(right)
+
+    def _capture_static_ui_text(self) -> None:
+        """Remember English widget captions so language changes are reversible."""
+        def visit(widget: tk.Misc) -> None:
+            try:
+                caption = str(widget.cget("text"))
+                if caption:
+                    self._widget_text_defaults.setdefault(widget, caption)
+            except (tk.TclError, TypeError):
+                pass
+            if isinstance(widget, ttk.Notebook):
+                for tab_id in widget.tabs():
+                    key = (widget, tab_id)
+                    self._notebook_tab_defaults.setdefault(key, str(widget.tab(tab_id, "text")))
+            for child in widget.winfo_children():
+                visit(child)
+
+        visit(self)
+        for menu in self._menus:
+            try:
+                for index in range(menu.index("end") + 1):
+                    if menu.type(index) in ("command", "cascade", "checkbutton", "radiobutton"):
+                        self._menu_label_defaults.setdefault((menu, index), str(menu.entrycget(index, "label")))
+            except tk.TclError:
+                continue
+
+    def _watch_status_variables(self) -> None:
+        """Keep status text readable in the active language as values change."""
+        for variable in (
+            self.project_status_var,
+            self.run_status_var,
+            self.source_crs_var,
+            self.datum_var,
+            self.resource_var,
+            self.cells_var,
+            self.speed_var,
+            self.result_path_var,
+            self.animation_info_var,
+            self.animation_year_var,
+        ):
+            variable.trace_add("write", lambda *_args, var=variable: self._translate_status_variable(var))
+
+    def _translate_status_variable(self, variable: tk.StringVar) -> None:
+        value = variable.get()
+        translated = translate_runtime(value, self.language_code)
+        if translated != value:
+            variable.set(translated)
+
+    def _apply_language(self) -> None:
+        """Refresh captions and visual labels without changing project values."""
+        self.title(translate("BR-MANGUE Studio", self.language_code))
+        if hasattr(self, "language_var"):
+            self.language_var.set(CODE_TO_LANGUAGE[self.language_code])
+        for widget, source in tuple(self._widget_text_defaults.items()):
+            try:
+                widget.configure(text=translate_runtime(source, self.language_code))
+            except tk.TclError:
+                self._widget_text_defaults.pop(widget, None)
+        for (notebook, tab_id), source in tuple(self._notebook_tab_defaults.items()):
+            try:
+                notebook.tab(tab_id, text=translate(source, self.language_code))
+            except tk.TclError:
+                self._notebook_tab_defaults.pop((notebook, tab_id), None)
+        for (menu, index), source in tuple(self._menu_label_defaults.items()):
+            try:
+                menu.entryconfigure(index, label=translate(source, self.language_code))
+            except tk.TclError:
+                self._menu_label_defaults.pop((menu, index), None)
+        for variable in (
+            self.project_status_var,
+            self.run_status_var,
+            self.source_crs_var,
+            self.datum_var,
+            self.resource_var,
+            self.cells_var,
+            self.speed_var,
+            self.result_path_var,
+            self.animation_info_var,
+            self.animation_year_var,
+        ):
+            self._translate_status_variable(variable)
+        for code, variable in self.class_vars.items():
+            canonical = translate(variable.get(), "en")
+            variable.set(translate(canonical, self.language_code))
+            combo = self._class_combos.get(code)
+            if combo is not None:
+                combo.configure(values=tuple(translate(role, self.language_code) for role in ROLE_LABELS))
+        if hasattr(self, "source_choice"):
+            source = translate(self.source_choice_var.get(), "en")
+            self.source_choice.configure(values=tuple(
+                translate(value, self.language_code)
+                for value in ("Cellular rules", "Raster input validation", "Raster runner")
+            ))
+            self.source_choice_var.set(translate(source, self.language_code))
+        if hasattr(self, "engine_combo"):
+            self._sync_engine_choice()
+        if hasattr(self, "monitor_text"):
+            self._set_monitor(self._monitor_text())
+        if hasattr(self, "class_chart"):
+            self.class_bar_labels = {
+                "mangrove": translate("Mangrove", self.language_code),
+                "migrated_mangrove": translate("Migrated", self.language_code),
+                "flooded_mangrove": translate("Flooded", self.language_code),
+                "vegetation": translate("Vegetation", self.language_code),
+                "sea": translate("Water", self.language_code),
+                "anthropized": translate("Developed", self.language_code),
+            }
+            self._redraw_class_chart()
+        if hasattr(self, "trajectory_records") and self.trajectory_records:
+            self._draw_trajectory()
+        elif hasattr(self, "inputs") and self.inputs is not None:
+            self._draw_input_maps()
+        elif hasattr(self, "visual_axes"):
+            self._draw_placeholder()
+
+    def _on_language_selected(self, _event: Any = None) -> None:
+        selected = self.language_var.get()
+        self.language_code = LANGUAGE_CODES.get(selected, "en")
+        save_language(self.language_code)
+        self._apply_language()
+
+    def _sync_engine_choice(self) -> None:
+        engine_labels = {
+            "blocks": "Persistent blocks",
+            "continuous": "Continuous",
+            "dissmodel": "DissModel",
+        }
+        label = engine_labels.get(self.engine_var.get(), "Persistent blocks")
+        self.engine_choice_var.set(translate(label, self.language_code))
+
+    def _on_engine_selected(self, _event: Any = None) -> None:
+        label = translate(self.engine_choice_var.get(), "en")
+        self.engine_var.set({
+            "Persistent blocks": "blocks",
+            "Continuous": "continuous",
+            "DissModel": "dissmodel",
+        }.get(label, "blocks"))
+
+    def _show_message(self, kind: str, title: str, message: Any) -> Any:
+        """Show a dialog with localized interface text and unchanged diagnostics."""
+        dialog = getattr(messagebox, kind)
+        return dialog(
+            translate_runtime(title, self.language_code),
+            translate_runtime(str(message), self.language_code),
+            parent=self,
+        )
 
     def _build_left(self, parent: ttk.Frame) -> None:
         notebook = ttk.Notebook(parent)
@@ -1140,7 +1321,17 @@ class BRMangueStudio(tk.Tk):
         engine_values = ["blocks", "continuous"]
         if DISSMODEL_AVAILABLE:
             engine_values.append("dissmodel")
-        ttk.Combobox(parent, textvariable=self.engine_var, values=engine_values, state="readonly", width=16).grid(row=7, column=1, sticky="w", pady=4)
+        choices = ["Persistent blocks", "Continuous"]
+        if DISSMODEL_AVAILABLE:
+            choices.append("DissModel")
+        self.engine_combo = ttk.Combobox(
+            parent, textvariable=self.engine_choice_var,
+            values=tuple(translate(label, self.language_code) for label in choices),
+            state="readonly", width=20,
+        )
+        self.engine_combo.grid(row=7, column=1, sticky="w", pady=4)
+        self.engine_combo.bind("<<ComboboxSelected>>", self._on_engine_selected)
+        self._sync_engine_choice()
         ttk.Checkbutton(parent, text="Enable optional mangrove suitability layer", variable=self.soil_enabled_var).grid(row=8, column=0, columnspan=2, sticky="w", pady=5)
         ttk.Checkbutton(parent, text="Allow migration without suitability layer", variable=self.migration_without_soil_var).grid(row=9, column=0, columnspan=2, sticky="w", pady=5)
         ttk.Label(parent, text="A migrated cell becomes a new propagation source only after the maturation delay. Use 0 for a sensitivity test without a biological delay.", wraplength=360, foreground="#5d6b78").grid(row=10, column=0, columnspan=2, sticky="w", pady=(10, 0))
@@ -1295,10 +1486,10 @@ class BRMangueStudio(tk.Tk):
         source_controls = ttk.Frame(source_tab)
         source_controls.grid(row=0, column=0, sticky="ew", pady=(0, 6))
         ttk.Label(source_controls, text="Rule module").pack(side="left")
-        self.source_choice_var = tk.StringVar(value="Cellular rules")
+        self.source_choice_var = tk.StringVar(value=translate("Cellular rules", self.language_code))
         self.source_choice = ttk.Combobox(
             source_controls, textvariable=self.source_choice_var,
-            values=("Cellular rules", "Raster input validation", "Raster runner"),
+            values=tuple(translate(value, self.language_code) for value in ("Cellular rules", "Raster input validation", "Raster runner")),
             state="readonly", width=26,
         )
         self.source_choice.pack(side="left", padx=8)
@@ -1329,7 +1520,7 @@ class BRMangueStudio(tk.Tk):
         self.after_idle(reset)
 
     def _legend_handles(self) -> list[Patch]:
-        return [Patch(facecolor=MODEL_COLORS[code], label=label) for code, label in MODEL_LABELS.items()]
+        return [Patch(facecolor=MODEL_COLORS[code], label=translate(label, self.language_code)) for code, label in MODEL_LABELS.items()]
 
     def _show_source_code(self) -> None:
         files = {
@@ -1337,19 +1528,19 @@ class BRMangueStudio(tk.Tk):
             "Raster input validation": "raster_inputs.py",
             "Raster runner": "raster_runner.py",
         }
-        filename = files.get(self.source_choice_var.get(), "engine.py")
+        filename = files.get(translate(self.source_choice_var.get(), "en"), "engine.py")
         roots = []
         if getattr(sys, "_MEIPASS", None):
             roots.append(Path(sys._MEIPASS) / "brmangue_lua")
         roots.append(Path(__file__).resolve().parents[1] / "brmangue_lua")
         source_path = next((root / filename for root in roots if (root / filename).exists()), None)
         if source_path is None:
-            text = f"Source file not bundled: {filename}"
+            text = translate_runtime(f"Source file not bundled: {filename}", self.language_code)
         else:
             try:
                 text = source_path.read_text(encoding="utf-8")
             except OSError as exc:
-                text = f"Unable to read {source_path}: {exc}"
+                text = translate_runtime(f"Unable to read {source_path}: {exc}", self.language_code)
         self.source_text.configure(state="normal")
         self.source_text.delete("1.0", "end")
         self.source_text.insert("1.0", text)
@@ -1375,12 +1566,12 @@ class BRMangueStudio(tk.Tk):
             "anthropized": MODEL_COLORS[4],
         }
         self.class_bar_labels = {
-            "mangrove": "Mangrove",
-            "migrated_mangrove": "Migrated",
-            "flooded_mangrove": "Flooded",
-            "vegetation": "Vegetation",
-            "sea": "Water",
-            "anthropized": "Developed",
+            "mangrove": translate("Mangrove", self.language_code),
+            "migrated_mangrove": translate("Migrated", self.language_code),
+            "flooded_mangrove": translate("Flooded", self.language_code),
+            "vegetation": translate("Vegetation", self.language_code),
+            "sea": translate("Water", self.language_code),
+            "anthropized": translate("Developed", self.language_code),
         }
         self.class_change_values: dict[str, int] = {key: 0 for key in self.class_bar_colors}
         self.class_current_values: dict[str, int] = {key: 0 for key in self.class_bar_colors}
@@ -1389,7 +1580,7 @@ class BRMangueStudio(tk.Tk):
     def _draw_placeholder(self) -> None:
         for ax in self.visual_axes.values():
             ax.clear()
-            ax.text(0.5, 0.5, "Load input rasters to begin", ha="center", va="center", transform=ax.transAxes)
+            ax.text(0.5, 0.5, translate("Load input rasters to begin", self.language_code), ha="center", va="center", transform=ax.transAxes)
             ax.set_xticks([])
             ax.set_yticks([])
         self.ax_trajectory_area.clear()
@@ -1397,7 +1588,7 @@ class BRMangueStudio(tk.Tk):
         self.ax_trajectory_area.set_yticks([])
         for ax in (self.traj_area_ax, self.traj_change_ax):
             ax.clear()
-            ax.text(0.5, 0.5, "Run a simulation to build the trajectory", ha="center", va="center", transform=ax.transAxes)
+            ax.text(0.5, 0.5, translate("Run a simulation to build the trajectory", self.language_code), ha="center", va="center", transform=ax.transAxes)
             ax.set_xticks([])
             ax.set_yticks([])
         self.traj_area_km2_ax.clear()
@@ -1416,13 +1607,13 @@ class BRMangueStudio(tk.Tk):
             self.animation_year_var.set("Year —")
             self.animation_info_var.set("No annual figures generated yet.")
             for label in self.animation_labels.values():
-                label.configure(image="", text="Run a simulation to generate the annual preview.")
+                label.configure(image="", text=translate("Run a simulation to generate the annual preview.", self.language_code))
                 label.image = None
 
     def _browse(self, variable: tk.StringVar, label: str) -> None:
         path = filedialog.askopenfilename(
-            title=f"Select {label}",
-            filetypes=[("GeoTIFF", "*.tif *.tiff"), ("All files", "*.*")],
+            title=f"{translate('Select', self.language_code)} {translate(label, self.language_code)}",
+            filetypes=[(translate("GeoTIFF", self.language_code), "*.tif *.tiff"), (translate("All files", self.language_code), "*.*")],
         )
         if path:
             variable.set(path)
@@ -1432,7 +1623,7 @@ class BRMangueStudio(tk.Tk):
     def inspect_mapbiomas(self) -> None:
         path = Path(self.mapbiomas_var.get().strip())
         if not path.exists():
-            messagebox.showerror("Land-cover inspection", "Select a valid categorical land-cover GeoTIFF first.")
+            self._show_message("showerror", "Land-cover inspection", "Select a valid categorical land-cover GeoTIFF first.")
             return
         try:
             band = int(self.band_var.get())
@@ -1461,7 +1652,7 @@ class BRMangueStudio(tk.Tk):
             scope = "in study area" if self.mask_var.get().strip() else "in raster"
             self.run_status_var.set(f"Found {len(self.class_counts)} source classes {scope}")
         except Exception as exc:
-            messagebox.showerror("Land-cover inspection", str(exc))
+            self._show_message("showerror", "Land-cover inspection", str(exc))
 
     def reproject_inputs(self) -> None:
         """Create aligned copies of the selected rasters on a target CRS."""
@@ -1500,7 +1691,7 @@ class BRMangueStudio(tk.Tk):
             if self.project_file is not None:
                 output_dir = self.project_file.parent / "prepared_inputs"
             else:
-                chosen = filedialog.askdirectory(title="Choose a folder for prepared input rasters")
+                chosen = filedialog.askdirectory(title=translate("Choose a folder for prepared input rasters", self.language_code))
                 if not chosen:
                     return
                 output_dir = Path(chosen) / "prepared_inputs"
@@ -1552,12 +1743,12 @@ class BRMangueStudio(tk.Tk):
             self.expected_crs_var.set(target_label)
             self.run_status_var.set("Prepared aligned rasters; validate and load inputs")
             self.inspect_mapbiomas()
-            messagebox.showinfo(
+            self._show_message("showinfo",
                 "Inputs prepared",
                 f"Aligned copies were created in:\n{output_dir}\n\nOriginal rasters were not modified. Review the class mapping and click Validate and load inputs.",
             )
         except Exception as exc:
-            messagebox.showerror("Reprojection", f"Unable to reproject the inputs: {exc}")
+            self._show_message("showerror", "Reprojection", f"Unable to reproject the inputs: {exc}")
 
     def _rebuild_class_rows(self) -> None:
         for child in self.class_inner.winfo_children():
@@ -1568,21 +1759,32 @@ class BRMangueStudio(tk.Tk):
         ttk.Label(header, text="Pixels", width=12).pack(side="left")
         ttk.Label(header, text="Model role").pack(side="left")
         self.class_vars.clear()
+        self._class_combos.clear()
         for code in sorted(self.class_counts):
             row = ttk.Frame(self.class_inner)
             row.pack(fill="x", pady=2)
             ttk.Label(row, text=str(code), width=8).pack(side="left")
             ttk.Label(row, text=f"{self.class_counts[code]:,}", width=12).pack(side="left")
-            var = tk.StringVar(value=_default_role(code))
+            var = tk.StringVar(value=translate(_default_role(code), self.language_code))
             self.class_vars[code] = var
-            ttk.Combobox(row, textvariable=var, values=ROLE_LABELS, state="readonly", width=27).pack(side="left", fill="x", expand=True)
+            combo = ttk.Combobox(
+                row,
+                textvariable=var,
+                values=tuple(translate(role, self.language_code) for role in ROLE_LABELS),
+                state="readonly",
+                width=27,
+            )
+            combo.pack(side="left", fill="x", expand=True)
+            self._class_combos[code] = combo
+        self._capture_static_ui_text()
+        self._apply_language()
 
     def _mapping_from_ui(self) -> tuple[dict[str, list[int]], list[int], dict[int, str]]:
         mapping: dict[str, list[int]] = {key: [] for key in DEFAULT_LAND_COVER_MAPPING}
         excluded: list[int] = []
         roles: dict[int, str] = {}
         for code, var in self.class_vars.items():
-            role = var.get()
+            role = translate(var.get(), "en")
             roles[code] = role
             if role == "Exclude":
                 excluded.append(code)
@@ -1628,7 +1830,7 @@ class BRMangueStudio(tk.Tk):
             self._draw_input_maps()
         except Exception as exc:
             self.inputs = None
-            messagebox.showerror("Input validation", str(exc))
+            self._show_message("showerror", "Input validation", str(exc))
 
     def _make_display(self, usos: np.ndarray) -> tuple[np.ndarray, tuple[int, int, int, int]]:
         values = np.asarray(usos, dtype=np.uint8).copy()
@@ -1699,12 +1901,12 @@ class BRMangueStudio(tk.Tk):
 
     def _draw_input_maps(self) -> None:
         assert self.inputs is not None
-        self._show_map(self.ax_initial, self.inputs.grid.usos, f"Initial state — {self.year_var.get()}")
-        self._show_elevation(self.ax_elevation, self.inputs.grid.alt2, "Elevation / relative surface")
-        self._show_map(self.ax_current, self.inputs.grid.usos, "Current state — not started")
+        self._show_map(self.ax_initial, self.inputs.grid.usos, translate_runtime(f"Initial state — {self.year_var.get()}", self.language_code))
+        self._show_elevation(self.ax_elevation, self.inputs.grid.alt2, translate("Elevation / relative surface", self.language_code))
+        self._show_map(self.ax_current, self.inputs.grid.usos, translate_runtime("Current state — not started", self.language_code))
         self.ax_trajectory.clear()
-        self.ax_trajectory.set_xlabel("Calendar year")
-        self.ax_trajectory.set_ylabel("Cells")
+        self.ax_trajectory.set_xlabel(translate("Calendar year", self.language_code))
+        self.ax_trajectory.set_ylabel(translate("Cells", self.language_code))
         self.ax_trajectory_area.clear()
         self.ax_trajectory_area.set_visible(False)
         self.ax_trajectory_area.set_ylabel("")
@@ -1737,7 +1939,7 @@ class BRMangueStudio(tk.Tk):
 
     def start_run(self) -> None:
         if self.running:
-            messagebox.showinfo("Simulation", "A simulation is already running.")
+            self._show_message("showinfo", "Simulation", "A simulation is already running.")
             return
         if self.inputs is None:
             self.load_inputs()
@@ -1754,7 +1956,7 @@ class BRMangueStudio(tk.Tk):
                     "BRMANGUE_Studio_DissModel executable or install DissModel."
                 )
             if self.project_file is None:
-                chosen = filedialog.askdirectory(title="Choose project folder for results")
+                chosen = filedialog.askdirectory(title=translate("Choose project folder for results", self.language_code))
                 if not chosen:
                     return
                 self.project_file = Path(chosen) / "brmangue_project.json"
@@ -1784,7 +1986,7 @@ class BRMangueStudio(tk.Tk):
                 self.animation_after_id = None
             self.animation_info_var.set("Generating annual figures and GIF…")
             for label in self.animation_labels.values():
-                label.configure(image="", text="Simulation running…")
+                label.configure(image="", text=translate("Simulation running…", self.language_code))
                 label.image = None
             self.animation_year_var.set("Year —")
             self.running = True
@@ -1803,12 +2005,12 @@ class BRMangueStudio(tk.Tk):
             land_cover_band = int(self.land_cover_band_var.get())
             self.worker = threading.Thread(
                 target=self._run_worker,
-                args=(parameters, block_size, steps, callback, code_roles, initial_year, engine, land_cover_path, land_cover_band),
+                args=(parameters, block_size, steps, callback, code_roles, initial_year, engine, land_cover_path, land_cover_band, self.language_code),
                 daemon=True,
             )
             self.worker.start()
         except Exception as exc:
-            messagebox.showerror("Simulation", str(exc))
+            self._show_message("showerror", "Simulation", str(exc))
 
     def _run_worker(
         self,
@@ -1821,6 +2023,7 @@ class BRMangueStudio(tk.Tk):
         engine: str,
         land_cover_path: str,
         land_cover_band: int,
+        language_code: str,
     ) -> None:
         assert self.inputs is not None
         assert self.run_dir is not None
@@ -1861,7 +2064,7 @@ class BRMangueStudio(tk.Tk):
                     self.run_dir / "transition_by_land_cover_code.csv",
                 )
             self.message_queue.put(("postprocess", "Simulation complete. Generating annual figures and GIF in the background…"))
-            annual_paths = _generate_annual_figures(self.inputs, self.run_dir, trajectory)
+            annual_paths = _generate_annual_figures(self.inputs, self.run_dir, trajectory, language_code)
             animation_path = _generate_animation(annual_paths, self.run_dir)
             animation_paths = _generate_component_animations(self.run_dir, annual_paths)
             spreadsheet_path = _write_simulation_spreadsheet(self.inputs, self.run_dir, trajectory)
@@ -1951,7 +2154,7 @@ class BRMangueStudio(tk.Tk):
                 self.run_status_var.set("Failed")
                 elapsed = time.perf_counter() - getattr(self, "run_started", time.perf_counter())
                 self._set_monitor(f"Simulation failed after {_format_duration(elapsed)}.\n")
-                messagebox.showerror("Simulation", payload)
+                self._show_message("showerror", "Simulation", payload)
         self.after(40, self._poll_messages)
 
     def _handle_step(self, event: dict[str, Any]) -> None:
@@ -1981,14 +2184,14 @@ class BRMangueStudio(tk.Tk):
         self.ax_trajectory_area.clear()
         self.ax_trajectory_area.set_visible(False)
         for column, label, color in [
-            ("mangrove", "Mangrove", "#006d2c"),
-            ("migrated_mangrove", "Migrated mangrove", "#7b3294"),
-            ("flooded_mangrove", "Flooded mangrove", "#e34a33"),
+            ("mangrove", translate("Mangrove", self.language_code), "#006d2c"),
+            ("migrated_mangrove", translate("Migrated mangrove", self.language_code), "#7b3294"),
+            ("flooded_mangrove", translate("Flooded mangrove", self.language_code), "#e34a33"),
         ]:
             if column in frame:
                 self.ax_trajectory.plot(frame["calendar_year"], frame[column], label=label, color=color, linewidth=2)
-        self.ax_trajectory.set_xlabel("Calendar year")
-        self.ax_trajectory.set_ylabel("Cells")
+        self.ax_trajectory.set_xlabel(translate("Calendar year", self.language_code))
+        self.ax_trajectory.set_ylabel(translate("Cells", self.language_code))
         self.ax_trajectory.grid(alpha=0.25)
         self.ax_trajectory.legend(fontsize=8)
         # Area equivalents remain available in trajectory.csv and the monitor,
@@ -1997,14 +2200,14 @@ class BRMangueStudio(tk.Tk):
         self.traj_area_ax.clear()
         self.traj_area_km2_ax.clear()
         for column, label, color in [
-            ("mangrove", "Mangrove cells", "#006d2c"),
-            ("migrated_mangrove", "Migrated mangrove", "#7b3294"),
-            ("flooded_mangrove", "Flooded mangrove", "#e34a33"),
+            ("mangrove", translate("Mangrove cells", self.language_code), "#006d2c"),
+            ("migrated_mangrove", translate("Migrated mangrove", self.language_code), "#7b3294"),
+            ("flooded_mangrove", translate("Flooded mangrove", self.language_code), "#e34a33"),
         ]:
             if column in frame:
                 self.traj_area_ax.plot(frame["calendar_year"], frame[column], label=label, color=color, linewidth=2)
-        self.traj_area_ax.set_title("Mangrove trajectory")
-        self.traj_area_ax.set_ylabel("Cells")
+        self.traj_area_ax.set_title(translate("Mangrove trajectory", self.language_code))
+        self.traj_area_ax.set_ylabel(translate("Cells", self.language_code))
         self.traj_area_ax.grid(alpha=0.25)
         self.traj_area_ax.legend(loc="best", fontsize=8)
         self.traj_area_ax.tick_params(labelbottom=False)
@@ -2019,12 +2222,12 @@ class BRMangueStudio(tk.Tk):
             gains = frame.get("annual_gain", pd.Series(np.zeros(len(frame)))).to_numpy()
             losses = frame.get("annual_loss", pd.Series(np.zeros(len(frame)))).to_numpy()
             net_change = gains - losses
-        self.traj_change_ax.bar(years, np.maximum(net_change, 0), color="#72b66b", label="Net annual gain", width=0.72)
-        self.traj_change_ax.bar(years, np.minimum(net_change, 0), color="#ef3b2c", label="Net annual loss", width=0.72)
+        self.traj_change_ax.bar(years, np.maximum(net_change, 0), color="#72b66b", label=translate("Net annual gain", self.language_code), width=0.72)
+        self.traj_change_ax.bar(years, np.minimum(net_change, 0), color="#ef3b2c", label=translate("Net annual loss", self.language_code), width=0.72)
         self.traj_change_km2_ax.set_visible(False)
         self.traj_change_ax.axhline(0, color="#333333", linewidth=0.8)
-        self.traj_change_ax.set_xlabel("Calendar year")
-        self.traj_change_ax.set_ylabel("Net annual change (cells)")
+        self.traj_change_ax.set_xlabel(translate("Calendar year", self.language_code))
+        self.traj_change_ax.set_ylabel(translate("Net annual change (cells)", self.language_code))
         self.traj_change_ax.grid(alpha=0.2, axis="y")
         self.traj_change_ax.legend(loc="best", fontsize=8, ncol=2)
         self.trajectory_canvas.draw_idle()
@@ -2035,7 +2238,7 @@ class BRMangueStudio(tk.Tk):
             return
         year = int(summary.get("calendar_year", 0))
         frame = pd.DataFrame(self.trajectory_records)
-        path = _save_annual_figure_file(self.inputs, self.run_dir, self.last_state, frame, year)
+        path = _save_annual_figure_file(self.inputs, self.run_dir, self.last_state, frame, year, self.language_code)
         self.annual_figure_paths.append(path)
 
     def _create_animation(self) -> None:
@@ -2106,7 +2309,7 @@ class BRMangueStudio(tk.Tk):
                     token = path.stem.rsplit("_", 1)[-1]
                     year = token if token.isdigit() else None
             else:
-                label.configure(image="", text="No figure available for this component.")
+                label.configure(image="", text=translate("No figure available for this component.", self.language_code))
                 label.image = None
         self.animation_year_var.set(f"Year {year}" if year else "Year —")
 
@@ -2151,16 +2354,16 @@ class BRMangueStudio(tk.Tk):
 
     def open_animation(self) -> None:
         if self.animation_path is None or not self.animation_path.exists():
-            messagebox.showinfo("Animation", "Run a simulation first to generate the GIF.")
+            self._show_message("showinfo", "Animation", "Run a simulation first to generate the GIF.")
             return
         self._open_desktop_path(self.animation_path, "Animation")
 
     def export_animation(self) -> None:
         if self.animation_path is None or not self.animation_path.exists():
-            messagebox.showinfo("Animation", "Run a simulation first to generate the GIF.")
+            self._show_message("showinfo", "Animation", "Run a simulation first to generate the GIF.")
             return
         destination = filedialog.asksaveasfilename(
-            title="Export simulation GIF",
+            title=translate("Export simulation GIF", self.language_code),
             defaultextension=".gif",
             filetypes=[("Animated GIF", "*.gif")],
         )
@@ -2170,14 +2373,14 @@ class BRMangueStudio(tk.Tk):
     def open_animations_folder(self) -> None:
         folder = self.run_dir / "animations" if self.run_dir else None
         if folder is None or not folder.exists():
-            messagebox.showinfo("Animations", "Run a simulation first to generate the animations.")
+            self._show_message("showinfo", "Animations", "Run a simulation first to generate the animations.")
             return
         self._open_desktop_path(folder, "Animations")
 
     def open_figures_folder(self) -> None:
         folder = self.run_dir / "figures" if self.run_dir else None
         if folder is None or not folder.exists():
-            messagebox.showinfo("Annual figures", "Run a simulation first to generate annual figures.")
+            self._show_message("showinfo", "Annual figures", "Run a simulation first to generate annual figures.")
             return
         self._open_desktop_path(folder, "Annual figures")
 
@@ -2187,7 +2390,7 @@ class BRMangueStudio(tk.Tk):
             candidate = self.run_dir / "simulation_data.csv"
             path = candidate if candidate.exists() else None
         if path is None or not path.exists():
-            messagebox.showinfo("Simulation table", "Run a simulation first to generate the simulation table.")
+            self._show_message("showinfo", "Simulation table", "Run a simulation first to generate the simulation table.")
             return
         self._open_desktop_path(path, "Simulation table")
 
@@ -2195,7 +2398,7 @@ class BRMangueStudio(tk.Tk):
         try:
             _open_path_with_desktop_application(path)
         except Exception as exc:
-            messagebox.showerror(purpose, f"Unable to open {path}:\n{exc}", parent=self)
+            self._show_message("showerror", purpose, f"Unable to open {path}:\n{exc}")
 
     def _redraw_class_chart(self) -> None:
         """Draw a compact vertical gain/loss chart with one bar per class."""
@@ -2281,6 +2484,7 @@ class BRMangueStudio(tk.Tk):
         )
 
     def _set_monitor(self, text: str) -> None:
+        text = translate_runtime(text, self.language_code)
         self.monitor_text.configure(state="normal")
         self.monitor_text.delete("1.0", "end")
         self.monitor_text.insert("1.0", text)
@@ -2309,13 +2513,14 @@ class BRMangueStudio(tk.Tk):
         self.after(1000, self._update_resources)
 
     def new_project(self) -> None:
-        folder = filedialog.askdirectory(title="Choose a new BR-MANGUE project folder")
+        folder = filedialog.askdirectory(title=translate("Choose a new BR-MANGUE project folder", self.language_code))
         if not folder:
             return
         self.project_file = Path(folder) / "brmangue_project.json"
         self.inputs = None
         self.initial_class_counts = {}
         self.class_vars.clear()
+        self._class_combos.clear()
         self.source_crs_var.set("Not loaded")
         self.datum_var.set("Not loaded")
         self.vertical_datum_var.set("")
@@ -2329,9 +2534,9 @@ class BRMangueStudio(tk.Tk):
 
     def save_project_as(self) -> None:
         path = filedialog.asksaveasfilename(
-            title="Save BR-MANGUE project",
+            title=translate("Save BR-MANGUE project", self.language_code),
             defaultextension=".json",
-            filetypes=[("BR-MANGUE project", "*.json"), ("JSON", "*.json")],
+            filetypes=[(translate("BR-MANGUE project", self.language_code), "*.json"), (translate("JSON", self.language_code), "*.json")],
         )
         if path:
             self.project_file = Path(path)
@@ -2374,7 +2579,7 @@ class BRMangueStudio(tk.Tk):
                 "expected_crs": self.expected_crs_var.get(),
                 "target_crs": self.target_crs_var.get(),
                 "target_resolution": self.target_resolution_var.get(),
-                "source_datum_metadata": self.datum_var.get(),
+                "source_datum_metadata": translate(self.datum_var.get(), "en"),
                 "declared_vertical_datum": self.vertical_datum_var.get(),
             },
             "parameters": {
@@ -2396,7 +2601,10 @@ class BRMangueStudio(tk.Tk):
         self.project_status_var.set(f"Project: {self.project_file.parent}")
 
     def open_project(self) -> None:
-        path = filedialog.askopenfilename(title="Open BR-MANGUE project", filetypes=[("Project JSON", "*.json"), ("All files", "*.*")])
+        path = filedialog.askopenfilename(
+            title=translate("Open BR-MANGUE project", self.language_code),
+            filetypes=[(translate("Project JSON", self.language_code), "*.json"), (translate("All files", self.language_code), "*.*")],
+        )
         if not path:
             return
         try:
@@ -2445,6 +2653,7 @@ class BRMangueStudio(tk.Tk):
                 var.set(str(parameters.get(key, default)))
             if self.engine_var.get() == "dissmodel" and not DISSMODEL_AVAILABLE:
                 self.engine_var.set("blocks")
+            self._sync_engine_choice()
             self.soil_enabled_var.set(bool(parameters.get("soil_enabled", False)))
             self.migration_without_soil_var.set(bool(parameters.get("allow_migration_without_soil", True)))
             self.project_status_var.set(f"Project: {self.project_file.parent}")
@@ -2452,15 +2661,15 @@ class BRMangueStudio(tk.Tk):
             saved_roles = payload.get("class_roles", {})
             for code, var in self.class_vars.items():
                 if str(code) in saved_roles and saved_roles[str(code)] in ROLE_LABELS:
-                    var.set(saved_roles[str(code)])
+                    var.set(translate(saved_roles[str(code)], self.language_code))
             self.load_inputs()
         except Exception as exc:
-            messagebox.showerror("Open project", str(exc))
+            self._show_message("showerror", "Open project", str(exc))
 
     def open_results_folder(self) -> None:
         folder = self.run_dir or (self.project_file.parent / "results" if self.project_file else None)
         if folder is None:
-            messagebox.showinfo("Results", "No project or simulation output exists yet.")
+            self._show_message("showinfo", "Results", "No project or simulation output exists yet.")
             return
         folder.mkdir(parents=True, exist_ok=True)
         self._open_desktop_path(folder, "Results")
