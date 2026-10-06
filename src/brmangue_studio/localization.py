@@ -235,6 +235,13 @@ _PT_BR = {
     "Mangrove trajectory": "Trajetória do manguezal",
     "Net annual change": "Variação anual líquida",
     "Select a target CRS or enter an EPSG code.": "Selecione um SRC de destino ou digite um código EPSG.",
+    "The study-area mask must share shape, CRS and transform with the land-cover raster.": "A máscara da área de estudo deve ter as mesmas dimensões, SRC e transformação do raster de cobertura da terra.",
+    "Target resolution must be positive.": "A resolução de destino deve ser positiva.",
+    "The target CRS produced an empty raster grid.": "O SRC de destino gerou uma grade raster vazia.",
+    "The land-cover and elevation paths must be valid.": "Os caminhos dos rasters de cobertura da terra e elevação devem ser válidos.",
+    "Final calendar year must be greater than initial year.": "O ano final deve ser posterior ao ano inicial.",
+    "Migration maturation delay must be zero or greater.": "O atraso de maturação da migração deve ser zero ou maior.",
+    "Block size must be positive.": "O tamanho do bloco deve ser maior que zero.",
 }
 
 _RUNTIME_PATTERNS = (
@@ -254,6 +261,12 @@ _RUNTIME_PATTERNS = (
     (re.compile(r"^Unable to reproject the inputs: (.*)$"), re.compile(r"^Não foi possível reprojetar os dados: (.*)$"), "Unable to reproject the inputs: {value}", "Não foi possível reprojetar os dados: {value}"),
     (re.compile(r"^Unable to display annual figures: (.*)$"), re.compile(r"^Não foi possível exibir as figuras anuais: (.*)$"), "Unable to display annual figures: {value}", "Não foi possível exibir as figuras anuais: {value}"),
     (re.compile(r"^Unable to open (.+):$"), re.compile(r"^Não foi possível abrir (.+):$"), "Unable to open {value}:", "Não foi possível abrir {value}:"),
+    (re.compile(r"^Band must be between (.+) and (.+)\.$"), re.compile(r"^A banda deve estar entre (.+) e (.+)\.$"), "Band must be between {value} and {value2}.", "A banda deve estar entre {value} e {value2}."),
+    (re.compile(r"^Band (.+) is not available in (.+)\.$"), re.compile(r"^A banda (.+) não está disponível em (.+)\.$"), "Band {value} is not available in {value2}.", "A banda {value} não está disponível em {value2}."),
+    (re.compile(r"^The (.+) raster has no CRS metadata: (.+)$"), re.compile(r"^O raster de (.+) não contém metadados de SRC: (.+)$"), "The {value} raster has no CRS metadata: {value2}", "O raster de {value} não contém metadados de SRC: {value2}"),
+    (re.compile(r"^Expected CRS (.+) does not match input CRS (.+); reproject inputs before loading\.$"), re.compile(r"^O SRC esperado (.+) não corresponde ao SRC de entrada (.+); reprojete os dados antes de carregá-los\.$"), "Expected CRS {value} does not match input CRS {value2}; reproject inputs before loading.", "O SRC esperado {value} não corresponde ao SRC de entrada {value2}; reprojete os dados antes de carregá-los."),
+    (re.compile(r"^The desktop utility '(.+)' is not installed\.$"), re.compile(r"^O utilitário '(.+)' não está instalado\.$"), "The desktop utility '{value}' is not installed.", "O utilitário '{value}' não está instalado."),
+    (re.compile(r"^Simulation failed after (.+)\.$"), re.compile(r"^A simulação falhou após (.+)\.$"), "Simulation failed after {value}.", "A simulação falhou após {value}."),
 )
 
 
@@ -302,7 +315,11 @@ def _normalize(text: str) -> str:
     for english_pattern, portuguese_pattern, english_template, _portuguese_template in _RUNTIME_PATTERNS:
         match = portuguese_pattern.match(text)
         if match:
-            return english_template.format(value=match.group(1))
+            values = {f"value{index + 1 if index else ''}": value for index, value in enumerate(match.groups())}
+            try:
+                return english_template.format(**values)
+            except KeyError:
+                return text
     return text
 
 
@@ -329,7 +346,10 @@ def translate_runtime(text: str, language: str = "en") -> str:
         for english_pattern, _portuguese_pattern, _english_template, portuguese_template in _RUNTIME_PATTERNS:
             match = english_pattern.match(line)
             if match:
-                output.append(portuguese_template.format(value=match.group(1)))
+                values = {f"value{index + 1 if index else ''}": value for index, value in enumerate(match.groups())}
+                if _english_template in ("Initial state — {value}", "Current state — {value}"):
+                    values["value"] = translate(values["value"], language)
+                output.append(portuguese_template.format(**values))
                 matched = True
                 break
         if matched:

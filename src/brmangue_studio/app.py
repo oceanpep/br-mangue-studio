@@ -1318,9 +1318,6 @@ class BRMangueStudio(tk.Tk):
             ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=4)
             ttk.Entry(parent, textvariable=variable, width=18).grid(row=row, column=1, sticky="ew", pady=4)
         ttk.Label(parent, text="Processing engine").grid(row=7, column=0, sticky="w", pady=4)
-        engine_values = ["blocks", "continuous"]
-        if DISSMODEL_AVAILABLE:
-            engine_values.append("dissmodel")
         choices = ["Persistent blocks", "Continuous"]
         if DISSMODEL_AVAILABLE:
             choices.append("DissModel")
