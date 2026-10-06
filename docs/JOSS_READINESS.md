@@ -30,9 +30,10 @@ that the software is ready for immediate submission.
 - The research-impact section separates the controlled Linux comparison from
   historical, non-controlled Windows timing records and from ecological
   validation.
-- Key references now include the original BR-MANGUE formulation, related
-  mangrove cellular-automata work, ecological model assessment, TerraME, SLAMM
-  documentation, NumPy, Rasterio, and GDAL.
+- Key references now include the original BR-MANGUE formulation, its 2022
+  MPI/CUDA parallelization study, related mangrove cellular-automata work,
+  ecological model assessment, TerraME, SLAMM documentation, NumPy, Rasterio,
+  and GDAL.
 - A GitHub Actions workflow is configured to compile the JOSS draft and retain
   its PDF as a workflow artifact when manuscript files change.
 
