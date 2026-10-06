@@ -160,6 +160,7 @@ _PT_BR = {
     "Export simulation GIF": "Exportar GIF da simulação",
     "Select {label}": "Selecione {label}",
     "GeoTIFF": "GeoTIFF",
+    "Animated GIF": "GIF animado",
     "All files": "Todos os arquivos",
     "BR-MANGUE project": "Projeto BR-MANGUE",
     "JSON": "JSON",

@@ -2362,7 +2362,7 @@ class BRMangueStudio(tk.Tk):
         destination = filedialog.asksaveasfilename(
             title=translate("Export simulation GIF", self.language_code),
             defaultextension=".gif",
-            filetypes=[("Animated GIF", "*.gif")],
+            filetypes=[(translate("Animated GIF", self.language_code), "*.gif")],
         )
         if destination:
             shutil.copy2(self.animation_path, destination)
