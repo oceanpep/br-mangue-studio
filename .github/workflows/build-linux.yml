@@ -2,7 +2,13 @@ name: Build Linux desktop executable
 
 on:
   push:
-    branches: ["main", "linux-*"]
+    branches: ["main", "fix-*"]
+    paths:
+      - ".github/workflows/build-linux.yml"
+      - "packaging/BRMANGUE_Studio_Linux.spec"
+      - "src/**"
+      - "pyproject.toml"
+  pull_request:
     paths:
       - ".github/workflows/build-linux.yml"
       - "packaging/BRMANGUE_Studio_Linux.spec"
