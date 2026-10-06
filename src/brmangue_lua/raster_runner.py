@@ -512,9 +512,15 @@ def run_raster_simulation(
             "resource_sample_count": len(resource_samples),
             "resource_sampling_interval_seconds": 1.0 if resource_samples else None,
             "measurement_scope": (
-                "Simulation starts after input validation, raster loading, and "
-                "persistent block workspace creation. Output files are included "
-                "in total run timing but not in the simulation timing."
+                "simulation_elapsed_seconds starts after raster loading and, for "
+                "the blocks engine, persistent workspace creation. It covers the "
+                "annual model loop and includes per-step GeoTIFF writes when "
+                "annual states are saved. total_run_elapsed_seconds starts at "
+                "runner entry and includes workspace setup and runner outputs, "
+                "but excludes GUI figures, animations, and transition reports "
+                "created after the runner returns. output_size_bytes is sampled "
+                "before the resource trace and GUI post-processing outputs are "
+                "written; it includes the persistent block workspace."
             ),
         },
         "block_input_materialization": {
