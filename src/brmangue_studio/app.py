@@ -132,7 +132,7 @@ FIGURE_COMPONENT_LABELS = {
     "change": "Net annual change",
 }
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
