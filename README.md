@@ -23,8 +23,8 @@ rasters, project files, and simulation results remain on your computer.
 
 | Platform | Availability | Verified environment |
 | --- | --- | --- |
-| Windows 10/11, 64-bit | Stable 1.0.0 | Windows desktop release |
-| Linux x86_64 | Research preview 1.0.0 | Built on Ubuntu 22.04 LTS; application startup verified on Ubuntu 26.04.1 LTS |
+| Windows 10/11, 64-bit | Stable 1.0.1 | Windows desktop release |
+| Linux x86_64 | Research preview 1.0.1 | Built on Ubuntu 22.04 LTS; application startup verified on Ubuntu 26.04.1 LTS |
 
 The Linux build needs a graphical desktop, compatible glibc libraries, and
 `xdg-open` to open generated files and folders. Ubuntu 24.04, Linux Mint 22,
