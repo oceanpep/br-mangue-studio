@@ -153,6 +153,14 @@ O enquadramento depende da legenda do produto. Não atribua um papel apenas
 porque o código parece familiar. Confirme a legenda, consulte os metadados e
 observe o mapa inicial.
 
+Além dos papéis padrão, o usuário pode criar classes personalizadas na aba
+**Class mapping**. Informe um nome, escolha uma cor e adicione a classe; depois,
+atribua a ela os códigos correspondentes do raster de origem. As classes
+personalizadas permanecem no mesmo estado durante a simulação e são incluídas
+nos mapas, metadados, GeoTIFFs e tabelas de resultados. Elas não participam das
+regras padrão de mangue, migração ou inundação. Um projeto aceita até 32.757
+classes personalizadas.
+
 ### 3.2 Estados internos
 
 O Studio também registra estados derivados durante a simulação:
@@ -358,6 +366,11 @@ Cada linha mostra um código do raster, o número de pixels e uma lista de
 papéis. Selecione o papel de acordo com a legenda do seu produto. Revise a
 lista antes de carregar: um código que deveria ser água associado a
 **Anthropized / blocked** altera completamente o cenário.
+
+Para criar uma categoria própria, use **Optional custom classes**. Digite o
+nome, escolha a cor e clique em **Add**. A nova categoria aparecerá nas opções
+de cada código de origem. Ao removê-la, primeiro reatribua todos os códigos que
+ainda estiverem associados a ela.
 
 ### 6.5 Aba Simulation
 

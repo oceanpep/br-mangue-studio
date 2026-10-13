@@ -113,6 +113,8 @@ class BrMangueGrid:
     crs_wkt: str | None = None
     # Completed age of migrated cells; -1 means that the cell is not migrated.
     migration_age: np.ndarray | None = None
+    # Additional fixed model states defined by a project, e.g. 11 = cropland.
+    custom_state_codes: tuple[int, ...] = ()
     last_transition_metrics: dict[str, int] = field(default_factory=dict, init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -122,6 +124,7 @@ class BrMangueGrid:
             raise ValueError("migration_age deve ter o mesmo tamanho de usos.")
         else:
             self.migration_age = np.asarray(self.migration_age, dtype=np.int16)
+        self.custom_state_codes = tuple(int(code) for code in self.custom_state_codes)
 
     @classmethod
     def from_geodataframe(
@@ -194,6 +197,7 @@ class BrMangueGrid:
             source_path=self.source_path,
             crs_wkt=self.crs_wkt,
             migration_age=self.migration_age.copy(),
+            custom_state_codes=self.custom_state_codes,
         )
 
     def class_counts(self) -> dict[str, int]:
@@ -211,6 +215,8 @@ class BrMangueGrid:
                 "flooded_natural": int(np.count_nonzero(self.usos == VEGETACAO_TERRESTRE_INUNDADO)),
             }
         )
+        for code in self.custom_state_codes:
+            counts[f"custom_{code}"] = int(np.count_nonzero(self.usos == code))
         return counts
 
     def _apply_flooding(self, index: int, past_usos: np.ndarray) -> None:

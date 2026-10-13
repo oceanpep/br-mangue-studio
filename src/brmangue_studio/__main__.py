@@ -23,7 +23,11 @@ def _resolve_input(project_dir: Path, value: str | None) -> Path | None:
 def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
     """Run a project without opening the graphical interface."""
     from brmangue_lua.engine import ModelParameters
-    from brmangue_lua.raster_inputs import DEFAULT_LAND_COVER_MAPPING, load_raster_inputs
+    from brmangue_lua.raster_inputs import (
+        DEFAULT_LAND_COVER_MAPPING,
+        load_raster_inputs,
+        normalize_custom_model_classes,
+    )
     from brmangue_lua.raster_runner import run_raster_simulation
     from brmangue_studio.app import (
         _generate_annual_figures,
@@ -46,6 +50,7 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
 
     mapping = {key: [] for key in DEFAULT_LAND_COVER_MAPPING}
     excluded: list[int] = []
+    custom_mapping: dict[int, list[int]] = {}
     roles = {int(code): role for code, role in config.get("class_roles", {}).items()}
     role_to_mapping = {
         "Mangrove": "mangrove",
@@ -56,8 +61,14 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
     for code, role in roles.items():
         if role == "Exclude":
             excluded.append(code)
+        elif role.startswith("custom:"):
+            custom_code = int(role.split(":", 1)[1])
+            custom_mapping.setdefault(custom_code, []).append(code)
         elif role in role_to_mapping:
             mapping[role_to_mapping[role]].append(code)
+    custom_classes = normalize_custom_model_classes(
+        config.get("custom_model_classes", [])
+    )
 
     params_config = config.get("parameters", {})
     initial_year = int(params_config.get("initial_year", 2025))
@@ -74,6 +85,8 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
         land_cover_band=int(config.get("land_cover", {}).get("band", 1)),
         land_cover_year=config.get("land_cover", {}).get("reference_year"),
         mapping=mapping,
+        custom_class_mapping=custom_mapping,
+        custom_classes=custom_classes,
         exclude_source_codes=excluded,
     )
     parameters = ModelParameters(
