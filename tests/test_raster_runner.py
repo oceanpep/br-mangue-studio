@@ -23,6 +23,9 @@ from brmangue_lua.persistent_blocks import PersistentBlockRunner
 from brmangue_studio.__main__ import _run_batch
 from brmangue_studio.app import (
     BRMangueStudio,
+    UNASSIGNED_ROLE,
+    _validate_class_assignments,
+    _validate_class_coverage,
     _model_colormap,
     _write_simulation_spreadsheet,
     _write_transition_report,
@@ -378,6 +381,52 @@ def test_custom_class_mapping_accepts_portuguese_display_labels():
     assert BRMangueStudio._display_custom_behavior(studio, "mangrove") == "Fonte de mangue"
 
 
+def test_custom_mapping_mode_starts_blank_and_hides_standard_model_roles():
+    custom_classes = [{"code": 300, "name": "Waterbody", "color": "#2299aa", "behavior": "water"}]
+    studio = SimpleNamespace(
+        language_code="en",
+        custom_model_classes=custom_classes,
+        class_mapping_mode_var=SimpleNamespace(get=lambda: "custom"),
+        _custom_role_label=lambda item: f"Custom class: {item['name']}",
+        _display_role=lambda role: translate(role, "en"),
+    )
+
+    options = BRMangueStudio._role_options(studio)
+    initial_role = BRMangueStudio._initial_source_role(studio, 33)
+
+    assert options == ("Unassigned", "Exclude", "Custom class: Waterbody")
+    assert initial_role == "Unassigned"
+    assert "Water" not in options
+    assert "Mangrove" not in options
+
+
+def test_custom_mapping_mode_rejects_unassigned_codes_and_accepts_explicit_mapping():
+    with pytest.raises(ValueError, match="Unassigned codes: 5, 33"):
+        _validate_class_assignments(
+            {33: UNASSIGNED_ROLE, 5: UNASSIGNED_ROLE},
+            mode="custom",
+            custom_classes=[{"code": 300, "name": "Aquatic", "color": "#2299aa"}],
+        )
+
+    _validate_class_assignments(
+        {33: "custom:300", 5: "Exclude"},
+        mode="custom",
+        custom_classes=[{"code": 300, "name": "Aquatic", "color": "#2299aa"}],
+    )
+
+    with pytest.raises(ValueError, match="not inspected.*24"):
+        _validate_class_coverage(
+            {33: "custom:300"},
+            {"33": 2, "24": 4},
+            mode="custom",
+        )
+    _validate_class_coverage(
+        {33: "custom:300", 24: "Exclude"},
+        {"33": 2},
+        mode="custom",
+    )
+
+
 def test_saved_batch_project_runs_with_custom_model_class(tmp_path, capsys):
     land_cover = tmp_path / "land_cover.tif"
     elevation = tmp_path / "elevation.tif"
@@ -428,3 +477,48 @@ def test_saved_batch_project_runs_with_custom_model_class(tmp_path, capsys):
     assert table.loc[table.calendar_year == 2026, "state_300_agriculture_cells"].item() == 1
     with rasterio.open(output_dir / "final_usos_2026.tif") as src:
         assert src.read(1).tolist() == [[1, 300]]
+
+
+def test_saved_custom_mode_project_runs_without_standard_class_assignments(tmp_path, capsys):
+    land_cover = tmp_path / "land_cover_custom_mode.tif"
+    elevation = tmp_path / "elevation_custom_mode.tif"
+    _write_raster(land_cover, np.array([[90, 5]], dtype=np.uint8), dtype="uint8")
+    _write_raster(elevation, np.array([[50, 50]], dtype=np.float32), dtype="float32", nodata=-9999)
+    project_path = tmp_path / "custom_mode_project.json"
+    project_path.write_text(json.dumps({
+        "format": "brmangue-studio-project",
+        "version": "0.3.0",
+        "inputs": {
+            "land_cover": land_cover.name,
+            "elevation": elevation.name,
+            "mask": "",
+            "soil": "",
+        },
+        "land_cover": {"band": 1, "reference_year": 2025},
+        "class_mapping_mode": "custom",
+        "class_roles": {"90": "custom:300", "5": "Exclude"},
+        "custom_model_classes": [
+            {
+                "code": 300,
+                "name": "Surface water",
+                "color": "#2299aa",
+                "behavior": "water",
+            }
+        ],
+        "parameters": {
+            "initial_year": 2025,
+            "final_year": 2026,
+            "tide_height_m": 0,
+            "sea_level_rise_mm_per_year": 0,
+            "engine": "continuous",
+            "soil_enabled": False,
+            "allow_migration_without_soil": False,
+        },
+    }), encoding="utf-8")
+    output_dir = tmp_path / "custom_mode_output"
+
+    assert _run_batch(project_path, output_dir) == 0
+    capsys.readouterr()
+
+    with rasterio.open(output_dir / "final_usos_2026.tif") as src:
+        assert src.read(1).tolist() == [[300, 0]]
