@@ -317,11 +317,12 @@ def test_custom_model_color_is_used_in_map_palette():
     assert norm(300) == 300
 
 
-def test_transition_report_keeps_custom_source_identity_for_derived_states(tmp_path):
+def test_transition_report_keeps_custom_source_identity_for_derived_states(tmp_path, monkeypatch):
+    monkeypatch.setattr("brmangue_studio.app.TRANSITION_REPORT_CHUNK_CELLS", 1)
     land_cover = tmp_path / "land_cover.tif"
     elevation = tmp_path / "elevation.tif"
-    _write_raster(land_cover, np.array([[5, 90]], dtype=np.uint8), dtype="uint8")
-    _write_raster(elevation, np.array([[1, 1]], dtype=np.float32), dtype="float32", nodata=-9999)
+    _write_raster(land_cover, np.array([[90, 90, 90, 90]], dtype=np.uint8), dtype="uint8")
+    _write_raster(elevation, np.array([[1, 1, 1, 1]], dtype=np.float32), dtype="float32", nodata=-9999)
     inputs = load_raster_inputs(
         land_cover,
         elevation,
@@ -339,17 +340,17 @@ def test_transition_report_keeps_custom_source_identity_for_derived_states(tmp_p
         land_cover,
         1,
         inputs,
-        np.array([1, VEGETACAO_TERRESTRE_INUNDADO]),
-        {5: "Mangrove", 90: "custom:300"},
+        np.array([VEGETACAO_TERRESTRE_INUNDADO, 8, VEGETACAO_TERRESTRE_INUNDADO, 8]),
+        {90: "custom:300"},
         tmp_path / "transition.csv",
     )
 
     table = pd.read_csv(report)
-    custom_row = table.loc[table.source_land_cover_code == 90].iloc[0]
-    assert custom_row.source_custom_class == "Seasonal wetland"
-    assert custom_row.behavior_profile == "natural_vegetation"
-    assert custom_row.destination_model_state == "VEGETACAO_TERRESTRE_INUNDADO"
-    assert custom_row.destination_model_code == VEGETACAO_TERRESTRE_INUNDADO
+    custom_rows = table.loc[table.source_land_cover_code == 90]
+    assert custom_rows.source_custom_class.tolist() == ["Seasonal wetland"] * 2
+    assert custom_rows.behavior_profile.tolist() == ["natural_vegetation"] * 2
+    assert custom_rows.destination_model_code.tolist() == [8, VEGETACAO_TERRESTRE_INUNDADO]
+    assert custom_rows.cells.tolist() == [2, 2]
 
 
 def test_custom_class_mapping_accepts_portuguese_display_labels():
