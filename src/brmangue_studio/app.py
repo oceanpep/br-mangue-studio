@@ -96,6 +96,7 @@ ROLE_TO_MODEL = {
     "Water": "water",
     "Anthropized / blocked": "managed_land_use_candidate",
 }
+TRANSITION_REPORT_CHUNK_CELLS = 1_000_000
 CUSTOM_BEHAVIOR_LABELS = {
     "fixed": "Fixed class",
     "mangrove": "Mangrove source",
@@ -578,12 +579,20 @@ def _write_transition_report(
     """Relate source classes and final states, retaining custom-class identity."""
     with rasterio.open(land_cover_path) as src:
         source_codes = src.read(band)[inputs.valid_rows, inputs.valid_cols]
-    destination_codes = np.asarray(final_usos, dtype=np.int64)
-    pairs, counts = np.unique(
-        np.column_stack((source_codes.astype(np.int64), destination_codes)),
-        axis=0,
-        return_counts=True,
-    )
+    destination_codes = np.asarray(final_usos)
+    if source_codes.size != destination_codes.size:
+        raise ValueError("O raster de origem e o estado final devem ter o mesmo número de células.")
+    pair_counts: dict[tuple[int, int], int] = {}
+    pair_dtype = np.dtype([("source", np.int32), ("destination", np.int32)])
+    for start in range(0, source_codes.size, TRANSITION_REPORT_CHUNK_CELLS):
+        stop = min(start + TRANSITION_REPORT_CHUNK_CELLS, source_codes.size)
+        pair_chunk = np.empty(stop - start, dtype=pair_dtype)
+        pair_chunk["source"] = source_codes[start:stop]
+        pair_chunk["destination"] = destination_codes[start:stop]
+        pairs, counts = np.unique(pair_chunk, return_counts=True)
+        for pair, count in zip(pairs, counts):
+            key = (int(pair["source"]), int(pair["destination"]))
+            pair_counts[key] = pair_counts.get(key, 0) + int(count)
     custom_classes = {
         int(item["code"]): item
         for item in inputs.metadata.get("custom_model_classes", [])
@@ -601,9 +610,7 @@ def _write_transition_report(
         10: "VEGETACAO_TERRESTRE_INUNDADO",
     }
     rows: list[dict[str, Any]] = []
-    for (source_code, destination_code), count in zip(pairs, counts):
-        source_code = int(source_code)
-        destination_code = int(destination_code)
+    for (source_code, destination_code), count in sorted(pair_counts.items()):
         role = code_roles.get(source_code, "Unmapped")
         custom_name = ""
         behavior = ""
@@ -628,7 +635,7 @@ def _write_transition_report(
                 "behavior_profile": behavior,
                 "destination_model_state": destination,
                 "destination_model_code": destination_code,
-                "cells": int(count),
+                "cells": count,
             }
         )
     result = pd.DataFrame(
