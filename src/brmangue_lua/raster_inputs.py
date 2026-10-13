@@ -21,6 +21,7 @@ import rasterio
 from .engine import (
     AREA_ANTROPIZADA,
     BrMangueGrid,
+    CUSTOM_CLASS_BEHAVIORS,
     MAR,
     MANGUE,
     VEGETACAO_TERRESTRE,
@@ -178,7 +179,7 @@ def _build_raster_neighbors(index_grid: np.ndarray, rows: np.ndarray, cols: np.n
 def normalize_custom_model_classes(
     custom_classes: list[dict[str, Any]] | None,
 ) -> list[dict[str, Any]]:
-    """Validate project-defined, fixed model states."""
+    """Validate project-defined model states and their built-in behavior profile."""
     result: list[dict[str, Any]] = []
     used_codes: set[int] = set()
     used_names: set[str] = set()
@@ -201,6 +202,7 @@ def normalize_custom_model_classes(
             raise ValueError("O nome e a cor da classe personalizada devem ser textos.")
         name = raw_name.strip()
         color = raw_color.strip()
+        behavior = str(item.get("behavior", "fixed")).strip()
         if code <= 10 or code > MAX_CUSTOM_MODEL_STATE:
             raise ValueError(
                 f"O código da classe personalizada deve estar entre 11 e {MAX_CUSTOM_MODEL_STATE}."
@@ -215,9 +217,18 @@ def normalize_custom_model_classes(
             raise ValueError(
                 f"A cor da classe '{name}' deve estar no formato hexadecimal #RRGGBB."
             )
+        if behavior not in CUSTOM_CLASS_BEHAVIORS:
+            raise ValueError(
+                f"O perfil de comportamento da classe '{name}' não é válido."
+            )
         used_codes.add(code)
         used_names.add(name.casefold())
-        result.append({"code": code, "name": name, "color": color.lower()})
+        result.append({
+            "code": code,
+            "name": name,
+            "color": color.lower(),
+            "behavior": behavior,
+        })
     return sorted(result, key=lambda item: item["code"])
 
 
@@ -421,6 +432,10 @@ def load_raster_inputs(
             source_path=str(mapbiomas_path),
             crs_wkt=mb.crs.to_wkt() if mb.crs else None,
             custom_state_codes=tuple(item["code"] for item in custom_definitions),
+            custom_state_behaviors={
+                int(item["code"]): str(item["behavior"])
+                for item in custom_definitions
+            },
         )
         metadata = {
             "land_cover": {

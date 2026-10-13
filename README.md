@@ -42,7 +42,10 @@ for the complete compatibility notes and checksums.
   study-area mask rasters are optional.
 - Lets you map source raster codes to standard or project-defined model
   classes, with custom names and colours, and save the configuration in a
-  project. Custom classes remain fixed during a run.
+  project. Each custom class can reuse the existing rules for mangrove,
+  natural vegetation, bare soil, anthropized land, or water; fixed classes
+  remain available as well. Derived transitions are linked to their original
+  source class in the transition report.
 - Provides continuous and persistent-block processing for different raster
   sizes and memory constraints.
 - Exports annual state rasters, trajectory and transition tables, figures, and
