@@ -66,6 +66,9 @@ class PersistentBlockRunner:
     state_a: dict[str, np.memmap]
     state_b: dict[str, np.memmap]
     custom_state_codes: tuple[int, ...] = ()
+    custom_state_behaviors: dict[int, str] = field(default_factory=dict)
+    _migration_candidate_states: frozenset[int] = field(default_factory=frozenset, repr=False)
+    _migration_source_states: frozenset[int] = field(default_factory=frozenset, repr=False)
     current_slot: str = "a"
     years_completed: int = 0
     last_transition_metrics: dict[str, int] = field(default_factory=dict, init=False, repr=False)
@@ -151,6 +154,10 @@ class PersistentBlockRunner:
             "strict_lua_schema": bool(strict_lua_schema),
             "state_dtype": {name: str(dtype) for name, dtype in STATE_DTYPES.items()},
             "custom_model_state_codes": list(grid.custom_state_codes),
+            "custom_model_state_behaviors": {
+                str(code): behavior
+                for code, behavior in grid.custom_state_behaviors.items()
+            },
         }
         (root / "metadata.json").write_text(
             json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -158,6 +165,9 @@ class PersistentBlockRunner:
         # A geometria e os vetores temporários usados para construir o
         # workspace não permanecem vivos durante a simulação.
         custom_state_codes = grid.custom_state_codes
+        custom_state_behaviors = dict(grid.custom_state_behaviors)
+        migration_candidate_states = grid._migration_candidate_states
+        migration_source_states = grid._migration_source_states
         del grid
         gc.collect()
         return cls(
@@ -168,6 +178,9 @@ class PersistentBlockRunner:
             state_a=state["a"],
             state_b=state["b"],
             custom_state_codes=custom_state_codes,
+            custom_state_behaviors=custom_state_behaviors,
+            _migration_candidate_states=migration_candidate_states,
+            _migration_source_states=migration_source_states,
         )
 
     @property
@@ -192,22 +205,32 @@ class PersistentBlockRunner:
             "migrated_mangrove": int(np.count_nonzero(usos == MANGUE_MIGRADO)),
             "flooded_mangrove": int(np.count_nonzero(usos == MANGUE_INUNDADO)),
             "flooded_natural": int(np.count_nonzero(usos == VEGETACAO_TERRESTRE_INUNDADO)),
-            "min_alt2": float(np.nanmin(alt2)),
-            "max_alt2": float(np.nanmax(alt2)),
         }
         for code in self.custom_state_codes:
             summary[f"custom_{code}"] = int(np.count_nonzero(usos == code))
+        summary["min_alt2"] = float(np.nanmin(alt2))
+        summary["max_alt2"] = float(np.nanmax(alt2))
         return summary
 
     @staticmethod
-    def _apply_flooding(current_usos: np.memmap, past_usos: np.memmap, index: int) -> None:
+    def _apply_flooding(
+        current_usos: np.memmap,
+        past_usos: np.memmap,
+        index: int,
+        custom_behaviors: dict[int, str],
+    ) -> None:
         previous = int(past_usos[index])
         current_usos[index] = {
             MANGUE: MANGUE_INUNDADO,
             VEGETACAO_TERRESTRE: VEGETACAO_TERRESTRE_INUNDADO,
             AREA_ANTROPIZADA: AREA_ANTROPIZADA_INUNDADO,
             SOLO_DESCOBERTO: SOLO_DESCOBERTO_INUNDADO,
-        }.get(previous, int(current_usos[index]))
+        }.get(previous, {
+            "mangrove": MANGUE_INUNDADO,
+            "natural_vegetation": VEGETACAO_TERRESTRE_INUNDADO,
+            "bare_soil": SOLO_DESCOBERTO_INUNDADO,
+            "anthropized": AREA_ANTROPIZADA_INUNDADO,
+        }.get(custom_behaviors.get(previous), int(current_usos[index])))
 
     def step(self, time_index: int, parameters: ModelParameters) -> dict[str, int | float]:
         """Executa um passo, mantendo apenas os arrays persistentes e um bloco.
@@ -252,7 +275,7 @@ class PersistentBlockRunner:
                     age = -1
                     migration_age[index] = -1
 
-                if is_sea_or_flooded(int(past_usos[index])) and past_alt2[index] >= 0:
+                if is_sea_or_flooded(int(past_usos[index]), self.custom_state_behaviors) and past_alt2[index] >= 0:
                     lower: list[int] = []
                     for neighbor in self.neighbors[index]:
                         if neighbor >= 0 and past_alt2[neighbor] < past_alt2[index]:
@@ -262,8 +285,10 @@ class PersistentBlockRunner:
                     alt2[index] += flow
                     for neighbor in lower:
                         alt2[neighbor] += flow
-                        if not is_sea_or_flooded(int(past_usos[neighbor])):
-                            self._apply_flooding(usos, past_usos, neighbor)
+                        if not is_sea_or_flooded(int(past_usos[neighbor]), self.custom_state_behaviors):
+                            self._apply_flooding(
+                                usos, past_usos, neighbor, self.custom_state_behaviors
+                            )
 
                 soil_source = int(solos[index]) in (SOLO_MANGUE, CANAL_FLUVIAL)
                 mature_migrated_soil_source = (
@@ -274,20 +299,20 @@ class PersistentBlockRunner:
                 if soil_source or mature_migrated_soil_source:
                     for neighbor in self.neighbors[index]:
                         if neighbor >= 0 and (
-                            int(usos[neighbor]) in (VEGETACAO_TERRESTRE, SOLO_DESCOBERTO)
+                            int(usos[neighbor]) in self._migration_candidate_states
                             and int(solos[neighbor]) != SOLO_MANGUE
                             and alt2[neighbor] <= tidal_influence_zone
                         ):
                             solos[neighbor] = SOLO_MANGUE_MIGRADO
 
-                migration_source = int(usos[index]) == MANGUE or (
+                migration_source = int(usos[index]) in self._migration_source_states or (
                     int(usos[index]) == MANGUE_MIGRADO
                     and age >= parameters.migration_maturity_years
                 )
                 if migration_source:
                     for neighbor in self.neighbors[index]:
                         if neighbor >= 0 and (
-                            int(usos[neighbor]) in (VEGETACAO_TERRESTRE, SOLO_DESCOBERTO)
+                            int(usos[neighbor]) in self._migration_candidate_states
                             and alt2[neighbor] <= tidal_influence_zone
                             and (
                                 parameters.allow_migration_without_soil
@@ -303,14 +328,18 @@ class PersistentBlockRunner:
                     and int(solos[index]) == SOLO_MANGUE_MIGRADO
                 )
                 if (int(solos[index]) == SOLO_MANGUE) or (
-                    migrated_soil and not is_sea_or_flooded(int(usos[index]))
+                    migrated_soil and not is_sea_or_flooded(
+                        int(usos[index]), self.custom_state_behaviors
+                    )
                 ):
                     alt2[index] += accretion_rate_m
 
         current["usos"].flush()
         current["alt2"].flush()
         current["classe_solos"].flush()
-        self.last_transition_metrics = mangrove_extent_metrics(past_usos, usos)
+        self.last_transition_metrics = mangrove_extent_metrics(
+            past_usos, usos, self.custom_state_behaviors
+        )
         self.current_slot = "b" if self.current_slot == "a" else "a"
         self.years_completed += 1
         return self.summary()

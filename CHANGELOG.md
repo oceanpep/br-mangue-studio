@@ -20,12 +20,14 @@ All notable changes to BR-MANGUE Studio are recorded here.
 - Added `migration_maturity_years` to project files, command-line execution,
   run metadata, and the user manual.
 
-## [Unreleased]
+## [1.2.0] — 2026-10-12
 
 - Added optional project-defined classes to the class-mapping tab. Users can
-  name and colour additional fixed states, map source raster codes to them, and
-  retain them in continuous and persistent-block runs, maps, GeoTIFFs, project
-  files, metadata, and simulation tables.
+  name and colour additional states and select an existing behavior profile
+  for mangrove, natural vegetation, bare soil, anthropized land, or water.
+  Continuous and persistent-block engines apply the same migration, flooding,
+  and flow rules. Project files and metadata retain the selected profile, and
+  transition reports identify custom source classes after a derived transition.
 
 ## [1.0.0] — 2026-09-21
 
