@@ -1,9 +1,13 @@
 import numpy as np
+import pytest
 import rasterio
 from rasterio.transform import from_origin
 
 from brmangue_lua.engine import MANGUE, MAR, VEGETACAO_TERRESTRE
-from brmangue_lua.raster_inputs import load_raster_inputs
+from brmangue_lua.raster_inputs import (
+    load_raster_inputs,
+    normalize_custom_model_classes,
+)
 
 
 def _write_raster(path, data, *, dtype, nodata=0):
@@ -85,3 +89,99 @@ def test_raster_loader_ignores_unmasked_nan_in_categorical_raster(tmp_path):
     assert "nan" not in inputs.metadata["land_cover"]["mapping"]["source_code_counts_valid"]
     assert inputs.grid.class_counts()["mangrove"] == 1
     assert inputs.grid.class_counts()["sea"] == 1
+
+
+def test_custom_model_class_maps_source_code_and_exports_wide_state(tmp_path):
+    land_cover = tmp_path / "land_cover.tif"
+    elevation = tmp_path / "elevation.tif"
+    _write_raster(land_cover, np.array([[5, 90]], dtype=np.uint8), dtype="uint8")
+    _write_raster(elevation, np.array([[50, 50]], dtype=np.float32), dtype="float32", nodata=-9999)
+
+    inputs = load_raster_inputs(
+        land_cover,
+        elevation,
+        soil_enabled=False,
+        custom_class_mapping={300: [90]},
+        custom_classes=[{"code": 300, "name": "Agriculture", "color": "#C08020"}],
+    )
+
+    assert inputs.grid.usos.tolist() == [1, 300]
+    assert inputs.grid.custom_state_codes == (300,)
+    assert inputs.grid.class_counts()["custom_300"] == 1
+    assert inputs.metadata["custom_model_classes"] == [
+        {"code": 300, "name": "Agriculture", "color": "#c08020", "behavior": "fixed"}
+    ]
+    assert inputs.metadata["land_cover"]["mapping"]["source_to_model"]["custom_300"] == [90]
+
+    output = inputs.write_state_raster(inputs.grid.usos, tmp_path / "state.tif", year=2025)
+    with rasterio.open(output) as src:
+        assert src.dtypes == ("uint16",)
+        assert src.read(1).tolist() == [[1, 300]]
+        assert src.tags()["custom_model_classes"] == (
+            '[{"code": 300, "name": "Agriculture", "color": "#c08020", "behavior": "fixed"}]'
+        )
+
+
+def test_custom_model_classes_validate_codes_names_and_colors():
+    normalized = normalize_custom_model_classes([
+        {"code": 12, "name": " Wetland ", "color": "#AABBCC"},
+    ])
+    assert normalized == [{
+        "code": 12,
+        "name": "Wetland",
+        "color": "#aabbcc",
+        "behavior": "fixed",
+    }]
+
+    configured = normalize_custom_model_classes([
+        {
+            "code": 300,
+            "name": "Salt marsh",
+            "color": "#123456",
+            "behavior": "natural_vegetation",
+        },
+    ])
+    assert configured[0]["behavior"] == "natural_vegetation"
+
+    with pytest.raises(ValueError, match="repetido"):
+        normalize_custom_model_classes([
+            {"code": 11, "name": "Forest", "color": "#112233"},
+            {"code": 12, "name": "forest", "color": "#445566"},
+        ])
+    with pytest.raises(ValueError, match="formato hexadecimal"):
+        normalize_custom_model_classes([
+            {"code": 11, "name": "Forest", "color": "green"},
+        ])
+    with pytest.raises(ValueError, match="entre 11"):
+        normalize_custom_model_classes([
+            {"code": 10, "name": "Forest", "color": "#112233"},
+        ])
+    with pytest.raises(ValueError, match="número inteiro"):
+        normalize_custom_model_classes([
+            {"code": 11.5, "name": "Forest", "color": "#112233"},
+        ])
+    with pytest.raises(ValueError, match="perfil de comportamento"):
+        normalize_custom_model_classes([
+            {
+                "code": 11,
+                "name": "Forest",
+                "color": "#112233",
+                "behavior": "new_unreviewed_rule",
+            },
+        ])
+
+
+def test_custom_source_class_cannot_overlap_default_mapping(tmp_path):
+    land_cover = tmp_path / "land_cover.tif"
+    elevation = tmp_path / "elevation.tif"
+    _write_raster(land_cover, np.array([[5]], dtype=np.uint8), dtype="uint8")
+    _write_raster(elevation, np.array([[50]], dtype=np.float32), dtype="float32", nodata=-9999)
+
+    with pytest.raises(ValueError, match="atribuído a mais de uma classe"):
+        load_raster_inputs(
+            land_cover,
+            elevation,
+            soil_enabled=False,
+            custom_class_mapping={300: [5]},
+            custom_classes=[{"code": 300, "name": "Custom", "color": "#112233"}],
+        )
