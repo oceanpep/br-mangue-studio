@@ -65,6 +65,7 @@ class PersistentBlockRunner:
     neighbors: np.memmap
     state_a: dict[str, np.memmap]
     state_b: dict[str, np.memmap]
+    custom_state_codes: tuple[int, ...] = ()
     current_slot: str = "a"
     years_completed: int = 0
     last_transition_metrics: dict[str, int] = field(default_factory=dict, init=False, repr=False)
@@ -149,12 +150,14 @@ class PersistentBlockRunner:
             "neighbor_count": 8,
             "strict_lua_schema": bool(strict_lua_schema),
             "state_dtype": {name: str(dtype) for name, dtype in STATE_DTYPES.items()},
+            "custom_model_state_codes": list(grid.custom_state_codes),
         }
         (root / "metadata.json").write_text(
             json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         # A geometria e os vetores temporários usados para construir o
         # workspace não permanecem vivos durante a simulação.
+        custom_state_codes = grid.custom_state_codes
         del grid
         gc.collect()
         return cls(
@@ -164,6 +167,7 @@ class PersistentBlockRunner:
             neighbors=neighbors,
             state_a=state["a"],
             state_b=state["b"],
+            custom_state_codes=custom_state_codes,
         )
 
     @property
@@ -177,7 +181,7 @@ class PersistentBlockRunner:
     def summary(self) -> dict[str, int | float]:
         usos = self.current["usos"]
         alt2 = self.current["alt2"]
-        return {
+        summary: dict[str, int | float] = {
             "mangrove": int(np.count_nonzero(usos == MANGUE)),
             "vegetation": int(np.count_nonzero(usos == VEGETACAO_TERRESTRE)),
             "sea": int(np.count_nonzero(usos == MAR)),
@@ -191,6 +195,9 @@ class PersistentBlockRunner:
             "min_alt2": float(np.nanmin(alt2)),
             "max_alt2": float(np.nanmax(alt2)),
         }
+        for code in self.custom_state_codes:
+            summary[f"custom_{code}"] = int(np.count_nonzero(usos == code))
+        return summary
 
     @staticmethod
     def _apply_flooding(current_usos: np.memmap, past_usos: np.memmap, index: int) -> None:

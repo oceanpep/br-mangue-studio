@@ -22,6 +22,11 @@ All notable changes to BR-MANGUE Studio are recorded here.
 
 ## [Unreleased]
 
+- Added optional project-defined classes to the class-mapping tab. Users can
+  name and colour additional fixed states, map source raster codes to them, and
+  retain them in continuous and persistent-block runs, maps, GeoTIFFs, project
+  files, metadata, and simulation tables.
+
 ## [1.0.0] — 2026-09-21
 
 This release consolidates the Python desktop application for the BR-MANGUE
