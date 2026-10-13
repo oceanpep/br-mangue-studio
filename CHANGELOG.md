@@ -28,6 +28,10 @@ All notable changes to BR-MANGUE Studio are recorded here.
   Continuous and persistent-block engines apply the same migration, flooding,
   and flow rules. Project files and metadata retain the selected profile, and
   transition reports identify custom source classes after a derived transition.
+- Added a fully user-defined mapping mode. It hides the standard model classes,
+  starts every source code unassigned, and requires each code to be mapped to a
+  named class and behavior profile or explicitly excluded. The selected mode is
+  saved with the project; older projects continue to use standard mapping.
 
 ## [1.0.0] — 2026-09-21
 
