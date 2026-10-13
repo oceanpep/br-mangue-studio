@@ -1,149 +1,67 @@
 ---
-title: "BR-MANGUE Studio: an accessible and reproducible cellular model for exploring mangrove response to sea-level rise"
+title: "BR-MANGUE Studio: a raster-based cellular model for mangrove response to sea-level rise"
 tags:
   - cellular automata
   - mangrove modelling
   - sea-level rise
-  - coastal change
   - geospatial raster
   - environmental modelling
 authors:
   - name: Felipe Martins Sousa
     affiliation: "1"
   - name: Denilson da Silva Bezerra
-    affiliation: "2"
+    affiliation: "1"
+  - name: Sergio Souza Costa
+    affiliation: "1"
+  - name: Ricardo Luvizotto Santos
+    affiliation: "1"
 affiliations:
-  - name: Universidade Federal do Maranhão, Brazil
+  - name: Universidade Federal do Maranhão, Programa de Pós-Graduação em Ciência e Tecnologia Ambiental, Brazil
     index: 1
-  - name: Instituto Nacional de Pesquisas Espaciais, Brazil
-    index: 2
-date: 1 October 2026
+date: 12 October 2026
 bibliography: paper.bib
 ---
 
 # Summary
 
-BR-MANGUE Studio is a desktop research application for exploring how mangrove
-landscapes may respond to scenarios of coastal sea-level rise [@brmangue2026].
-It represents a landscape as a raster grid, assigns a state to each valid cell,
-and applies local transition rules year by year. Researchers can load a categorical
-land-cover GeoTIFF and an aligned elevation raster, map source codes to model
-roles, configure a scenario, and inspect annual maps, trajectories, transition
-tables, resource diagnostics, and animations. A standalone Windows application
-and a Linux x86_64 research preview provide ready-to-run interfaces, while the
-Python package exposes the model and raster runner for reproducible
-computational workflows. Both desktop builds bundle the Python runtime and
-project libraries; users still provide their own input rasters and a compatible
-operating-system environment.
+BR-MANGUE Studio is desktop and Python software for building, running, and inspecting spatial cellular-automaton simulations of mangrove response to coastal sea-level rise [@brmangue2026]. It reads categorical land-cover and elevation rasters, lets users map source codes to model classes, and applies annual transition rules across a raster grid. Users can inspect annual maps, trajectories, class transitions, and run metadata. The software provides a graphical interface for Windows and Linux, a command-line raster runner, and a Python package. Packaged applications include the Python runtime and required project libraries; users supply their own input data. English and Brazilian Portuguese are available in the interface.
 
 # Statement of need
 
-Mangroves occupy complex coastal landscapes in which small differences in
-elevation, adjacency, land cover, and human occupation affect the space
-available for future migration. Spatially explicit cellular models are useful
-for making these local assumptions visible and for testing alternative
-scenarios. The original BR-MANGUE formulation demonstrated this approach for
-Maranhão Island, Brazil, using a cellular automaton to explore sea-level-rise
-impacts and mangrove migration near anthropic barriers [@bezerra2014].
+Mangrove response to sea-level rise depends on spatially explicit interactions among land cover, elevation, inundation, neighbourhood conditions, and barriers to migration. The original BR-MANGUE model used cellular automata to represent these interactions and explore mangrove response on Maranhão Island [@bezerra2014]. Researchers who reuse this approach need to prepare raster inputs, configure model classes and parameters, run simulations, and trace how outputs were produced. A research workflow that exposes these choices is useful for testing assumptions and comparing scenarios.
 
-Researchers who want to reuse that formulation face practical barriers: input
-data must be converted to a particular grid schema, the original workflow is
-not convenient for users unfamiliar with its development environment, and
-large raster domains require an explicit memory strategy. BR-MANGUE Studio
-addresses this gap by combining an input-validation workflow, explicit class
-mapping, annual state outputs, a continuous executor, a persistent block
-executor, and graphical Windows and Linux distributions. It is intended for coastal
-scientists, geographers, environmental modellers, students, and research
-groups that need to inspect assumptions rather than receive an opaque final
-map. The application also exports ordinary GeoTIFF, CSV, and spreadsheet
-products, so results can be checked in familiar tools and incorporated into
-existing geographic-information workflows without requiring a new data
-format.
+BR-MANGUE Studio addresses this need with raster validation, configurable class mapping, annual simulation, two execution engines, and standard geospatial and tabular outputs. It is intended for coastal researchers, geographers, environmental modellers, students, and research groups that need an inspectable workflow for spatial scenarios. The software accepts provider-independent, aligned raster inputs rather than requiring a particular land-cover or elevation product.
 
 # State of the field
 
-General-purpose GIS software can reclassify rasters and perform map algebra,
-but it does not by itself provide the BR-MANGUE state-transition semantics,
-annual transition reports, or a direct comparison between in-memory and
-persistent-block execution. The Studio builds on established cellular-automata
-ideas [@wolfram1983] and interoperable geospatial raster tooling [@gdal2020].
-General cellular-automata frameworks offer more flexibility, but require users
-to implement the mangrove-specific states, neighbourhood rules, input schema,
-and output audit trail. Large-scale geospatial platforms such as Earth Engine
-address a different, cloud-oriented workflow [@gorelick2017]. BR-MANGUE Studio is
-therefore a domain-specific, provider-independent implementation rather than
-a replacement for GIS or a general cellular-automata framework. Building a
-focused tool was appropriate because the research contribution is the
-reproducible packaging of the documented BR-MANGUE rules and workflow, not a
-new generic CA language.
+The BR-MANGUE formulation has previously been implemented as a cellular model and later parallelized with MPI and CUDA for high-performance computing [@bezerra2014; @carreirofilho2022]. BR-MANGUE Studio continues this research line in a Python-based desktop and raster workflow; it does not claim a new transition theory or replace the earlier parallel implementation. It adds input validation, configurable class mapping, annual output and run provenance, alongside continuous and persistent-block execution.
+
+General cellular-modelling environments such as TerraME provide flexible tools for implementing spatial and multi-paradigm models [@carneiro2013], while GDAL supports interoperable raster and vector data access [@gdal2026]. These tools are broader in scope. BR-MANGUE Studio packages the BR-MANGUE states and workflow in a focused application that can be used without implementing the model infrastructure from scratch. The contribution is the integrated, reusable implementation and its reproducible raster workflow, built on established geospatial libraries and cellular-automaton concepts [@wolfram1983].
 
 # Software design
 
-The implementation separates four concerns: (1) raster validation and
-compaction into a valid-cell grid; (2) model states, attributes, and Moore
-neighbourhood rules; (3) annual execution and persistent block storage; and
-(4) user-interface visualisation and provenance outputs. This separation keeps
-the scientific transition rules testable without requiring the desktop
-interface and allows the same input metadata to be used in continuous and
-block runs.
+The software separates raster preparation, model state and transition rules, simulation execution, and output generation. During preparation, aligned rasters are validated and valid cells are represented in a compact grid with neighbourhood indices. The model updates cell states annually from their current attributes, neighbourhood, and scenario parameters. Outputs include GeoTIFF states, trajectory and transition tables, run parameters, input hashes, timing, and available resource measurements.
 
-The continuous engine keeps active arrays in memory and avoids persistent
-block I/O. The block engine alternates persistent state arrays and traverses a
-configurable number of cells at a time. The second option can run domains that
-are unsafe to materialise in RAM, at the cost of storage operations. Both
-engines record the engine, input hashes, parameters, annual trajectories,
-resource samples, and output manifest so that speed claims can be separated
-from scientific equivalence. Optional CRS reprojection writes aligned copies
-without modifying source rasters.
+The class-mapping interface lets users define additional model classes by name and colour, assign raster source codes, and select a behavior profile. Profiles reuse the implemented rules for a fixed class, mangrove source, natural vegetation, bare soil, anthropized land, or water; they do not add new transition equations. The continuous and persistent-block engines apply the selected migration, flooding, and flow behavior consistently. When a custom class changes to a derived state, run metadata retains its name and profile, and the transition report links its source raster code to the final model state. Projects created before profiles were introduced retain their previous fixed-state behavior.
+
+Users can choose either standard mapping or a fully user-defined mapping mode. In the latter, built-in category choices are hidden and source codes start unassigned; each code must be associated with a named class and behavior profile or explicitly excluded before the inputs are loaded. This supports grouping source categories such as rivers, lakes, and lagoons under a shared water profile while preserving the user-defined class identity in project metadata and transition reports. The selected mode and assignments are saved with the project.
+
+The repository includes automated unit and raster-workflow tests, user documentation, and continuous integration across supported Python versions.
+
+The continuous engine keeps the model state in memory and avoids persistent state-file access. The persistent-block engine stores state and neighbourhood arrays in disk-backed memory maps and updates a configurable slice of cells at a time. It reduces resident state during simulation and can lower memory pressure, at the cost of storage space and additional I/O. Both engines load and prepare the input grid before simulation; the block engine therefore still requires sufficient memory during preparation and is not an out-of-core raster reader. Their outputs can be compared cell by cell to check computational equivalence. Optional reprojection creates aligned copies and leaves source rasters unchanged.
 
 # Research impact statement
 
-The project provides a reproducible implementation of a published mangrove
-cellular-model formulation and makes it usable with modern aligned raster
-datasets. Verification includes automated rule and raster tests, a long-horizon
-continuous-versus-block comparison on 2,337,998 valid raster cells, and a
-one-step CMMA comparison on 78,007,000 active cells. In the unmasked Ilha do
-Maranhão raster extent, both Linux engines completed 75 steps from 2025 to
-2100, processing 175,349,850 cell updates each. The initial state and all 75
-annual output rasters (2026–2100), as well as state and transition metrics,
-were identical cell by cell. Continuous mode took 567.5 s, and 10,000-cell
-blocks took 1,417.1 s; peak process RSS was 545 and 567 MB, respectively. The
-same inputs were also reprojected to EPSG:31983 and aligned; a one-step run on
-the prepared copies matched between engines. An archived CMMA one-step
-comparison reported identical final rasters and trajectories; it took 123.6 s
-in continuous mode and 476.7 s in persistent blocks of 10,000 cells, without
-annual raster export.
+The software has been used by its developers to exercise both engines on geospatial input and to measure computational capacity. In a 75-step raster workflow with 2,337,998 valid cells, the continuous and block engines produced identical annual states and trajectory metrics. The input extent was the valid rectangular overlap of the rasters without a study-area mask; this is a software verification run, not an ecological assessment.
 
-Separate Windows archives record 76 steps from 2024 to 2100 on 78,007,309
-valid cells, with annual rasters for 2025–2100. They report 13,921 s for
-continuous mode and 15,065 s for 1,000,000-cell blocks (about 8 h combined),
-with peak process RSS of 5.02 and 5.81 GB, respectively. The two runs used
-different source-class mappings: codes 3 and 4, and codes 23 and 32, were
-assigned to different model classes; the block metadata also omits the
-migration-maturity parameter. These runs therefore provide descriptive
-timings, not a controlled engine-equivalence comparison. The archives do not
-identify the Windows version, processor, or source revision. A Linux x86_64
-executable started successfully on Ubuntu 26.04.1 LTS. The raster tests used
-the project runner and an unmasked rectangular raster extent, so they provide
-software verification and performance evidence, not independent ecological
-validation. The repository includes automated tests, a user manual, benchmark
-records, platform builds, and run-level metadata.
+A separate five-step synthetic capacity run used 160,000,000 valid cells (10,000 × 16,000) and disabled annual state export. On Ubuntu 26.04.1 LTS, an Intel Core i3-1215U with 8 logical CPUs and 20.1 GB of DDR4-3200 memory, the continuous engine processed 800,000,000 cell updates in 2,195.8 s, or 364,334 cell updates per second. Peak RSS during the measured simulation was 9.07 GiB; an external monitor recorded 12.65 GiB including input loading. The CPU's advertised maximum frequency is 4.4 GHz; its frequency during the run was not measured. The synthetic rasters have arbitrary spatial coordinates and no geographic or ecological interpretation. Attempts at 180, 200, and 240 million cells were stopped by a system-memory safety guard before completion. These were not completed simulations or software failures. Each size was run once, so the result is a measured capacity example for this computer, not a universal limit or comparative performance claim. The repository contains the benchmark configuration, run metadata, resource samples, and trajectory under `docs/benchmarks/capacity_tests/`.
 
 # AI usage disclosure
 
-OpenAI Codex (GPT-6, accessed 1 October 2026) assisted with code and test
-review, benchmark-record analysis, and revisions to project documentation and
-this manuscript. Earlier project work also used generative AI for reference
-discovery and draft structuring; the authors must confirm the tool and model
-versions used for those earlier tasks before submission. The authors are
-responsible for verifying AI-assisted text, references, code, and results and
-for all scientific, technical, authorship, and licensing decisions.
+Consensus and Connected Papers were used to discover relevant literature. ChatGPT and Codex, using the model families Sol, Luna, and Astra, assisted with Python development, model structuring, code and test review, benchmark-record analysis, and drafting and editing project documentation and this paper. The project records identify the model families but do not retain build-specific version identifiers. The authors made the core scientific and design decisions and are responsible for reviewing and validating AI-assisted code, text, references, and results before submission.
 
 # Acknowledgements
 
-The project was developed from the BR-MANGUE model formulation and the
-coastal-mangrove modelling work of Bezerra and collaborators. The authors
-acknowledge the GEOTAM laboratory and the Universidade Federal do Maranhão
-for the research context in which the Studio is being developed.
+This study was financed in part by the Coordenação de Aperfeiçoamento de Pessoal de Nível Superior - Brasil (CAPES) - Finance Code 001. The authors acknowledge the GEOTAM laboratory and the Universidade Federal do Maranhão for the research context in which the software was developed.
 
 # References

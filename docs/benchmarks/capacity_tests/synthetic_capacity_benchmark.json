@@ -1,0 +1,949 @@
+{
+  "environment": {
+    "utc": "2026-10-06T20:12:43.715686+00:00",
+    "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "processor": "12th Gen Intel(R) Core(TM) i3-1215U",
+    "logical_cpus": 8,
+    "ram_bytes": 20116140032,
+    "source_tag": "v1.1.0",
+    "source_commit": "61630971869a5b9747d1b0dcf638e464446bc1b3",
+    "input_design": "synthetic grid; 30 m cells; EPSG:3857 with arbitrary origin; repeated 32-cell classes (5,11,33,15) and deterministic 0.2-9.174 m elevation pattern; all pixels valid; no ecological meaning.",
+    "duration_years": 5,
+    "annual_state_exports": false,
+    "engines": [
+      "continuous",
+      "blocks"
+    ],
+    "block_size_cells": 100000,
+    "parameters": {
+      "tide_height": 6.0,
+      "sea_level_rise_rate": 0.5,
+      "allow_migration_without_soil": true,
+      "migration_maturity_years": 1
+    },
+    "cpu_model": "12th Gen Intel(R) Core(TM) i3-1215U",
+    "os_release": "Ubuntu 26.04.1 LTS",
+    "kernel": "7.0.0-34-generic",
+    "package_versions": {
+      "numpy": "2.5.3",
+      "rasterio": "1.5.2",
+      "pandas": "3.0.6",
+      "psutil": "7.2.2",
+      "affine": "3.0.1",
+      "pyproj": "3.8.0"
+    },
+    "synthetic_source_class_mapping": {
+      "5": "mangrove",
+      "11": "natural_candidate",
+      "33": "water",
+      "15": "managed_or_blocked"
+    },
+    "hardware_specs_supplemented_after_run": {
+      "cpu_max_advertised_frequency_ghz": 4.4,
+      "cpu_frequency_during_benchmark_recorded": false,
+      "ram_type": "DDR4",
+      "ram_data_rate_mt_s": 3200,
+      "source_note": "RAM specification provided by the computer owner; neither RAM rate nor instantaneous CPU frequency was measured by the benchmark."
+    }
+  },
+  "grid_results": [
+    {
+      "shape": [
+        1024,
+        1024
+      ],
+      "cells": 1048576,
+      "land_cover_sha256": "ae96ee7ed9933ffcc7709a630c60965b153849eb36c481b5f9686494fd02e8db",
+      "dem_sha256": "1255cf4a5b3b9cf57b929ea8a999dd0f999c624305eb3aaaaf9af9776807ed69",
+      "engines": [
+        {
+          "engine": "continuous",
+          "block_size_cells": null,
+          "cells": 1048576,
+          "years": 5,
+          "initial_year": 2025,
+          "final_year": 2030,
+          "performance": {
+            "preparation_elapsed_seconds": 0.011278,
+            "simulation_elapsed_seconds": 11.166125,
+            "postprocessing_elapsed_seconds": 0.001311,
+            "total_run_elapsed_seconds": 11.178715,
+            "annual_steps": 5,
+            "cell_updates": 5242880,
+            "cell_updates_per_second": 469534.421,
+            "rss_before_bytes": 180133888,
+            "rss_after_bytes": 201621504,
+            "peak_rss_bytes": 201621504,
+            "peak_rss_gib": 0.187775,
+            "system_memory_before": {
+              "total_bytes": 20116140032,
+              "available_bytes": 7880765440,
+              "used_bytes": 12235374592,
+              "percent": 60.8
+            },
+            "system_memory_after": {
+              "total_bytes": 20116140032,
+              "available_bytes": 7968714752,
+              "used_bytes": 12147425280,
+              "percent": 60.4
+            },
+            "disk_free_before_bytes": 187426590720,
+            "disk_free_after_bytes": 187426373632,
+            "output_size_bytes": 115283,
+            "process_io_before": {
+              "read_bytes": 0,
+              "write_bytes": 53248
+            },
+            "process_io_after": {
+              "read_bytes": 0,
+              "write_bytes": 118784
+            },
+            "process_io_delta": {
+              "read_bytes": 0,
+              "write_bytes": 65536
+            },
+            "process_cpu_before": {
+              "user_seconds": 1.1,
+              "system_seconds": 0.06
+            },
+            "process_cpu_after": {
+              "user_seconds": 12.25,
+              "system_seconds": 0.07
+            },
+            "process_cpu_delta": {
+              "user_seconds": 11.15,
+              "system_seconds": 0.01
+            },
+            "resource_trace": "resource_samples.csv",
+            "resource_sample_count": 11,
+            "resource_sampling_interval_seconds": 1.0,
+            "measurement_scope": "Simulation starts after input validation, raster loading, and persistent block workspace creation. Output files are included in total run timing but not in the simulation timing."
+          },
+          "trajectory_final_row": {
+            "year": 5,
+            "calendar_year": 2030,
+            "mangrove": 251717,
+            "vegetation": 131547,
+            "sea": 262144,
+            "anthropized": 195480,
+            "bare": 0,
+            "flooded_bare": 0,
+            "flooded_anthropized": 66664,
+            "migrated_mangrove": 62656,
+            "flooded_mangrove": 10427,
+            "flooded_natural": 67941,
+            "min_alt2": 0.20000000298023224,
+            "max_alt2": 12.270000267028802,
+            "mangrove_extent": 314373,
+            "annual_gain": 11461,
+            "annual_loss": 4024,
+            "annual_net_change": 7437,
+            "step_elapsed_seconds": 2.47008,
+            "step_rss_bytes": 199794688,
+            "step_cells_per_second": 424510.938,
+            "cell_area_km2": 0.0009,
+            "mangrove_km2": 226.5453,
+            "migrated_mangrove_km2": 56.3904,
+            "flooded_mangrove_km2": 9.3843,
+            "vegetation_km2": 118.39229999999999,
+            "sea_km2": 235.9296,
+            "anthropized_km2": 175.932,
+            "bare_km2": 0.0,
+            "flooded_bare_km2": 0.0,
+            "flooded_anthropized_km2": 59.9976,
+            "flooded_natural_km2": 61.146899999999995,
+            "mangrove_extent_km2": 282.9357,
+            "annual_gain_km2": 10.3149,
+            "annual_loss_km2": 3.6216,
+            "annual_net_change_km2": 6.6933
+          },
+          "final_state_pixel_sha256": "8a68d92670a0dff93c0d9c18b9d75d7779dfb4ac99da494545f22d129f23d409",
+          "externally_sampled_peak_rss_bytes_including_load": 199794688,
+          "wall_seconds_parent_process": 11.762,
+          "stderr_tail": ""
+        },
+        {
+          "engine": "blocks",
+          "block_size_cells": 100000,
+          "cells": 1048576,
+          "years": 5,
+          "initial_year": 2025,
+          "final_year": 2030,
+          "performance": {
+            "preparation_elapsed_seconds": 1.355311,
+            "simulation_elapsed_seconds": 25.281383,
+            "postprocessing_elapsed_seconds": 0.001466,
+            "total_run_elapsed_seconds": 26.638163,
+            "annual_steps": 5,
+            "cell_updates": 5242880,
+            "cell_updates_per_second": 207381.056,
+            "rss_before_bytes": 201068544,
+            "rss_after_bytes": 146063360,
+            "peak_rss_bytes": 207269888,
+            "peak_rss_gib": 0.193035,
+            "system_memory_before": {
+              "total_bytes": 20116140032,
+              "available_bytes": 8020578304,
+              "used_bytes": 12095561728,
+              "percent": 60.1
+            },
+            "system_memory_after": {
+              "total_bytes": 20116140032,
+              "available_bytes": 8063799296,
+              "used_bytes": 12052340736,
+              "percent": 59.9
+            },
+            "disk_free_before_bytes": 187363364864,
+            "disk_free_after_bytes": 187363725312,
+            "output_size_bytes": 63030794,
+            "process_io_before": {
+              "read_bytes": 0,
+              "write_bytes": 62971904
+            },
+            "process_io_after": {
+              "read_bytes": 0,
+              "write_bytes": 130146304
+            },
+            "process_io_delta": {
+              "read_bytes": 0,
+              "write_bytes": 67174400
+            },
+            "process_cpu_before": {
+              "user_seconds": 2.37,
+              "system_seconds": 0.07
+            },
+            "process_cpu_after": {
+              "user_seconds": 28.09,
+              "system_seconds": 1.55
+            },
+            "process_cpu_delta": {
+              "user_seconds": 25.72,
+              "system_seconds": 1.48
+            },
+            "resource_trace": "resource_samples.csv",
+            "resource_sample_count": 17,
+            "resource_sampling_interval_seconds": 1.0,
+            "measurement_scope": "Simulation starts after input validation, raster loading, and persistent block workspace creation. Output files are included in total run timing but not in the simulation timing."
+          },
+          "trajectory_final_row": {
+            "year": 5,
+            "calendar_year": 2030,
+            "mangrove": 251717,
+            "vegetation": 131547,
+            "sea": 262144,
+            "anthropized": 195480,
+            "bare": 0,
+            "flooded_bare": 0,
+            "flooded_anthropized": 66664,
+            "migrated_mangrove": 62656,
+            "flooded_mangrove": 10427,
+            "flooded_natural": 67941,
+            "min_alt2": 0.20000000298023224,
+            "max_alt2": 12.270000267028802,
+            "mangrove_extent": 314373,
+            "annual_gain": 11461,
+            "annual_loss": 4024,
+            "annual_net_change": 7437,
+            "step_elapsed_seconds": 5.660219,
+            "step_rss_bytes": 207269888,
+            "step_cells_per_second": 185253.594,
+            "cell_area_km2": 0.0009,
+            "mangrove_km2": 226.5453,
+            "migrated_mangrove_km2": 56.3904,
+            "flooded_mangrove_km2": 9.3843,
+            "vegetation_km2": 118.39229999999999,
+            "sea_km2": 235.9296,
+            "anthropized_km2": 175.932,
+            "bare_km2": 0.0,
+            "flooded_bare_km2": 0.0,
+            "flooded_anthropized_km2": 59.9976,
+            "flooded_natural_km2": 61.146899999999995,
+            "mangrove_extent_km2": 282.9357,
+            "annual_gain_km2": 10.3149,
+            "annual_loss_km2": 3.6216,
+            "annual_net_change_km2": 6.6933
+          },
+          "final_state_pixel_sha256": "8a68d92670a0dff93c0d9c18b9d75d7779dfb4ac99da494545f22d129f23d409",
+          "externally_sampled_peak_rss_bytes_including_load": 243019776,
+          "wall_seconds_parent_process": 27.274,
+          "stderr_tail": ""
+        }
+      ],
+      "final_state_pixel_arrays_identical": true
+    },
+    {
+      "shape": [
+        2048,
+        2048
+      ],
+      "cells": 4194304,
+      "land_cover_sha256": "aaff701ead1371f8f05742d1e20959dbb397cd674f48c165d087e7e8885fbacc",
+      "dem_sha256": "629645f84917f1d386e71a7c6e0d983f3d327fb2a5fd6201db64525439f59fef",
+      "engines": [
+        {
+          "engine": "continuous",
+          "block_size_cells": null,
+          "cells": 4194304,
+          "years": 5,
+          "initial_year": 2025,
+          "final_year": 2030,
+          "performance": {
+            "preparation_elapsed_seconds": 0.045491,
+            "simulation_elapsed_seconds": 52.820116,
+            "postprocessing_elapsed_seconds": 0.001964,
+            "total_run_elapsed_seconds": 52.867576,
+            "annual_steps": 5,
+            "cell_updates": 20971520,
+            "cell_updates_per_second": 397036.613,
+            "rss_before_bytes": 377954304,
+            "rss_after_bytes": 422297600,
+            "peak_rss_bytes": 423301120,
+            "peak_rss_gib": 0.39423,
+            "system_memory_before": {
+              "total_bytes": 20116140032,
+              "available_bytes": 7909191680,
+              "used_bytes": 12206948352,
+              "percent": 60.7
+            },
+            "system_memory_after": {
+              "total_bytes": 20116140032,
+              "available_bytes": 7843389440,
+              "used_bytes": 12272750592,
+              "percent": 61.0
+            },
+            "disk_free_before_bytes": 187363061760,
+            "disk_free_after_bytes": 187360141312,
+            "output_size_bytes": 429568,
+            "process_io_before": {
+              "read_bytes": 0,
+              "write_bytes": 196608
+            },
+            "process_io_after": {
+              "read_bytes": 0,
+              "write_bytes": 430080
+            },
+            "process_io_delta": {
+              "read_bytes": 0,
+              "write_bytes": 233472
+            },
+            "process_cpu_before": {
+              "user_seconds": 1.56,
+              "system_seconds": 0.19
+            },
+            "process_cpu_after": {
+              "user_seconds": 54.28,
+              "system_seconds": 0.27
+            },
+            "process_cpu_delta": {
+              "user_seconds": 52.72,
+              "system_seconds": 0.08
+            },
+            "resource_trace": "resource_samples.csv",
+            "resource_sample_count": 50,
+            "resource_sampling_interval_seconds": 1.0,
+            "measurement_scope": "Simulation starts after input validation, raster loading, and persistent block workspace creation. Output files are included in total run timing but not in the simulation timing."
+          },
+          "trajectory_final_row": {
+            "year": 5,
+            "calendar_year": 2030,
+            "mangrove": 1005572,
+            "vegetation": 523673,
+            "sea": 1048576,
+            "anthropized": 777872,
+            "bare": 0,
+            "flooded_bare": 0,
+            "flooded_anthropized": 270704,
+            "migrated_mangrove": 249271,
+            "flooded_mangrove": 43004,
+            "flooded_natural": 275632,
+            "min_alt2": 0.20000000298023224,
+            "max_alt2": 12.270000267028802,
+            "mangrove_extent": 1254843,
+            "annual_gain": 46335,
+            "annual_loss": 16545,
+            "annual_net_change": 29790,
+            "step_elapsed_seconds": 12.922887,
+            "step_rss_bytes": 420511744,
+            "step_cells_per_second": 324564.002,
+            "cell_area_km2": 0.0009,
+            "mangrove_km2": 905.0147999999999,
+            "migrated_mangrove_km2": 224.3439,
+            "flooded_mangrove_km2": 38.7036,
+            "vegetation_km2": 471.3057,
+            "sea_km2": 943.7184,
+            "anthropized_km2": 700.0848,
+            "bare_km2": 0.0,
+            "flooded_bare_km2": 0.0,
+            "flooded_anthropized_km2": 243.6336,
+            "flooded_natural_km2": 248.06879999999998,
+            "mangrove_extent_km2": 1129.3587,
+            "annual_gain_km2": 41.701499999999996,
+            "annual_loss_km2": 14.8905,
+            "annual_net_change_km2": 26.811
+          },
+          "final_state_pixel_sha256": "31643fd7d7c998c7542517f443388f0d3303ee4e5d2055cb8a05e097e0f464ad",
+          "externally_sampled_peak_rss_bytes_including_load": 500154368,
+          "wall_seconds_parent_process": 54.053,
+          "stderr_tail": ""
+        },
+        {
+          "engine": "blocks",
+          "block_size_cells": 100000,
+          "cells": 4194304,
+          "years": 5,
+          "initial_year": 2025,
+          "final_year": 2030,
+          "performance": {
+            "preparation_elapsed_seconds": 6.719611,
+            "simulation_elapsed_seconds": 124.652406,
+            "postprocessing_elapsed_seconds": 0.001896,
+            "total_run_elapsed_seconds": 131.373918,
+            "annual_steps": 5,
+            "cell_updates": 20971520,
+            "cell_updates_per_second": 168239.994,
+            "rss_before_bytes": 462381056,
+            "rss_after_bytes": 237125632,
+            "peak_rss_bytes": 486965248,
+            "peak_rss_gib": 0.453522,
+            "system_memory_before": {
+              "total_bytes": 20116140032,
+              "available_bytes": 8146317312,
+              "used_bytes": 11969822720,
+              "percent": 59.5
+            },
+            "system_memory_after": {
+              "total_bytes": 20116140032,
+              "available_bytes": 8149684224,
+              "used_bytes": 11966455808,
+              "percent": 59.5
+            },
+            "disk_free_before_bytes": 187108007936,
+            "disk_free_after_bytes": 187108376576,
+            "output_size_bytes": 252089037,
+            "process_io_before": {
+              "read_bytes": 0,
+              "write_bytes": 251858944
+            },
+            "process_io_after": {
+              "read_bytes": 0,
+              "write_bytes": 593715200
+            },
+            "process_io_delta": {
+              "read_bytes": 0,
+              "write_bytes": 341856256
+            },
+            "process_cpu_before": {
+              "user_seconds": 8.17,
+              "system_seconds": 0.23
+            },
+            "process_cpu_after": {
+              "user_seconds": 136.45,
+              "system_seconds": 11.33
+            },
+            "process_cpu_delta": {
+              "user_seconds": 128.28,
+              "system_seconds": 11.1
+            },
+            "resource_trace": "resource_samples.csv",
+            "resource_sample_count": 60,
+            "resource_sampling_interval_seconds": 1.0,
+            "measurement_scope": "Simulation starts after input validation, raster loading, and persistent block workspace creation. Output files are included in total run timing but not in the simulation timing."
+          },
+          "trajectory_final_row": {
+            "year": 5,
+            "calendar_year": 2030,
+            "mangrove": 1005572,
+            "vegetation": 523673,
+            "sea": 1048576,
+            "anthropized": 777872,
+            "bare": 0,
+            "flooded_bare": 0,
+            "flooded_anthropized": 270704,
+            "migrated_mangrove": 249271,
+            "flooded_mangrove": 43004,
+            "flooded_natural": 275632,
+            "min_alt2": 0.20000000298023224,
+            "max_alt2": 12.270000267028802,
+            "mangrove_extent": 1254843,
+            "annual_gain": 46335,
+            "annual_loss": 16545,
+            "annual_net_change": 29790,
+            "step_elapsed_seconds": 27.789646,
+            "step_rss_bytes": 486965248,
+            "step_cells_per_second": 150930.458,
+            "cell_area_km2": 0.0009,
+            "mangrove_km2": 905.0147999999999,
+            "migrated_mangrove_km2": 224.3439,
+            "flooded_mangrove_km2": 38.7036,
+            "vegetation_km2": 471.3057,
+            "sea_km2": 943.7184,
+            "anthropized_km2": 700.0848,
+            "bare_km2": 0.0,
+            "flooded_bare_km2": 0.0,
+            "flooded_anthropized_km2": 243.6336,
+            "flooded_natural_km2": 248.06879999999998,
+            "mangrove_extent_km2": 1129.3587,
+            "annual_gain_km2": 41.701499999999996,
+            "annual_loss_km2": 14.8905,
+            "annual_net_change_km2": 26.811
+          },
+          "final_state_pixel_sha256": "31643fd7d7c998c7542517f443388f0d3303ee4e5d2055cb8a05e097e0f464ad",
+          "externally_sampled_peak_rss_bytes_including_load": 630161408,
+          "wall_seconds_parent_process": 132.881,
+          "stderr_tail": ""
+        }
+      ],
+      "final_state_pixel_arrays_identical": true
+    },
+    {
+      "shape": [
+        2048,
+        4096
+      ],
+      "cells": 8388608,
+      "land_cover_sha256": "27cdf7f82192364c904947fbbabbfd20d8ab11ddf2ff391f1a0629e1fc9368ab",
+      "dem_sha256": "7082c6bf224a1fc8645f45e79d678365a63961ca77a38954c2e72df01938b7a8",
+      "engines": [
+        {
+          "engine": "continuous",
+          "block_size_cells": null,
+          "cells": 8388608,
+          "years": 5,
+          "initial_year": 2025,
+          "final_year": 2030,
+          "performance": {
+            "preparation_elapsed_seconds": 0.102251,
+            "simulation_elapsed_seconds": 113.687216,
+            "postprocessing_elapsed_seconds": 0.002463,
+            "total_run_elapsed_seconds": 113.791933,
+            "annual_steps": 5,
+            "cell_updates": 41943040,
+            "cell_updates_per_second": 368933.654,
+            "rss_before_bytes": 634372096,
+            "rss_after_bytes": 669335552,
+            "peak_rss_bytes": 669335552,
+            "peak_rss_gib": 0.623367,
+            "system_memory_before": {
+              "total_bytes": 20116140032,
+              "available_bytes": 7806869504,
+              "used_bytes": 12309270528,
+              "percent": 61.2
+            },
+            "system_memory_after": {
+              "total_bytes": 20116140032,
+              "available_bytes": 7792795648,
+              "used_bytes": 12323344384,
+              "percent": 61.3
+            },
+            "disk_free_before_bytes": 187107028992,
+            "disk_free_after_bytes": 187105284096,
+            "output_size_bytes": 838144,
+            "process_io_before": {
+              "read_bytes": 0,
+              "write_bytes": 389120
+            },
+            "process_io_after": {
+              "read_bytes": 0,
+              "write_bytes": 839680
+            },
+            "process_io_delta": {
+              "read_bytes": 0,
+              "write_bytes": 450560
+            },
+            "process_cpu_before": {
+              "user_seconds": 2.35,
+              "system_seconds": 0.65
+            },
+            "process_cpu_after": {
+              "user_seconds": 115.9,
+              "system_seconds": 0.8
+            },
+            "process_cpu_delta": {
+              "user_seconds": 113.55,
+              "system_seconds": 0.15
+            },
+            "resource_trace": "resource_samples.csv",
+            "resource_sample_count": 107,
+            "resource_sampling_interval_seconds": 1.0,
+            "measurement_scope": "Simulation starts after input validation, raster loading, and persistent block workspace creation. Output files are included in total run timing but not in the simulation timing."
+          },
+          "trajectory_final_row": {
+            "year": 5,
+            "calendar_year": 2030,
+            "mangrove": 2010789,
+            "vegetation": 1046348,
+            "sea": 2097152,
+            "anthropized": 1553584,
+            "bare": 0,
+            "flooded_bare": 0,
+            "flooded_anthropized": 543568,
+            "migrated_mangrove": 499729,
+            "flooded_mangrove": 86363,
+            "flooded_natural": 551075,
+            "min_alt2": 0.20000000298023224,
+            "max_alt2": 12.270000267028802,
+            "mangrove_extent": 2510518,
+            "annual_gain": 92935,
+            "annual_loss": 33221,
+            "annual_net_change": 59714,
+            "step_elapsed_seconds": 25.391859,
+            "step_rss_bytes": 667504640,
+            "step_cells_per_second": 330366.05,
+            "cell_area_km2": 0.0009,
+            "mangrove_km2": 1809.7101,
+            "migrated_mangrove_km2": 449.7561,
+            "flooded_mangrove_km2": 77.7267,
+            "vegetation_km2": 941.7132,
+            "sea_km2": 1887.4368,
+            "anthropized_km2": 1398.2256,
+            "bare_km2": 0.0,
+            "flooded_bare_km2": 0.0,
+            "flooded_anthropized_km2": 489.21119999999996,
+            "flooded_natural_km2": 495.9675,
+            "mangrove_extent_km2": 2259.4662,
+            "annual_gain_km2": 83.6415,
+            "annual_loss_km2": 29.898899999999998,
+            "annual_net_change_km2": 53.742599999999996
+          },
+          "final_state_pixel_sha256": "f625c5da0f93cbe528cf395b0bf57e7d3f302069c781cdb52f1a7939f78867fd",
+          "externally_sampled_peak_rss_bytes_including_load": 835162112,
+          "wall_seconds_parent_process": 116.115,
+          "stderr_tail": ""
+        },
+        {
+          "engine": "blocks",
+          "block_size_cells": 100000,
+          "cells": 8388608,
+          "years": 5,
+          "initial_year": 2025,
+          "final_year": 2030,
+          "performance": {
+            "preparation_elapsed_seconds": 12.275282,
+            "simulation_elapsed_seconds": 253.609304,
+            "postprocessing_elapsed_seconds": 0.003435,
+            "total_run_elapsed_seconds": 265.888027,
+            "annual_steps": 5,
+            "cell_updates": 41943040,
+            "cell_updates_per_second": 165384.469,
+            "rss_before_bytes": 785436672,
+            "rss_after_bytes": 283906048,
+            "peak_rss_bytes": 785534976,
+            "peak_rss_gib": 0.731586,
+            "system_memory_before": {
+              "total_bytes": 20116140032,
+              "available_bytes": 8184119296,
+              "used_bytes": 11932020736,
+              "percent": 59.3
+            },
+            "system_memory_after": {
+              "total_bytes": 20116140032,
+              "available_bytes": 8042176512,
+              "used_bytes": 12073963520,
+              "percent": 60.0
+            },
+            "disk_free_before_bytes": 186601201664,
+            "disk_free_after_bytes": 186600300544,
+            "output_size_bytes": 504156767,
+            "process_io_before": {
+              "read_bytes": 0,
+              "write_bytes": 503709696
+            },
+            "process_io_after": {
+              "read_bytes": 0,
+              "write_bytes": 1314709504
+            },
+            "process_io_delta": {
+              "read_bytes": 0,
+              "write_bytes": 810999808
+            },
+            "process_cpu_before": {
+              "user_seconds": 13.93,
+              "system_seconds": 0.55
+            },
+            "process_cpu_after": {
+              "user_seconds": 274.61,
+              "system_seconds": 22.38
+            },
+            "process_cpu_delta": {
+              "user_seconds": 260.68,
+              "system_seconds": 21.83
+            },
+            "resource_trace": "resource_samples.csv",
+            "resource_sample_count": 130,
+            "resource_sampling_interval_seconds": 1.0,
+            "measurement_scope": "Simulation starts after input validation, raster loading, and persistent block workspace creation. Output files are included in total run timing but not in the simulation timing."
+          },
+          "trajectory_final_row": {
+            "year": 5,
+            "calendar_year": 2030,
+            "mangrove": 2010789,
+            "vegetation": 1046348,
+            "sea": 2097152,
+            "anthropized": 1553584,
+            "bare": 0,
+            "flooded_bare": 0,
+            "flooded_anthropized": 543568,
+            "migrated_mangrove": 499729,
+            "flooded_mangrove": 86363,
+            "flooded_natural": 551075,
+            "min_alt2": 0.20000000298023224,
+            "max_alt2": 12.270000267028802,
+            "mangrove_extent": 2510518,
+            "annual_gain": 92935,
+            "annual_loss": 33221,
+            "annual_net_change": 59714,
+            "step_elapsed_seconds": 55.905799,
+            "step_rss_bytes": 785534976,
+            "step_cells_per_second": 150048.977,
+            "cell_area_km2": 0.0009,
+            "mangrove_km2": 1809.7101,
+            "migrated_mangrove_km2": 449.7561,
+            "flooded_mangrove_km2": 77.7267,
+            "vegetation_km2": 941.7132,
+            "sea_km2": 1887.4368,
+            "anthropized_km2": 1398.2256,
+            "bare_km2": 0.0,
+            "flooded_bare_km2": 0.0,
+            "flooded_anthropized_km2": 489.21119999999996,
+            "flooded_natural_km2": 495.9675,
+            "mangrove_extent_km2": 2259.4662,
+            "annual_gain_km2": 83.6415,
+            "annual_loss_km2": 29.898899999999998,
+            "annual_net_change_km2": 53.742599999999996
+          },
+          "final_state_pixel_sha256": "f625c5da0f93cbe528cf395b0bf57e7d3f302069c781cdb52f1a7939f78867fd",
+          "externally_sampled_peak_rss_bytes_including_load": 1137770496,
+          "wall_seconds_parent_process": 268.001,
+          "stderr_tail": ""
+        }
+      ],
+      "final_state_pixel_arrays_identical": true
+    },
+    {
+      "shape": [
+        4096,
+        4096
+      ],
+      "cells": 16777216,
+      "land_cover_sha256": "3d046759829563daa8cec8fe3408953d248978489e40cf6c2dd22d70e7b3352e",
+      "dem_sha256": "e8079b27826fc274245be59b85f37e392cf8173b0ce6b08dbe1022107e75898e",
+      "engines": [
+        {
+          "engine": "continuous",
+          "block_size_cells": null,
+          "cells": 16777216,
+          "years": 5,
+          "initial_year": 2025,
+          "final_year": 2030,
+          "performance": {
+            "preparation_elapsed_seconds": 0.216328,
+            "simulation_elapsed_seconds": 228.741885,
+            "postprocessing_elapsed_seconds": 0.00233,
+            "total_run_elapsed_seconds": 228.960545,
+            "annual_steps": 5,
+            "cell_updates": 83886080,
+            "cell_updates_per_second": 366728.113,
+            "rss_before_bytes": 1171144704,
+            "rss_after_bytes": 1221672960,
+            "peak_rss_bytes": 1221672960,
+            "peak_rss_gib": 1.137772,
+            "system_memory_before": {
+              "total_bytes": 20116140032,
+              "available_bytes": 7190609920,
+              "used_bytes": 12925530112,
+              "percent": 64.3
+            },
+            "system_memory_after": {
+              "total_bytes": 20116140032,
+              "available_bytes": 7158390784,
+              "used_bytes": 12957749248,
+              "percent": 64.4
+            },
+            "disk_free_before_bytes": 186597720064,
+            "disk_free_after_bytes": 186590330880,
+            "output_size_bytes": 1668143,
+            "process_io_before": {
+              "read_bytes": 77824,
+              "write_bytes": 765952
+            },
+            "process_io_after": {
+              "read_bytes": 77824,
+              "write_bytes": 1658880
+            },
+            "process_io_delta": {
+              "read_bytes": 0,
+              "write_bytes": 892928
+            },
+            "process_cpu_before": {
+              "user_seconds": 3.76,
+              "system_seconds": 1.24
+            },
+            "process_cpu_after": {
+              "user_seconds": 232.02,
+              "system_seconds": 1.69
+            },
+            "process_cpu_delta": {
+              "user_seconds": 228.26,
+              "system_seconds": 0.45
+            },
+            "resource_trace": "resource_samples.csv",
+            "resource_sample_count": 216,
+            "resource_sampling_interval_seconds": 1.0,
+            "measurement_scope": "Simulation starts after input validation, raster loading, and persistent block workspace creation. Output files are included in total run timing but not in the simulation timing."
+          },
+          "trajectory_final_row": {
+            "year": 5,
+            "calendar_year": 2030,
+            "mangrove": 4020798,
+            "vegetation": 2088250,
+            "sea": 4194304,
+            "anthropized": 3102858,
+            "bare": 0,
+            "flooded_bare": 0,
+            "flooded_anthropized": 1091446,
+            "migrated_mangrove": 1004362,
+            "flooded_mangrove": 173506,
+            "flooded_natural": 1101692,
+            "min_alt2": 0.20000000298023224,
+            "max_alt2": 12.270000267028802,
+            "mangrove_extent": 5025160,
+            "annual_gain": 186531,
+            "annual_loss": 66726,
+            "annual_net_change": 119805,
+            "step_elapsed_seconds": 50.249404,
+            "step_rss_bytes": 1219969024,
+            "step_cells_per_second": 333878.905,
+            "cell_area_km2": 0.0009,
+            "mangrove_km2": 3618.7182,
+            "migrated_mangrove_km2": 903.9258,
+            "flooded_mangrove_km2": 156.1554,
+            "vegetation_km2": 1879.425,
+            "sea_km2": 3774.8736,
+            "anthropized_km2": 2792.5722,
+            "bare_km2": 0.0,
+            "flooded_bare_km2": 0.0,
+            "flooded_anthropized_km2": 982.3014,
+            "flooded_natural_km2": 991.5228,
+            "mangrove_extent_km2": 4522.644,
+            "annual_gain_km2": 167.87789999999998,
+            "annual_loss_km2": 60.053399999999996,
+            "annual_net_change_km2": 107.8245
+          },
+          "final_state_pixel_sha256": "e643607ffe40c1db884b3447bdffcf8de26d95d089e6e457ee114a2724305e63",
+          "externally_sampled_peak_rss_bytes_including_load": 1573388288,
+          "wall_seconds_parent_process": 233.228,
+          "stderr_tail": ""
+        },
+        {
+          "engine": "blocks",
+          "block_size_cells": 100000,
+          "cells": 16777216,
+          "years": 5,
+          "initial_year": 2025,
+          "final_year": 2030,
+          "performance": {
+            "preparation_elapsed_seconds": 26.863262,
+            "simulation_elapsed_seconds": 499.968846,
+            "postprocessing_elapsed_seconds": 0.003376,
+            "total_run_elapsed_seconds": 526.835487,
+            "annual_steps": 5,
+            "cell_updates": 83886080,
+            "cell_updates_per_second": 167782.614,
+            "rss_before_bytes": 1431891968,
+            "rss_after_bytes": 434286592,
+            "peak_rss_bytes": 1439199232,
+            "peak_rss_gib": 1.340359,
+            "system_memory_before": {
+              "total_bytes": 20116140032,
+              "available_bytes": 8062488576,
+              "used_bytes": 12053651456,
+              "percent": 59.9
+            },
+            "system_memory_after": {
+              "total_bytes": 20116140032,
+              "available_bytes": 7826898944,
+              "used_bytes": 12289241088,
+              "percent": 61.1
+            },
+            "disk_free_before_bytes": 185582358528,
+            "disk_free_after_bytes": 185579720704,
+            "output_size_bytes": 1008305425,
+            "process_io_before": {
+              "read_bytes": 0,
+              "write_bytes": 1275838464
+            },
+            "process_io_after": {
+              "read_bytes": 0,
+              "write_bytes": 3141701632
+            },
+            "process_io_delta": {
+              "read_bytes": 0,
+              "write_bytes": 1865863168
+            },
+            "process_cpu_before": {
+              "user_seconds": 28.9,
+              "system_seconds": 1.63
+            },
+            "process_cpu_after": {
+              "user_seconds": 542.37,
+              "system_seconds": 43.19
+            },
+            "process_cpu_delta": {
+              "user_seconds": 513.47,
+              "system_seconds": 41.56
+            },
+            "resource_trace": "resource_samples.csv",
+            "resource_sample_count": 271,
+            "resource_sampling_interval_seconds": 1.0,
+            "measurement_scope": "Simulation starts after input validation, raster loading, and persistent block workspace creation. Output files are included in total run timing but not in the simulation timing."
+          },
+          "trajectory_final_row": {
+            "year": 5,
+            "calendar_year": 2030,
+            "mangrove": 4020798,
+            "vegetation": 2088250,
+            "sea": 4194304,
+            "anthropized": 3102858,
+            "bare": 0,
+            "flooded_bare": 0,
+            "flooded_anthropized": 1091446,
+            "migrated_mangrove": 1004362,
+            "flooded_mangrove": 173506,
+            "flooded_natural": 1101692,
+            "min_alt2": 0.20000000298023224,
+            "max_alt2": 12.270000267028802,
+            "mangrove_extent": 5025160,
+            "annual_gain": 186531,
+            "annual_loss": 66726,
+            "annual_net_change": 119805,
+            "step_elapsed_seconds": 112.431558,
+            "step_rss_bytes": 1439199232,
+            "step_cells_per_second": 149221.592,
+            "cell_area_km2": 0.0009,
+            "mangrove_km2": 3618.7182,
+            "migrated_mangrove_km2": 903.9258,
+            "flooded_mangrove_km2": 156.1554,
+            "vegetation_km2": 1879.425,
+            "sea_km2": 3774.8736,
+            "anthropized_km2": 2792.5722,
+            "bare_km2": 0.0,
+            "flooded_bare_km2": 0.0,
+            "flooded_anthropized_km2": 982.3014,
+            "flooded_natural_km2": 991.5228,
+            "mangrove_extent_km2": 4522.644,
+            "annual_gain_km2": 167.87789999999998,
+            "annual_loss_km2": 60.053399999999996,
+            "annual_net_change_km2": 107.8245
+          },
+          "final_state_pixel_sha256": "e643607ffe40c1db884b3447bdffcf8de26d95d089e6e457ee114a2724305e63",
+          "externally_sampled_peak_rss_bytes_including_load": 2172989440,
+          "wall_seconds_parent_process": 530.749,
+          "stderr_tail": ""
+        }
+      ],
+      "final_state_pixel_arrays_identical": true
+    }
+  ],
+  "execution_completed_utc": "2026-10-06T20:37:12.784297+00:00"
+}
