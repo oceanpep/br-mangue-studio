@@ -1,0 +1,50 @@
+{
+  "started_utc": "2026-10-13T00:47:01.436289+00:00",
+  "environment": {
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "os": "Ubuntu 26.04.1 LTS",
+    "kernel": "7.0.0-34-generic",
+    "cpu_model": "12th Gen Intel(R) Core(TM) i3-1215U",
+    "logical_cpus": 8,
+    "ram_total_bytes": 20116140032,
+    "ram_available_at_start_bytes": 16800919552,
+    "swap_total_bytes": 8589930496,
+    "swap_free_at_start_bytes": 7127695360
+  },
+  "method": {
+    "source_tag": "v1.1.0",
+    "source_commit": "61630971869a5b9747d1b0dcf638e464446bc1b3",
+    "grid_shape": [
+      10000,
+      20000
+    ],
+    "cells": 200000000,
+    "years": 5,
+    "annual_state_exports": false,
+    "engine": "continuous",
+    "block_size_cells": null,
+    "safety_stop_if_ram_available_below_bytes": 1610612736,
+    "safety_stop_if_swap_free_below_bytes": 1073741824,
+    "sampling_interval_seconds": 1.0,
+    "inputs": "fully valid synthetic land-cover and DEM rasters; arbitrary EPSG:3857 grid; classes 5,11,33,15; no ecological interpretation"
+  },
+  "status": "stopped_low_available_ram",
+  "result": null,
+  "inputs": {
+    "land_cover_sha256": "5deda55b0ae1da2dedf4b9481a69841c00b1ffd7e2b7b4924aa2512d110bc3c6",
+    "dem_sha256": "8d6e0abe1d7aca5f61a4bb14b67981d2d72480cb08687eeb56b8fdfb9411ac99"
+  },
+  "started_available_after_input_generation_bytes": 15662927872,
+  "started_swap_free_after_input_generation_bytes": 7128719360,
+  "finished_utc": "2026-10-13T00:47:17.315388+00:00",
+  "return_code": -15,
+  "stop_reason": "stopped_low_available_ram",
+  "wall_seconds_until_exit": 11.121,
+  "externally_sampled_peak_rss_bytes_including_load": 14548779008,
+  "externally_sampled_peak_process_swap_bytes": 0,
+  "minimum_system_ram_available_bytes": 1418608640,
+  "minimum_system_swap_free_bytes": 7128719360,
+  "samples": 12,
+  "stdout_tail": "",
+  "stderr_tail": ""
+}

@@ -1,0 +1,47 @@
+{
+  "started_utc": "2026-10-06T22:58:27.466752+00:00",
+  "environment": {
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "os": "Ubuntu 26.04.1 LTS",
+    "kernel": "7.0.0-34-generic",
+    "cpu_model": "12th Gen Intel(R) Core(TM) i3-1215U",
+    "logical_cpus": 8,
+    "ram_total_bytes": 20116140032,
+    "ram_available_at_start_bytes": 14720806912,
+    "swap_total_bytes": 8589930496,
+    "swap_free_at_start_bytes": 1832099840
+  },
+  "method": {
+    "source_tag": "v1.1.0",
+    "source_commit": "61630971869a5b9747d1b0dcf638e464446bc1b3",
+    "grid_shape": [
+      5000,
+      8000
+    ],
+    "cells": 40000000,
+    "years": 5,
+    "annual_state_exports": false,
+    "engine": "blocks",
+    "block_size_cells": 100000,
+    "safety_stop_if_ram_available_below_bytes": 1610612736,
+    "safety_stop_if_swap_free_below_bytes": 1073741824,
+    "sampling_interval_seconds": 1.0,
+    "inputs": "fully valid synthetic land-cover and DEM rasters; arbitrary EPSG:3857 grid; classes 5,11,33,15; no ecological interpretation"
+  },
+  "status": "interrupted_before_completion",
+  "result": null,
+  "return_code": null,
+  "stop_reason": "The task turn was interrupted while this run was active; no completion metadata or final state was produced. This is not a model failure or completed benchmark.",
+  "last_observed_snapshot": {
+    "elapsed_seconds": 1576,
+    "process_rss_kib": 2839960,
+    "process_swap_kib": 0,
+    "approximate_system_ram_available": "about 13 GiB (rounded display)",
+    "final_state_available": false
+  },
+  "finished_utc": null,
+  "inputs": {
+    "land_cover_sha256": "7d75b9e94bb6a928ead701aadcdbe503899e3f67b9f867872cfbb85943badc4f",
+    "dem_sha256": "9ebc564fd73516869bd98870652213d3d339b06f7137723a9cd9fda86468ec1e"
+  }
+}

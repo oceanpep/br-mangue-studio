@@ -122,6 +122,7 @@ runtime figures are separate observations rather than a controlled comparison
 of engines.
 
 - [Benchmark and test records](docs/benchmarks/)
+- [Synthetic capacity benchmark scripts and records](docs/benchmarks/capacity_tests/README.md)
 - [Reproducibility and benchmarking protocol](docs/REPRODUCIBILITY_AND_BENCHMARKING.md)
 - [JOSS paper draft](paper.md) and [submission readiness audit](docs/JOSS_READINESS.md)
 - [Release and Zenodo checklist](docs/ZENODO_RELEASE.md)
