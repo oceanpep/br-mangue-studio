@@ -1,0 +1,308 @@
+{
+  "title": "Large-grid capacity trials for BR-MANGUE Studio (updated through 2026-10-13)",
+  "created_utc": "2026-10-13",
+  "software": {
+    "version": "1.1.0",
+    "source_commit": "61630971869a5b9747d1b0dcf638e464446bc1b3"
+  },
+  "machine": {
+    "os": "Ubuntu 26.04.1 LTS",
+    "kernel": "7.0.0-34-generic",
+    "cpu": "12th Gen Intel(R) Core(TM) i3-1215U",
+    "logical_cpus": 8,
+    "ram_bytes": 20116140032,
+    "swap_bytes": 8589930496,
+    "hardware_specs_supplemented_after_run": {
+      "cpu_max_advertised_frequency_ghz": 4.4,
+      "cpu_frequency_during_benchmark_recorded": false,
+      "ram_type": "DDR4",
+      "ram_data_rate_mt_s": 3200,
+      "source_note": "RAM specification provided by the computer owner; neither RAM rate nor instantaneous CPU frequency was measured by the benchmark."
+    }
+  },
+  "input_design": {
+    "kind": "synthetic, fully valid grids with no ecological/geographic interpretation",
+    "cell_size_m": 30,
+    "crs": "EPSG:3857 with arbitrary origin",
+    "classes": [
+      5,
+      11,
+      33,
+      15
+    ],
+    "dem_elevation_m_range": [
+      0.2,
+      9.174
+    ],
+    "annual_steps": 5,
+    "initial_year": 2025,
+    "final_year": 2030,
+    "annual_state_exports": false,
+    "parameters": {
+      "start": 1,
+      "final_time": 5,
+      "tide_height": 6.0,
+      "sea_level_rise_rate": 0.5,
+      "allow_migration_without_soil": true,
+      "migration_maturity_years": 1
+    },
+    "limitations": "One run per listed size/mode; these are engineering capacity tests, not ecological validation."
+  },
+  "safety_guards": {
+    "for_80m_ladder": "The original ladder used 1 GiB minimum available RAM. The 80M blocks run was manually stopped after swap pressure was observed, because that first guard did not consider free swap.",
+    "for_120m_and_later": "The revised monitor stopped when available RAM fell below 1.5 GiB or free swap fell below 1 GiB.",
+    "interpretation": "Guard-stopped runs are not software failures and are not counted as completed simulations. The repeated 160M run completed; 180M, 200M and 240M runs stopped at the RAM guard.",
+    "for_20261013_trials": "Each new run had a monitor sampling every second. The process was terminated when available system RAM fell below 1.5 GiB or free swap fell below 1 GiB. No run stopped by this guard is counted as a completed model simulation."
+  },
+  "runs": [
+    {
+      "cells": 80000000,
+      "shape": [
+        8000,
+        10000
+      ],
+      "engine": "continuous",
+      "status": "completed",
+      "runner_simulation_seconds": 1633.717002,
+      "runner_total_seconds": 1635.469353,
+      "wall_seconds_including_process_startup": 1671.588,
+      "cell_updates": 400000000,
+      "cell_updates_per_second": 244840.446,
+      "model_peak_rss_gib": 4.597569,
+      "externally_sampled_peak_rss_gib": 6.383,
+      "minimum_system_available_ram_gib": 2.4,
+      "final_state_sha256": "0a468c865790e0a8dcb2322950a4bc2cf7117cccba7aecae4c68e5943d0fb139",
+      "annual_outputs_written": false,
+      "input_hashes": {
+        "land_cover_sha256": "6683b5d38a09a3af75889e094ccd22ea2513b836eb9fc546fa82ace8ca50c184",
+        "dem_sha256": "f711f1fe4e65737d149a00458b634c25b4037a9ac006867ca44057aee76aefa8"
+      }
+    },
+    {
+      "cells": 80000000,
+      "shape": [
+        8000,
+        10000
+      ],
+      "engine": "blocks",
+      "block_size_cells": 100000,
+      "status": "manually_stopped_for_system_memory_safety",
+      "elapsed_before_stop_seconds": 88.116,
+      "externally_sampled_peak_rss_gib": 7.574,
+      "minimum_system_available_ram_gib": 2.627,
+      "process_swap_kib_observed": 1088200,
+      "system_swap_free_mib_approximate": 884,
+      "final_state_sha256": null,
+      "annual_outputs_written": false,
+      "model_performance_available": false,
+      "input_hashes": {
+        "land_cover_sha256": "6683b5d38a09a3af75889e094ccd22ea2513b836eb9fc546fa82ace8ca50c184",
+        "dem_sha256": "f711f1fe4e65737d149a00458b634c25b4037a9ac006867ca44057aee76aefa8"
+      }
+    },
+    {
+      "cells": 120000000,
+      "shape": [
+        10000,
+        12000
+      ],
+      "engine": "continuous",
+      "status": "completed",
+      "runner_simulation_seconds": 2467.307441,
+      "runner_total_seconds": 2469.896337,
+      "wall_seconds_including_process_startup": 2541.027,
+      "cell_updates": 600000000,
+      "cell_updates_per_second": 243180.072,
+      "model_peak_rss_gib": 6.819324,
+      "externally_sampled_peak_rss_gib": 9.499,
+      "minimum_system_available_ram_gib": 3.192,
+      "minimum_system_swap_free_gib": 2.172,
+      "process_swap_peak_gib": 0.0,
+      "final_state_sha256": "a70eeca4a79195097e4f12c7e329c1f4b64cf1a9367000db26266f15ceac17de",
+      "annual_outputs_written": false,
+      "input_hashes": {
+        "land_cover_sha256": "e686e0b75ea78751f21a5d2fe6cb77d487cdf64c55ba2baee22ebbe9237efdf3",
+        "dem_sha256": "534ad976789a3d4aa81cf3dc24f61766948e93cf47fff25e43442d26a93b5059"
+      }
+    },
+    {
+      "cells": 160000000,
+      "shape": [
+        10000,
+        16000
+      ],
+      "engine": "continuous",
+      "status": "stopped_by_ram_guard_before_valid_completion",
+      "wall_seconds_until_stop": 23.393,
+      "externally_sampled_peak_rss_gib": 12.041,
+      "minimum_system_available_ram_gib": 1.413,
+      "minimum_system_swap_free_gib": 1.684,
+      "final_state_sha256": null,
+      "annual_outputs_written": false,
+      "model_performance_available": false,
+      "safety_threshold_available_ram_gib": 1.5,
+      "input_hashes": {
+        "land_cover_sha256": "9985197c0e2cd27c4139645f20821b727d78a074bd10c82dc1b853db4ba46836",
+        "dem_sha256": "ad3a06f75f192c0f7ccb52ffd6f67bcf2fbfbcc2cb7e6b542fcb33c74351a9fd"
+      }
+    },
+    {
+      "cells": 40000000,
+      "shape": [
+        5000,
+        8000
+      ],
+      "engine": "blocks",
+      "block_size_cells": 100000,
+      "status": "interrupted_before_completion",
+      "last_observed_elapsed_seconds": 1576,
+      "last_observed_process_rss_kib": 2839960,
+      "last_observed_process_swap_kib": 0,
+      "final_state_sha256": null,
+      "annual_outputs_written": false,
+      "model_performance_available": false,
+      "input_hashes": {
+        "land_cover_sha256": "7d75b9e94bb6a928ead701aadcdbe503899e3f67b9f867872cfbb85943badc4f",
+        "dem_sha256": "9ebc564fd73516869bd98870652213d3d339b06f7137723a9cd9fda86468ec1e"
+      }
+    },
+    {
+      "cells": 160000000,
+      "shape": [
+        10000,
+        16000
+      ],
+      "engine": "continuous",
+      "block_size_cells": null,
+      "status": "completed",
+      "wall_seconds_including_process_startup": 2230.234,
+      "externally_sampled_peak_rss_gib": 12.648,
+      "minimum_system_available_ram_gib": 1.991,
+      "minimum_system_swap_free_gib": 8.0,
+      "process_swap_peak_gib": 0.0,
+      "annual_outputs_written": false,
+      "guard_stop_reason": null,
+      "final_state_sha256": "4299414c525717009e379dfca327df4fcc91ba22cc0e60910960956960ede48b",
+      "input_hashes": {
+        "land_cover_sha256": "9985197c0e2cd27c4139645f20821b727d78a074bd10c82dc1b853db4ba46836",
+        "dem_sha256": "ad3a06f75f192c0f7ccb52ffd6f67bcf2fbfbcc2cb7e6b542fcb33c74351a9fd"
+      },
+      "raw_record": "capacity_runs/raw_160m_continuous_retry_20261013.json",
+      "runner_simulation_seconds": 2195.786892,
+      "runner_total_seconds": 2197.603577,
+      "cell_updates": 800000000,
+      "cell_updates_per_second": 364334.081,
+      "model_peak_rss_gib": 9.074867,
+      "final_year": 2030,
+      "resource_samples": 2229
+    },
+    {
+      "cells": 240000000,
+      "shape": [
+        12000,
+        20000
+      ],
+      "engine": "continuous",
+      "block_size_cells": null,
+      "status": "stopped_low_available_ram",
+      "wall_seconds_including_process_startup": 17.254,
+      "externally_sampled_peak_rss_gib": 14.328,
+      "minimum_system_available_ram_gib": 1.417,
+      "minimum_system_swap_free_gib": 4.575,
+      "process_swap_peak_gib": 1.184,
+      "annual_outputs_written": false,
+      "guard_stop_reason": "stopped_low_available_ram",
+      "final_state_sha256": null,
+      "input_hashes": {
+        "land_cover_sha256": "d350f6e8af8c16f21d69acafcd1c7fc1be067f473ae654a0fa8ce331a21b7bb2",
+        "dem_sha256": "efe0094f8b29774724a1ced6f2bab3f1dfef5a310f30baf67a874f3e0317a007"
+      },
+      "raw_record": "capacity_runs/raw_240m_continuous_guard_stop_20261013.json",
+      "elapsed_before_guard_stop_seconds": 17.254,
+      "model_performance_available": false,
+      "safety_threshold_available_ram_gib": 1.5,
+      "resource_samples": 18
+    },
+    {
+      "cells": 200000000,
+      "shape": [
+        10000,
+        20000
+      ],
+      "engine": "continuous",
+      "block_size_cells": null,
+      "status": "stopped_low_available_ram",
+      "wall_seconds_including_process_startup": 11.121,
+      "externally_sampled_peak_rss_gib": 13.55,
+      "minimum_system_available_ram_gib": 1.321,
+      "minimum_system_swap_free_gib": 6.639,
+      "process_swap_peak_gib": 0.0,
+      "annual_outputs_written": false,
+      "guard_stop_reason": "stopped_low_available_ram",
+      "final_state_sha256": null,
+      "input_hashes": {
+        "land_cover_sha256": "5deda55b0ae1da2dedf4b9481a69841c00b1ffd7e2b7b4924aa2512d110bc3c6",
+        "dem_sha256": "8d6e0abe1d7aca5f61a4bb14b67981d2d72480cb08687eeb56b8fdfb9411ac99"
+      },
+      "raw_record": "capacity_runs/raw_200m_continuous_guard_stop_20261013.json",
+      "elapsed_before_guard_stop_seconds": 11.121,
+      "model_performance_available": false,
+      "safety_threshold_available_ram_gib": 1.5,
+      "resource_samples": 12
+    },
+    {
+      "cells": 180000000,
+      "shape": [
+        10000,
+        18000
+      ],
+      "engine": "continuous",
+      "block_size_cells": null,
+      "status": "stopped_low_available_ram",
+      "wall_seconds_including_process_startup": 22.129,
+      "externally_sampled_peak_rss_gib": 14.216,
+      "minimum_system_available_ram_gib": 1.499,
+      "minimum_system_swap_free_gib": 6.654,
+      "process_swap_peak_gib": 0.0,
+      "annual_outputs_written": false,
+      "guard_stop_reason": "stopped_low_available_ram",
+      "final_state_sha256": null,
+      "input_hashes": {
+        "land_cover_sha256": "db8f3a992d246c23cdb5da8be4da866bb518ca6fb50a1d68b4d2ce6101d05ce8",
+        "dem_sha256": "00db54f5a9f525f989f8af2585817ab707bb271d522624c12c1b5cf6fbb6dc05"
+      },
+      "raw_record": "capacity_runs/raw_180m_continuous_guard_stop_20261013.json",
+      "elapsed_before_guard_stop_seconds": 22.129,
+      "model_performance_available": false,
+      "safety_threshold_available_ram_gib": 1.5,
+      "resource_samples": 23
+    }
+  ],
+  "conclusion": {
+    "largest_completed_continuous_grid_in_this_series_cells": 160000000,
+    "largest_completed_blocks_grid_in_the_prior_five_year_series_cells": 16777216,
+    "tested_continuous_grid_sizes_20261013": [
+      160000000,
+      180000000,
+      200000000,
+      240000000
+    ],
+    "interpretation": "The 160M retry completed five annual steps. The 180M, 200M, and 240M attempts were stopped by the available-RAM guard before completion. Thus 160M is the largest completed grid in this series; these trials do not establish a universal software limit or an exact hardware maximum. One run was made per size, and the guarded attempts have no valid throughput or ecological results."
+  },
+  "raw_records": [
+    "capacity_runs/raw_80m_continuous_and_blocks.json",
+    "capacity_runs/raw_120m_continuous.json",
+    "capacity_runs/raw_160m_continuous_guard_stop.json",
+    "capacity_runs/raw_40m_blocks_interrupted.json",
+    "capacity_runs/raw_160m_continuous_retry_20261013.json",
+    "capacity_runs/resource_samples_160m_continuous_20261013.csv",
+    "capacity_runs/metadata_160m_continuous_20261013.json",
+    "capacity_runs/trajectory_160m_continuous_20261013.csv",
+    "capacity_runs/raw_240m_continuous_guard_stop_20261013.json",
+    "capacity_runs/resource_samples_240m_continuous_20261013.csv",
+    "capacity_runs/raw_200m_continuous_guard_stop_20261013.json",
+    "capacity_runs/resource_samples_200m_continuous_20261013.csv",
+    "capacity_runs/raw_180m_continuous_guard_stop_20261013.json",
+    "capacity_runs/resource_samples_180m_continuous_20261013.csv"
+  ]
+}

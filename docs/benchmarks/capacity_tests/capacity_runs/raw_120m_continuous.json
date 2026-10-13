@@ -1,0 +1,145 @@
+{
+  "started_utc": "2026-10-06T22:00:33.162553+00:00",
+  "environment": {
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "os": "Ubuntu 26.04.1 LTS",
+    "kernel": "7.0.0-34-generic",
+    "cpu_model": "12th Gen Intel(R) Core(TM) i3-1215U",
+    "logical_cpus": 8,
+    "ram_total_bytes": 20116140032,
+    "ram_available_at_start_bytes": 13724598272,
+    "swap_total_bytes": 8589930496,
+    "swap_free_at_start_bytes": 2861547520
+  },
+  "method": {
+    "source_tag": "v1.1.0",
+    "source_commit": "61630971869a5b9747d1b0dcf638e464446bc1b3",
+    "grid_shape": [
+      10000,
+      12000
+    ],
+    "cells": 120000000,
+    "years": 5,
+    "annual_state_exports": false,
+    "engine": "continuous",
+    "safety_stop_if_ram_available_below_bytes": 1610612736,
+    "safety_stop_if_swap_free_below_bytes": 1073741824,
+    "sampling_interval_seconds": 1.0,
+    "inputs": "fully valid synthetic land-cover and DEM rasters; arbitrary EPSG:3857 grid; classes 5,11,33,15; no ecological interpretation"
+  },
+  "status": "completed",
+  "result": {
+    "performance": {
+      "preparation_elapsed_seconds": 2.572724,
+      "simulation_elapsed_seconds": 2467.307441,
+      "postprocessing_elapsed_seconds": 0.016169,
+      "total_run_elapsed_seconds": 2469.896337,
+      "annual_steps": 5,
+      "cell_updates": 600000000,
+      "cell_updates_per_second": 243180.072,
+      "rss_before_bytes": 7319896064,
+      "rss_after_bytes": 7322193920,
+      "peak_rss_bytes": 7322193920,
+      "peak_rss_gib": 6.819324,
+      "system_memory_before": {
+        "total_bytes": 20116140032,
+        "available_bytes": 6431297536,
+        "used_bytes": 13684842496,
+        "percent": 68.0
+      },
+      "system_memory_after": {
+        "total_bytes": 20116140032,
+        "available_bytes": 5963509760,
+        "used_bytes": 14152630272,
+        "percent": 70.4
+      },
+      "disk_free_before_bytes": 182546485248,
+      "disk_free_after_bytes": 182526251008,
+      "output_size_bytes": 11561998,
+      "process_io_before": {
+        "read_bytes": 16678912,
+        "write_bytes": 5451776
+      },
+      "process_io_after": {
+        "read_bytes": 17068032,
+        "write_bytes": 11407360
+      },
+      "process_io_delta": {
+        "read_bytes": 389120,
+        "write_bytes": 5955584
+      },
+      "process_cpu_before": {
+        "user_seconds": 36.26,
+        "system_seconds": 36.44
+      },
+      "process_cpu_after": {
+        "user_seconds": 2468.55,
+        "system_seconds": 68.06
+      },
+      "process_cpu_delta": {
+        "user_seconds": 2432.29,
+        "system_seconds": 31.62
+      },
+      "resource_trace": "resource_samples.csv",
+      "resource_sample_count": 2325,
+      "resource_sampling_interval_seconds": 1.0,
+      "measurement_scope": "Simulation starts after input validation, raster loading, and persistent block workspace creation. Output files are included in total run timing but not in the simulation timing."
+    },
+    "final_state_pixel_sha256": "a70eeca4a79195097e4f12c7e329c1f4b64cf1a9367000db26266f15ceac17de",
+    "trajectory_final_row": {
+      "year": 5,
+      "calendar_year": 2030,
+      "mangrove": 28745453,
+      "vegetation": 14900320,
+      "sea": 30000128,
+      "anthropized": 22149098,
+      "bare": 0,
+      "flooded_bare": 0,
+      "flooded_anthropized": 7850518,
+      "migrated_mangrove": 7183479,
+      "flooded_mangrove": 1254675,
+      "flooded_natural": 7916329,
+      "min_alt2": 0.20000000298023224,
+      "max_alt2": 12.284000205993646,
+      "mangrove_extent": 35928932,
+      "annual_gain": 1339866,
+      "annual_loss": 482673,
+      "annual_net_change": 857193,
+      "step_elapsed_seconds": 541.018555,
+      "step_rss_bytes": 7321088000,
+      "step_cells_per_second": 221803.853,
+      "cell_area_km2": 0.0009,
+      "mangrove_km2": 25870.9077,
+      "migrated_mangrove_km2": 6465.1311,
+      "flooded_mangrove_km2": 1129.2075,
+      "vegetation_km2": 13410.288,
+      "sea_km2": 27000.1152,
+      "anthropized_km2": 19934.1882,
+      "bare_km2": 0.0,
+      "flooded_bare_km2": 0.0,
+      "flooded_anthropized_km2": 7065.4662,
+      "flooded_natural_km2": 7124.6961,
+      "mangrove_extent_km2": 32336.0388,
+      "annual_gain_km2": 1205.8794,
+      "annual_loss_km2": 434.40569999999997,
+      "annual_net_change_km2": 771.4737
+    }
+  },
+  "inputs": {
+    "land_cover_sha256": "e686e0b75ea78751f21a5d2fe6cb77d487cdf64c55ba2baee22ebbe9237efdf3",
+    "dem_sha256": "534ad976789a3d4aa81cf3dc24f61766948e93cf47fff25e43442d26a93b5059"
+  },
+  "started_available_after_input_generation_bytes": 13113348096,
+  "started_swap_free_after_input_generation_bytes": 2865991680,
+  "finished_utc": "2026-10-06T22:49:29.378204+00:00",
+  "return_code": 0,
+  "stop_reason": null,
+  "wall_seconds_until_exit": 2541.027,
+  "externally_sampled_peak_rss_bytes_including_load": 10199277568,
+  "externally_sampled_peak_process_swap_bytes": 0,
+  "minimum_system_ram_available_bytes": 3427880960,
+  "minimum_system_swap_free_bytes": 2331828224,
+  "samples": 2539,
+  "stdout_tail": "{\"engine\":\"continuous\",\"block_size_cells\":null,\"cells\":120000000,\"years\":5,\"initial_year\":2025,\"final_year\":2030,\"performance\":{\"preparation_elapsed_seconds\":2.572724,\"simulation_elapsed_seconds\":2467.307441,\"postprocessing_elapsed_seconds\":0.016169,\"total_run_elapsed_seconds\":2469.896337,\"annual_steps\":5,\"cell_updates\":600000000,\"cell_updates_per_second\":243180.072,\"rss_before_bytes\":7319896064,\"rss_after_bytes\":7322193920,\"peak_rss_bytes\":7322193920,\"peak_rss_gib\":6.819324,\"system_memory_before\":{\"total_bytes\":20116140032,\"available_bytes\":6431297536,\"used_bytes\":13684842496,\"percent\":68.0},\"system_memory_after\":{\"total_bytes\":20116140032,\"available_bytes\":5963509760,\"used_bytes\":14152630272,\"percent\":70.4},\"disk_free_before_bytes\":182546485248,\"disk_free_after_bytes\":182526251008,\"output_size_bytes\":11561998,\"process_io_before\":{\"read_bytes\":16678912,\"write_bytes\":5451776},\"process_io_after\":{\"read_bytes\":17068032,\"write_bytes\":11407360},\"process_io_delta\":{\"read_bytes\":389120,\"write_bytes\":5955584},\"process_cpu_before\":{\"user_seconds\":36.26,\"system_seconds\":36.44},\"process_cpu_after\":{\"user_seconds\":2468.55,\"system_seconds\":68.06},\"process_cpu_delta\":{\"user_seconds\":2432.29,\"system_seconds\":31.62},\"resource_trace\":\"resource_samples.csv\",\"resource_sample_count\":2325,\"resource_sampling_interval_seconds\":1.0,\"measurement_scope\":\"Simulation starts after input validation, raster loading, and persistent block workspace creation. Output files are included in total run timing but not in the simulation timing.\"},\"trajectory_final_row\":{\"year\":5,\"calendar_year\":2030,\"mangrove\":28745453,\"vegetation\":14900320,\"sea\":30000128,\"anthropized\":22149098,\"bare\":0,\"flooded_bare\":0,\"flooded_anthropized\":7850518,\"migrated_mangrove\":7183479,\"flooded_mangrove\":1254675,\"flooded_natural\":7916329,\"min_alt2\":0.20000000298023224,\"max_alt2\":12.284000205993646,\"mangrove_extent\":35928932,\"annual_gain\":1339866,\"annual_loss\":482673,\"annual_net_change\":857193,\"step_elapsed_seconds\":541.018555,\"step_rss_bytes\":7321088000,\"step_cells_per_second\":221803.853,\"cell_area_km2\":0.0009,\"mangrove_km2\":25870.9077,\"migrated_mangrove_km2\":6465.1311,\"flooded_mangrove_km2\":1129.2075,\"vegetation_km2\":13410.288,\"sea_km2\":27000.1152,\"anthropized_km2\":19934.1882,\"bare_km2\":0.0,\"flooded_bare_km2\":0.0,\"flooded_anthropized_km2\":7065.4662,\"flooded_natural_km2\":7124.6961,\"mangrove_extent_km2\":32336.0388,\"annual_gain_km2\":1205.8794,\"annual_loss_km2\":434.40569999999997,\"annual_net_change_km2\":771.4737},\"final_state_pixel_sha256\":\"a70eeca4a79195097e4f12c7e329c1f4b64cf1a9367000db26266f15ceac17de\"}\n",
+  "stderr_tail": ""
+}

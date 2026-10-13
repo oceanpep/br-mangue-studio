@@ -1,0 +1,116 @@
+{
+  "model": "BRMANGUE raster runner",
+  "status": "computational_demonstration_without_predictive_validity",
+  "initial_calendar_year": 2025,
+  "final_calendar_year": 2030,
+  "engine": "continuous",
+  "dissmodel_runner": null,
+  "block_size": null,
+  "save_annual_states": false,
+  "parameters": {
+    "start": 1,
+    "final_time": 5,
+    "area_cell": 0.09,
+    "tide_height": 6.0,
+    "sea_level_rise_rate": 0.5,
+    "legacy_lua_accretion_typo": true,
+    "allow_migration_without_soil": true,
+    "accretion_rate_mm": null,
+    "migration_maturity_years": 1
+  },
+  "cells": 160000000,
+  "cell_area_km2": 0.0009,
+  "area_conversion": "Projected CRS linear units converted to square kilometres",
+  "initial_class_counts": {
+    "mangrove": 40000000,
+    "vegetation": 40000000,
+    "sea": 40000000,
+    "anthropized": 40000000,
+    "bare": 0,
+    "flooded_bare": 0,
+    "flooded_anthropized": 0,
+    "migrated_mangrove": 0,
+    "flooded_mangrove": 0,
+    "flooded_natural": 0
+  },
+  "final_class_counts": {
+    "mangrove": 38327050,
+    "vegetation": 19863583,
+    "sea": 40000000,
+    "anthropized": 29528361,
+    "bare": 0,
+    "flooded_bare": 0,
+    "flooded_anthropized": 10471639,
+    "migrated_mangrove": 9585894,
+    "flooded_mangrove": 1672950,
+    "flooded_natural": 10550523
+  },
+  "elapsed_seconds": 2195.786892,
+  "rss_before_bytes": 9741385728,
+  "peak_rss_bytes": 9744064512,
+  "performance": {
+    "preparation_elapsed_seconds": 1.808269,
+    "simulation_elapsed_seconds": 2195.786892,
+    "postprocessing_elapsed_seconds": 0.008413,
+    "total_run_elapsed_seconds": 2197.603577,
+    "annual_steps": 5,
+    "cell_updates": 800000000,
+    "cell_updates_per_second": 364334.081,
+    "rss_before_bytes": 9741385728,
+    "rss_after_bytes": 9744064512,
+    "peak_rss_bytes": 9744064512,
+    "peak_rss_gib": 9.074867,
+    "system_memory_before": {
+      "total_bytes": 20116140032,
+      "available_bytes": 5981700096,
+      "used_bytes": 14134439936,
+      "percent": 70.3
+    },
+    "system_memory_after": {
+      "total_bytes": 20116140032,
+      "available_bytes": 5937004544,
+      "used_bytes": 14179135488,
+      "percent": 70.5
+    },
+    "disk_free_before_bytes": 179911200768,
+    "disk_free_after_bytes": 180298260480,
+    "output_size_bytes": 15253674,
+    "process_io_before": {
+      "read_bytes": 8192,
+      "write_bytes": 7266304
+    },
+    "process_io_after": {
+      "read_bytes": 12288,
+      "write_bytes": 15114240
+    },
+    "process_io_delta": {
+      "read_bytes": 4096,
+      "write_bytes": 7847936
+    },
+    "process_cpu_before": {
+      "user_seconds": 26.42,
+      "system_seconds": 7.79
+    },
+    "process_cpu_after": {
+      "user_seconds": 2217.18,
+      "system_seconds": 12.27
+    },
+    "process_cpu_delta": {
+      "user_seconds": 2190.76,
+      "system_seconds": 4.48
+    },
+    "resource_trace": "resource_samples.csv",
+    "resource_sample_count": 2066,
+    "resource_sampling_interval_seconds": 1.0,
+    "measurement_scope": "Simulation starts after input validation, raster loading, and persistent block workspace creation. Output files are included in total run timing but not in the simulation timing."
+  },
+  "block_input_materialization": {
+    "input_grid_released_after_persistent_copy": false,
+    "reopened_for_postprocessing": false,
+    "memory_note": null
+  },
+  "soil_enabled": false,
+  "migration_without_soil": true,
+  "soil_behavior_when_disabled": "land-cover fallback enables migration to vegetation or bare soil; soil-dependent accretion remains inactive; flooding remains active",
+  "input_metadata": "input_metadata.json"
+}
