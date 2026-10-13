@@ -159,6 +159,16 @@ selecione o perfil de comportamento e atribua à classe os códigos
 correspondentes do raster de origem. Cada perfil reutiliza as regras de uma
 categoria do modelo:
 
+O seletor **Mapping mode** oferece dois fluxos. **Use standard model classes**
+mantém as categorias padrão disponíveis. Em **Define my own classes**, os
+códigos do raster começam como **Unassigned** e as categorias padrão deixam de
+aparecer nas opções. Adicione cada classe com nome, cor e perfil; depois associe
+os códigos correspondentes do raster a ela. Por exemplo, códigos de rios, lagos
+e lagunas podem ser associados a uma classe criada pelo usuário com perfil
+**Water body**. Códigos que não participarão da simulação devem ser marcados
+explicitamente como **Exclude**. O Studio não carrega o raster enquanto houver
+códigos sem atribuição e salva o modo escolhido no projeto.
+
 | Perfil | Comportamento durante a simulação |
 |---|---|
 | **Fixed class** | Mantém o código personalizado, sem transições dinâmicas. |

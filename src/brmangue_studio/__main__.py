@@ -33,6 +33,8 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
         _generate_annual_figures,
         _generate_animation,
         _generate_component_animations,
+        _validate_class_assignments,
+        _validate_class_coverage,
         _write_simulation_spreadsheet,
         _write_transition_report,
     )
@@ -69,6 +71,11 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
     custom_classes = normalize_custom_model_classes(
         config.get("custom_model_classes", [])
     )
+    _validate_class_assignments(
+        roles,
+        mode=config.get("class_mapping_mode", "standard"),
+        custom_classes=custom_classes,
+    )
 
     params_config = config.get("parameters", {})
     initial_year = int(params_config.get("initial_year", 2025))
@@ -88,6 +95,11 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
         custom_class_mapping=custom_mapping,
         custom_classes=custom_classes,
         exclude_source_codes=excluded,
+    )
+    _validate_class_coverage(
+        roles,
+        inputs.metadata["land_cover"]["mapping"]["source_code_counts_valid"],
+        mode=config.get("class_mapping_mode", "standard"),
     )
     parameters = ModelParameters(
         start=1,
