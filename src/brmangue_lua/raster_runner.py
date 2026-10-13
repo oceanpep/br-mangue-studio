@@ -469,6 +469,7 @@ def run_raster_simulation(
         "save_annual_states": bool(save_annual_states),
         "parameters": _parameters_metadata(parameters),
         "cells": inputs.n_cells,
+        "custom_model_classes": inputs.metadata.get("custom_model_classes", []),
         "cell_area_km2": inputs.cell_area_km2,
         "area_conversion": (
             "Projected CRS linear units converted to square kilometres"
