@@ -23,8 +23,8 @@ rasters, project files, and simulation results remain on your computer.
 
 | Platform | Availability | Verified environment |
 | --- | --- | --- |
-| Windows 10/11, 64-bit | Stable 1.1.0 | Windows desktop release |
-| Linux x86_64 | Research preview 1.1.0 | Built on Ubuntu 22.04 LTS; application startup verified on Ubuntu 26.04.1 LTS |
+| Windows 10/11, 64-bit | Stable 1.2.0 | Windows desktop release |
+| Linux x86_64 | Research preview 1.2.0 | Built on Ubuntu 22.04 LTS; application startup verified on Ubuntu 26.04.1 LTS |
 
 The interface is available in English and Brazilian Portuguese. English is the
 default for a new installation; choose a language in the application header.
