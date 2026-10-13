@@ -2,6 +2,23 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [Unreleased]
+
+- Replaced the fixed legacy land-cover state constants with a per-project
+  state catalog. Configured class codes, behavior profiles, colors, and
+  flooded states now drive the continuous and persistent-block engines,
+  output rasters, maps, trajectory summaries, and transition reports.
+- Added one generic derived state named `Migrated mangrove`; flooded states
+  retain the source class name, and every code is documented in run metadata
+  and GeoTIFF tags.
+- Renamed state-raster outputs to English (`initial_state_*.tif`,
+  `states/state_*.tif`, and `final_state_*.tif`) and updated the batch workflow
+  and documentation.
+- Updated the Model rules view to show the current project class assignments
+  and behavior profiles directly. Removed the raw engine source pane from this
+  user-facing view so internal state identifiers are not presented as project
+  class rules.
+
 ## [1.1.0] — 2026-10-06
 
 - Added a Portuguese (Brazil) interface alongside English, which remains the

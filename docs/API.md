@@ -104,12 +104,14 @@ python -m brmangue_lua.raster_cli `
 
 Use `python -m brmangue_lua.raster_cli --help` para ver todas as opções.
 
-## Códigos do modelo
+## Model states
 
-Os códigos públicos do núcleo estão em `brmangue_lua.engine`: `MANGUE`,
-`VEGETACAO_TERRESTRE`, `MAR`, `AREA_ANTROPIZADA`, estados inundados e
-`MANGUE_MIGRADO`. A interface gráfica apresenta nomes legíveis para esses
-códigos.
+The model no longer assigns fixed numeric codes to land-cover states. Each
+project stores its class codes, names, behavior profiles, colors, and derived
+states in `model_state_catalog`, written to run metadata and GeoTIFF tags.
+Flooded states are generated for floodable classes, and migration uses one
+derived state named `Migrated mangrove`. Read codes through the catalog rather
+than assuming that a number represents a particular class.
 
 Alterações nas regras ou nos códigos devem incluir testes, uma nota no
 `CHANGELOG.md` e uma comparação de estados com uma entrada fixa.

@@ -1,4 +1,4 @@
-"""Linha de comando para simulações sobre rasters alinhados."""
+"""Command-line interface for simulations over aligned rasters."""
 
 from __future__ import annotations
 
@@ -11,27 +11,27 @@ from .raster_runner import load_and_run_raster_simulation
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Executa a tradução BRMANGUE Lua-parity sobre rasters alinhados."
+        description="Run the BRMANGUE Lua-parity model over aligned rasters."
     )
     parser.add_argument(
         "--land-cover", "--mapbiomas", dest="land_cover", required=True,
-        help="Raster categórico de uso/cobertura; a forma antiga --mapbiomas é aceita por compatibilidade.",
+        help="Categorical land-cover raster; the legacy --mapbiomas option remains supported.",
     )
     parser.add_argument(
         "--elevation", "--terrain", dest="elevation", required=True,
-        help="Raster de elevação alinhado ao raster categórico.",
+        help="Elevation raster aligned with the categorical raster.",
     )
-    parser.add_argument("--mask", help="Máscara binária da área de estudo.")
-    parser.add_argument("--soil", help="Raster opcional de classes de solo.")
+    parser.add_argument("--mask", help="Binary study-area mask.")
+    parser.add_argument("--soil", help="Optional soil-class raster.")
     parser.add_argument(
         "--disable-soil",
         action="store_true",
-        help="Ignora a camada de solo mesmo se --soil for informado.",
+        help="Ignore the soil layer even when --soil is provided.",
     )
     parser.add_argument(
         "--no-migration-without-soil",
         action="store_true",
-        help="Mantém a migração dependente de solo; por padrão ela usa o uso/cobertura quando o solo está ausente.",
+        help="Keep migration soil-dependent; by default, land-cover classes are used when soil is unavailable.",
     )
     parser.add_argument("--land-cover-band", "--mapbiomas-band", dest="land_cover_band", type=int, default=1)
     parser.add_argument("--land-cover-year", "--mapbiomas-year", dest="land_cover_year", type=int, default=None)
@@ -42,33 +42,33 @@ def build_parser() -> argparse.ArgumentParser:
         "--engine",
         choices=("continuous", "blocks", "dissmodel"),
         default="blocks",
-        help="Executor: contínuo, blocos persistentes ou DissModel.",
+        help="Executor: continuous, persistent blocks, or DissModel.",
     )
     parser.add_argument("--block-size", type=int, default=10_000)
     parser.add_argument(
         "--dissmodel-runner",
         choices=("continuous", "blocks"),
         default="blocks",
-        help="Executor de regras usado pelo DissModel.",
+        help="Rule executor used by DissModel.",
     )
     parser.add_argument("--tide-height", type=float, default=6.0)
     parser.add_argument("--sea-level-rise-rate", type=float, default=0.5)
     parser.add_argument(
         "--fix-accretion-typo",
         action="store_true",
-        help="Ativa a regra pretendida de acreção para solo migrado.",
+        help="Enable the intended accretion rule for migrated soil.",
     )
     parser.add_argument(
         "--migration-maturity-years",
         type=int,
         default=3,
-        help="Anos completos antes de uma célula migrada poder propagar (padrão: 3; 0 ativa no passo seguinte).",
+        help="Complete years before a migrated cell can propagate (default: 3; 0 enables it on the next step).",
     )
     parser.add_argument("--show-chart", action="store_true")
     parser.add_argument(
         "--no-annual-states",
         action="store_true",
-        help="Não grava um GeoTIFF para cada ano (reduz espaço em disco).",
+        help="Do not write one GeoTIFF per year (reduces disk use).",
     )
     return parser
 
@@ -76,7 +76,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = build_parser().parse_args()
     if args.final_year < args.initial_year:
-        raise SystemExit("--final-year deve ser maior ou igual a --initial-year.")
+        raise SystemExit("--final-year must be greater than or equal to --initial-year.")
     steps = args.final_year - args.initial_year
     soil_enabled = False if args.disable_soil else (args.soil is not None)
     parameters = ModelParameters(
@@ -106,7 +106,7 @@ def main() -> None:
         save_annual_states=not args.no_annual_states,
     )
     print(trajectory.to_string(index=False))
-    print(f"Resultados salvos em: {Path(args.output).resolve()}")
+    print(f"Results saved to: {Path(args.output).resolve()}")
 
 
 if __name__ == "__main__":

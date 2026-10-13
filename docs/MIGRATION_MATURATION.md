@@ -2,15 +2,15 @@
 
 ## Por que o atraso existe
 
-Uma célula que acabou de ser convertida para `MANGUE_MIGRADO` representa uma
+Uma célula recém-convertida para o estado `Migrated mangrove` representa uma
 área recém-estabelecida. Ela não deve ser tratada como uma fonte reprodutiva
 completa no passo anual imediatamente seguinte. O núcleo mantém, portanto,
 um contador interno de idade para cada célula migrada.
 
 O contador começa em zero no ano da conversão. A cada passo anual completo ele
 é incrementado. Quando atinge `migration_maturity_years`, a célula pode
-propagar para vizinhas elegíveis. A célula continua sendo registrada como
-`MANGUE_MIGRADO`; a idade não é gravada no GeoTIFF de uso/cobertura.
+propagar para vizinhas elegíveis. A célula continua com o estado
+`Migrated mangrove`; a idade não é gravada no GeoTIFF de uso e cobertura.
 
 ## Valor padrão e sensibilidade
 
