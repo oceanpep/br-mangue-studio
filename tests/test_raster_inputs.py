@@ -109,7 +109,7 @@ def test_custom_model_class_maps_source_code_and_exports_wide_state(tmp_path):
     assert inputs.grid.custom_state_codes == (300,)
     assert inputs.grid.class_counts()["custom_300"] == 1
     assert inputs.metadata["custom_model_classes"] == [
-        {"code": 300, "name": "Agriculture", "color": "#c08020"}
+        {"code": 300, "name": "Agriculture", "color": "#c08020", "behavior": "fixed"}
     ]
     assert inputs.metadata["land_cover"]["mapping"]["source_to_model"]["custom_300"] == [90]
 
@@ -118,7 +118,7 @@ def test_custom_model_class_maps_source_code_and_exports_wide_state(tmp_path):
         assert src.dtypes == ("uint16",)
         assert src.read(1).tolist() == [[1, 300]]
         assert src.tags()["custom_model_classes"] == (
-            '[{"code": 300, "name": "Agriculture", "color": "#c08020"}]'
+            '[{"code": 300, "name": "Agriculture", "color": "#c08020", "behavior": "fixed"}]'
         )
 
 
@@ -126,7 +126,22 @@ def test_custom_model_classes_validate_codes_names_and_colors():
     normalized = normalize_custom_model_classes([
         {"code": 12, "name": " Wetland ", "color": "#AABBCC"},
     ])
-    assert normalized == [{"code": 12, "name": "Wetland", "color": "#aabbcc"}]
+    assert normalized == [{
+        "code": 12,
+        "name": "Wetland",
+        "color": "#aabbcc",
+        "behavior": "fixed",
+    }]
+
+    configured = normalize_custom_model_classes([
+        {
+            "code": 300,
+            "name": "Salt marsh",
+            "color": "#123456",
+            "behavior": "natural_vegetation",
+        },
+    ])
+    assert configured[0]["behavior"] == "natural_vegetation"
 
     with pytest.raises(ValueError, match="repetido"):
         normalize_custom_model_classes([
@@ -144,6 +159,15 @@ def test_custom_model_classes_validate_codes_names_and_colors():
     with pytest.raises(ValueError, match="número inteiro"):
         normalize_custom_model_classes([
             {"code": 11.5, "name": "Forest", "color": "#112233"},
+        ])
+    with pytest.raises(ValueError, match="perfil de comportamento"):
+        normalize_custom_model_classes([
+            {
+                "code": 11,
+                "name": "Forest",
+                "color": "#112233",
+                "behavior": "new_unreviewed_rule",
+            },
         ])
 
 

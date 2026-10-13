@@ -155,11 +155,25 @@ observe o mapa inicial.
 
 Além dos papéis padrão, o usuário pode criar classes personalizadas na aba
 **Class mapping**. Informe um nome, escolha uma cor e adicione a classe; depois,
-atribua a ela os códigos correspondentes do raster de origem. As classes
-personalizadas permanecem no mesmo estado durante a simulação e são incluídas
-nos mapas, metadados, GeoTIFFs e tabelas de resultados. Elas não participam das
-regras padrão de mangue, migração ou inundação. Um projeto aceita até 32.757
-classes personalizadas.
+selecione o perfil de comportamento e atribua à classe os códigos
+correspondentes do raster de origem. Cada perfil reutiliza as regras de uma
+categoria do modelo:
+
+| Perfil | Comportamento durante a simulação |
+|---|---|
+| **Fixed class** | Mantém o código personalizado, sem transições dinâmicas. |
+| **Mangrove source** | Pode propagar a migração; em uma transição por inundação, passa ao estado de mangue inundado. |
+| **Natural vegetation** | Pode receber migração e passa ao estado de vegetação natural inundada quando inundada. |
+| **Bare soil** | Pode receber migração e passa ao estado de solo descoberto inundado quando inundado. |
+| **Anthropized area** | Permanece bloqueada para migração e pode passar ao estado antropizado inundado. |
+| **Water body** | Atua como fonte das regras de fluxo e inundação e não recebe conversão por essas regras. |
+
+O nome, a cor e o perfil ficam gravados no projeto e nos metadados. Quando uma
+classe personalizada muda para um estado derivado, como **Migrated mangrove**
+ou **Flooded natural vegetation**, o raster final mostra esse estado do modelo.
+O arquivo `transition_by_land_cover_code.csv` registra a classe de origem, o
+perfil e o estado final para permitir rastrear essa mudança. Um projeto aceita
+até 32.757 classes personalizadas.
 
 ### 3.2 Estados internos
 
@@ -368,9 +382,9 @@ lista antes de carregar: um código que deveria ser água associado a
 **Anthropized / blocked** altera completamente o cenário.
 
 Para criar uma categoria própria, use **Optional custom classes**. Digite o
-nome, escolha a cor e clique em **Add**. A nova categoria aparecerá nas opções
-de cada código de origem. Ao removê-la, primeiro reatribua todos os códigos que
-ainda estiverem associados a ela.
+nome, selecione o **Behavior profile**, escolha uma cor e clique em **Add**. A
+nova categoria aparecerá nas opções de cada código de origem. Ao removê-la,
+primeiro reatribua todos os códigos que ainda estiverem associados a ela.
 
 ### 6.5 Aba Simulation
 
