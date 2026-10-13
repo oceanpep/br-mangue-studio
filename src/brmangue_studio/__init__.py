@@ -1,4 +1,4 @@
-"""Interface desktop do BR-MANGUE sobre o núcleo científico independente."""
+"""BR-MANGUE desktop interface over the independent scientific core."""
 
 from .geospatial_runtime import configure_geospatial_runtime
 

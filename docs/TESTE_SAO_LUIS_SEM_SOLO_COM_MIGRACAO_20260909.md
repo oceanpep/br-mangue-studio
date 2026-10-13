@@ -4,11 +4,11 @@ Após o primeiro ensaio da Ilha de São Luís, foi acrescentada uma opção para
 grades sem mapa de solos. Quando essa opção está ativa, a classe de solo deixa
 de ser necessária para a elegibilidade da migração: somente células vizinhas
 de vegetação terrestre ou solo exposto, com elevação dentro da zona de
-influência da maré, podem receber `MANGUE_MIGRADO`. Água, áreas antropizadas,
+influência da maré, podem receber o estado `Migrated mangrove`. Água, áreas antropizadas,
 restrições e células inundadas continuam inelegíveis.
 
-O comportamento literal do Lua, que exige `SOLO_MANGUE` ou
-`SOLO_MANGUE_MIGRADO`, continua disponível com `--no-migration-without-soil`.
+O modo de elegibilidade que exige uma classe de solo continua disponível com
+`--no-migration-without-soil`.
 Assim, a mudança não quebra a auditoria de paridade e o usuário escolhe o
 nível de informação disponível.
 
@@ -47,4 +47,3 @@ Os produtos completos estão em
 trajetória, metadados, estados anuais e workspace persistente. A execução
 continua sendo uma demonstração computacional sem validade preditiva, pois os
 parâmetros do exemplo Lua ainda não foram calibrados para São Luís.
-

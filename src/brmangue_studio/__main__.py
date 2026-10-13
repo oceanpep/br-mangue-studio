@@ -94,6 +94,7 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
         mapping=mapping,
         custom_class_mapping=custom_mapping,
         custom_classes=custom_classes,
+        class_mapping_mode=config.get("class_mapping_mode", "standard"),
         exclude_source_codes=excluded,
     )
     _validate_class_coverage(
@@ -135,7 +136,7 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
         show_dissmodel_chart=False,
         save_annual_states=True,
     )
-    final_path = output_dir / f"final_usos_{final_year}.tif"
+    final_path = output_dir / f"final_state_{final_year}.tif"
     if final_path.exists():
         import rasterio
 
