@@ -18,6 +18,9 @@ Nesta versão, a interface já oferece:
 - inspeção das classes numéricas e contagens do raster categórico;
 - associação interativa de cada código às classes Mangrove, Natural
   vegetation, Water, Anthropized / blocked ou Exclude;
+- modo de mapeamento personalizado que começa sem atribuições, oculta as
+  classes padrão e exige que cada código seja associado a uma classe criada
+  pelo usuário ou explicitamente excluído;
 - confirmação do CRS dos rasters, declaração do datum vertical e registro dos
   metadados;
 - reprojeção horizontal opcional para um CRS escolhido pelo usuário, com
@@ -100,6 +103,10 @@ executável e não depende de um caminho fixo no computador do usuário.
 4. Clique em **Inspect land-cover classes** e escolha o papel de cada código.
    Códigos marcados como **Exclude** ficam fora do domínio válido; não são
    transformados em uma classe ecológica.
+   Para usar somente suas próprias categorias, selecione **Define my own
+   classes**. Crie cada categoria com um perfil de comportamento, associe os
+   códigos do raster e marque como **Exclude** os que não participarão da
+   simulação. Códigos sem atribuição impedem o carregamento dos dados.
 5. Se os rasters estiverem em CRS, resolução ou grades diferentes, use o campo
    **Reprojection target**. Digite parte do nome (por exemplo, `SIRGAS 2000`)
    ou um código como `EPSG:31983` e escolha uma das sugestões. O primeiro item

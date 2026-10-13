@@ -90,6 +90,7 @@ ROLE_LABELS = [
     "Water",
     "Anthropized / blocked",
 ]
+UNASSIGNED_ROLE = "Unassigned"
 ROLE_TO_MODEL = {
     "Mangrove": "mangrove",
     "Natural vegetation": "natural_accommodation_candidate",
@@ -566,6 +567,48 @@ def _default_role(code: int) -> str:
     if code in DEFAULT_LAND_COVER_MAPPING["natural_accommodation_candidate"]:
         return "Natural vegetation"
     return "Anthropized / blocked"
+
+
+def _validate_class_assignments(
+    roles: dict[int, str],
+    *,
+    mode: str,
+    custom_classes: list[dict[str, Any]],
+    language: str = "en",
+) -> None:
+    """Reject incomplete custom mappings instead of classifying them implicitly."""
+    unassigned = sorted(
+        int(code) for code, role in roles.items() if role == UNASSIGNED_ROLE
+    )
+    if unassigned:
+        raise ValueError(translate(
+            "Assign each source code to a custom class or choose Exclude before loading inputs. Unassigned codes: {codes}.",
+            language,
+        ).format(codes=", ".join(map(str, unassigned))))
+    if mode == "custom" and not custom_classes:
+        raise ValueError(translate(
+            "Add at least one custom model class before loading inputs in custom mode.",
+            language,
+        ))
+
+
+def _validate_class_coverage(
+    roles: dict[int, str],
+    source_code_counts: dict[str, int],
+    *,
+    mode: str,
+    language: str = "en",
+) -> None:
+    """Ensure every valid raster category has an explicit custom-mode choice."""
+    if mode != "custom":
+        return
+    observed = {int(code) for code in source_code_counts}
+    missing = sorted(observed.difference(int(code) for code in roles))
+    if missing:
+        raise ValueError(translate(
+            "The raster contains source codes that were not inspected. Inspect the raster again and assign or exclude them: {codes}.",
+            language,
+        ).format(codes=", ".join(map(str, missing))))
 
 
 def _write_transition_report(
@@ -1046,6 +1089,7 @@ class BRMangueStudio(tk.Tk):
         self.datum_var = tk.StringVar(value="Not loaded")
         self.vertical_datum_var = tk.StringVar(value="")
         self.custom_class_name_var = tk.StringVar(value="")
+        self.class_mapping_mode_var = tk.StringVar(value="standard")
         self.custom_class_color_var = tk.StringVar(value=DEFAULT_CUSTOM_COLORS[0])
         self.custom_class_behavior_var = tk.StringVar(value="Fixed class")
         self.expected_crs_var = tk.StringVar(value="")
@@ -1425,6 +1469,28 @@ class BRMangueStudio(tk.Tk):
         parent.columnconfigure(0, weight=1)
         ttk.Label(parent, text="Source class → model class", font=("Segoe UI", 10, "bold")).pack(anchor="w")
         ttk.Label(parent, text="Choose how each numeric class from the categorical raster is interpreted. Excluded codes become NoData.", wraplength=360, foreground="#5d6b78").pack(anchor="w", pady=(3, 8))
+        mode_frame = ttk.LabelFrame(parent, text="Mapping mode", padding=6)
+        mode_frame.pack(fill="x", pady=(0, 8))
+        ttk.Radiobutton(
+            mode_frame,
+            text="Use standard model classes",
+            variable=self.class_mapping_mode_var,
+            value="standard",
+            command=self._on_class_mapping_mode_changed,
+        ).pack(anchor="w")
+        ttk.Radiobutton(
+            mode_frame,
+            text="Define my own classes",
+            variable=self.class_mapping_mode_var,
+            value="custom",
+            command=self._on_class_mapping_mode_changed,
+        ).pack(anchor="w")
+        ttk.Label(
+            mode_frame,
+            text="Custom mode starts with no assignments. Add classes below, then assign each raster code to a custom class or choose Exclude.",
+            wraplength=360,
+            foreground="#5d6b78",
+        ).pack(anchor="w", pady=(3, 0))
         custom_frame = ttk.LabelFrame(parent, text="Optional custom classes", padding=6)
         custom_frame.pack(fill="x", pady=(0, 8))
         labels_row = ttk.Frame(custom_frame)
@@ -1496,13 +1562,16 @@ class BRMangueStudio(tk.Tk):
         return translate(label, self.language_code)
 
     def _role_options(self) -> tuple[str, ...]:
+        mode_var = getattr(self, "class_mapping_mode_var", None)
+        custom_mode = mode_var is not None and mode_var.get() == "custom"
+        roles = [UNASSIGNED_ROLE, "Exclude"] if custom_mode else ROLE_LABELS
         return tuple(
-            [translate(role, self.language_code) for role in ROLE_LABELS]
+            [translate(role, self.language_code) for role in roles]
             + [self._custom_role_label(item) for item in self.custom_model_classes]
         )
 
     def _canonical_role(self, displayed_role: str) -> str:
-        for role in ROLE_LABELS:
+        for role in [UNASSIGNED_ROLE, *ROLE_LABELS]:
             if displayed_role in {role, translate(role, "pt-BR")}:
                 return role
         for item in self.custom_model_classes:
@@ -1526,6 +1595,16 @@ class BRMangueStudio(tk.Tk):
                 return self._custom_role_label(item)
             return translate("Anthropized / blocked", self.language_code)
         return translate(role, self.language_code)
+
+    def _on_class_mapping_mode_changed(self) -> None:
+        """Reset source assignments when switching mapping workflows."""
+        if self.class_counts:
+            self._rebuild_class_rows(preserve_current=False)
+
+    def _initial_source_role(self, code: int) -> str:
+        if self.class_mapping_mode_var.get() == "custom":
+            return self._display_role(UNASSIGNED_ROLE)
+        return self._display_role(_default_role(code))
 
     def _refresh_model_legend(self) -> None:
         frame = getattr(self, "model_legend_items", None)
@@ -2101,7 +2180,7 @@ class BRMangueStudio(tk.Tk):
             row.pack(fill="x", pady=2)
             ttk.Label(row, text=str(code), width=8).pack(side="left")
             ttk.Label(row, text=f"{self.class_counts[code]:,}", width=12).pack(side="left")
-            default_role = self._display_role(_default_role(code))
+            default_role = self._initial_source_role(code)
             saved_role = previous.get(code, default_role)
             if saved_role not in role_options:
                 saved_role = default_role
@@ -2131,6 +2210,8 @@ class BRMangueStudio(tk.Tk):
             roles[code] = role
             if role == "Exclude":
                 excluded.append(code)
+            elif role == UNASSIGNED_ROLE:
+                continue
             elif role.startswith("custom:"):
                 custom_code = int(role.split(":", 1)[1])
                 custom_mapping.setdefault(custom_code, []).append(code)
@@ -2148,7 +2229,13 @@ class BRMangueStudio(tk.Tk):
             year_text = self.year_var.get().strip()
             year = int(year_text) if year_text else None
             expected = self.expected_crs_var.get().strip()
-            mapping, excluded, _, custom_mapping = self._mapping_from_ui()
+            mapping, excluded, roles, custom_mapping = self._mapping_from_ui()
+            _validate_class_assignments(
+                roles,
+                mode=self.class_mapping_mode_var.get(),
+                custom_classes=self.custom_model_classes,
+                language=self.language_code,
+            )
             soil = Path(self.soil_var.get().strip()) if self.soil_var.get().strip() else None
             soil_enabled = bool(self.soil_enabled_var.get() and soil is not None)
             inputs = load_raster_inputs(
@@ -2163,6 +2250,12 @@ class BRMangueStudio(tk.Tk):
                 custom_class_mapping=custom_mapping,
                 custom_classes=self.custom_model_classes,
                 exclude_source_codes=excluded,
+            )
+            _validate_class_coverage(
+                roles,
+                inputs.metadata["land_cover"]["mapping"]["source_code_counts_valid"],
+                mode=self.class_mapping_mode_var.get(),
+                language=self.language_code,
             )
             source_crs = str(inputs.metadata["land_cover"]["crs"] or "Unknown")
             if expected and not _crs_equivalent(expected, source_crs):
@@ -2878,6 +2971,7 @@ class BRMangueStudio(tk.Tk):
         self.project_file = Path(folder) / "brmangue_project.json"
         self.inputs = None
         self.custom_model_classes = []
+        self.class_mapping_mode_var.set("standard")
         self.custom_class_behavior_var.set(self._display_custom_behavior("fixed"))
         self.class_counts.clear()
         self.initial_class_counts = {}
@@ -2939,6 +3033,7 @@ class BRMangueStudio(tk.Tk):
                 "reference_year": int(self.land_cover_year_var.get()) if self.land_cover_year_var.get().strip() else None,
             },
             "class_roles": {str(k): v for k, v in roles.items()},
+            "class_mapping_mode": self.class_mapping_mode_var.get(),
             "custom_model_classes": self.custom_model_classes,
             "excluded_source_codes": excluded,
             "spatial_reference": {
@@ -3007,6 +3102,10 @@ class BRMangueStudio(tk.Tk):
             self.vertical_datum_var.set(spatial.get("declared_vertical_datum", ""))
             self.custom_model_classes = normalize_custom_model_classes(
                 payload.get("custom_model_classes", [])
+            )
+            saved_mapping_mode = payload.get("class_mapping_mode", "standard")
+            self.class_mapping_mode_var.set(
+                saved_mapping_mode if saved_mapping_mode in {"standard", "custom"} else "standard"
             )
             self._refresh_custom_class_list()
             self._refresh_model_legend()
