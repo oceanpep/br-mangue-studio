@@ -42,7 +42,7 @@ General cellular-modelling environments such as TerraME provide flexible tools f
 
 The software separates raster preparation, model state and transition rules, simulation execution, and output generation. During preparation, aligned rasters are validated and valid cells are represented in a compact grid with neighbourhood indices. The model updates cell states annually from their current attributes, neighbourhood, and scenario parameters. Outputs include GeoTIFF states, trajectory and transition tables, run parameters, input hashes, timing, and available resource measurements.
 
-The class-mapping interface also lets users define additional fixed model classes by name and colour and assign raster source codes to them. These classes are preserved in maps, raster outputs, metadata, and class-count tables in both execution engines; the existing transition rules continue to operate on the built-in states.
+The class-mapping interface lets users define additional model classes by name and colour, assign raster source codes, and select a behavior profile. Profiles reuse the implemented rules for a fixed class, mangrove source, natural vegetation, bare soil, anthropized land, or water; they do not add new transition equations. The continuous and persistent-block engines apply the selected migration, flooding, and flow behavior consistently. When a custom class changes to a derived state, run metadata retains its name and profile, and the transition report links its source raster code to the final model state. Projects created before profiles were introduced retain their previous fixed-state behavior.
 
 The repository includes automated unit and raster-workflow tests, user documentation, and continuous integration across supported Python versions.
 
