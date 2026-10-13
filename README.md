@@ -40,8 +40,9 @@ for the complete compatibility notes and checksums.
 
 - Reads categorical land-cover and elevation GeoTIFFs; soil-suitability and
   study-area mask rasters are optional.
-- Lets you map source raster codes to model classes and record scenario
-  parameters in a project.
+- Lets you map source raster codes to standard or project-defined model
+  classes, with custom names and colours, and save the configuration in a
+  project. Custom classes remain fixed during a run.
 - Provides continuous and persistent-block processing for different raster
   sizes and memory constraints.
 - Exports annual state rasters, trajectory and transition tables, figures, and
