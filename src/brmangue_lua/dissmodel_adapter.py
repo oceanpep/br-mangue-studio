@@ -1,4 +1,4 @@
-"""Integração opcional da tradução Lua-parity com o framework DissModel."""
+"""Optional integration of the model engine with the DissModel framework."""
 
 from __future__ import annotations
 
@@ -35,8 +35,8 @@ except ImportError:  # pragma: no cover - exercised only without optional packag
 def _require_dissmodel() -> None:
     if not DISSMODEL_AVAILABLE:
         raise ImportError(
-            "DissModel não está instalado. Instale o repositório local com "
-            "'python -m pip install -e C:\\Users\\felly\\dissmodel'."
+            "DissModel is not installed. Install it from its local repository "
+            "before selecting the DissModel execution mode."
         )
 
 
@@ -44,8 +44,8 @@ def _runner_summary(runner: Any, result: Any) -> dict[str, int | float]:
     if isinstance(result, dict):
         return result
     counts = runner.class_counts()
-    counts["min_alt2"] = float(runner.alt2.min())
-    counts["max_alt2"] = float(runner.alt2.max())
+    counts["min_elevation"] = float(runner.relative_elevation.min())
+    counts["max_elevation"] = float(runner.relative_elevation.max())
     return counts
 
 
@@ -55,18 +55,18 @@ def _runner_summary(runner: Any, result: Any) -> dict[str, int | float]:
 @track_plot(label="Annual gain", color="#74c476")
 @track_plot(label="Annual loss", color="#fb6a4a")
 class BRMangueLuaDissModel(Model):
-    """Componente DissModel que chama o executor contínuo ou em blocos."""
+    """DissModel component that calls the continuous or block executor."""
 
     def setup(  # type: ignore[override]
         self,
         runner: Any,
         parameters: ModelParameters,
-        resumos: list[dict[str, Any]],
+        summaries: list[dict[str, Any]],
         step_callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         self.runner = runner
         self.parameters = parameters
-        self.resumos = resumos
+        self.summaries = summaries
         self.step_callback = step_callback
 
     def execute(self) -> None:
@@ -101,7 +101,7 @@ class BRMangueLuaDissModel(Model):
             "gain": gain,
             "loss": loss,
         }
-        self.resumos.append(record)
+        self.summaries.append(record)
         if self.step_callback is not None:
             self.step_callback(record)
 
@@ -113,14 +113,14 @@ def run_dissmodel(
     show_chart: bool = False,
     step_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> pd.DataFrame:
-    """Executa o modelo usando o relógio e os componentes do DissModel."""
+    """Run the model with DissModel's clock and components."""
     _require_dissmodel()
-    resumos: list[dict[str, Any]] = []
+    summaries: list[dict[str, Any]] = []
     environment = Environment(end_time=parameters.final_time + 1)
     BRMangueLuaDissModel(
         runner=runner,
         parameters=parameters,
-        resumos=resumos,
+        summaries=summaries,
         step_callback=step_callback,
         step=1,
         start_time=parameters.start,
@@ -140,7 +140,7 @@ def run_dissmodel(
             title="BRMANGUE Lua-parity — DissModel",
         )
     environment.run()
-    return pd.DataFrame(resumos)
+    return pd.DataFrame(summaries)
 
 
 def run_dissmodel_shapefile(
@@ -153,7 +153,7 @@ def run_dissmodel_shapefile(
     strict_lua_schema: bool = False,
     show_chart: bool = False,
 ) -> pd.DataFrame:
-    """Executa DissModel com o executor contínuo ou com workspace persistente."""
+    """Run DissModel with the continuous or persistent block executor."""
     _require_dissmodel()
     output_dir = Path(output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -169,7 +169,7 @@ def run_dissmodel_shapefile(
             strict_lua_schema=strict_lua_schema,
         )
     else:
-        raise ValueError("runner_mode deve ser 'continuous' ou 'blocks'.")
+        raise ValueError("runner_mode must be 'continuous' or 'blocks'.")
 
     try:
         trajectory = run_dissmodel(runner, parameters, show_chart=show_chart)

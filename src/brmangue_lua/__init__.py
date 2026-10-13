@@ -1,4 +1,4 @@
-"""Tradução Python de paridade comportamental com o modelo Lua/TerraME."""
+"""Python implementation of behavioral parity with the Lua/TerraME model."""
 
 from .engine import BrMangueGrid, ModelParameters
 from .raster_inputs import RasterInputSet, load_raster_inputs

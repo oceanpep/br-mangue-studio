@@ -612,7 +612,9 @@ Cada execução cria uma pasta como `results/run_20260922T120000/`.
 | `input_metadata.json` | Metadados dos rasters e do mapeamento de classes |
 | `trajectory.csv` | Contagens, extensão ativa, ganhos/perdas brutos, saldo anual e indicadores para cada ano |
 | `resource_samples.csv` | Amostras de RAM, CPU, disco e processo |
-| `initial_usos_*.tif` | Estado inicial em raster |
+| `initial_state_*.tif` | Estado inicial em raster |
+| `states/state_*.tif` | Estado anual exportado em raster |
+| `final_state_*.tif` | Estado final exportado em raster |
 | `states/` | GeoTIFF do estado de cada ano, quando habilitado |
 | `figures/` | Figuras individuais de estado, elevação, trajetória e mudança |
 | `simulation.gif` | Animação combinada, quando gerada |

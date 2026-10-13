@@ -19,17 +19,13 @@ import numpy as np
 import rasterio
 
 from .engine import (
-    AREA_ANTROPIZADA,
     BrMangueGrid,
-    CUSTOM_CLASS_BEHAVIORS,
-    MAR,
-    MANGUE,
-    VEGETACAO_TERRESTRE,
 )
+from .model_states import CLASS_BEHAVIORS, STANDARD_CLASS_STYLES, build_model_state_catalog
 
 
 SOIL_DISABLED_SENTINEL = -999
-MAX_CUSTOM_MODEL_STATE = int(np.iinfo(np.int16).max)
+MAX_CUSTOM_MODEL_CLASS_CODE = 32767
 
 # Default numeric mapping for the built-in demonstration. Users can replace
 # every code through the interface; the core is provider-agnostic.
@@ -64,7 +60,7 @@ class RasterInputSet:
     def __post_init__(self) -> None:
         if self.n_cells_cached is None:
             if self.grid is None:
-                raise ValueError("n_cells_cached é obrigatório quando grid está ausente.")
+                raise ValueError("n_cells_cached is required when grid is unavailable.")
             self.n_cells_cached = int(self.grid.size)
 
     @property
@@ -94,17 +90,17 @@ class RasterInputSet:
         area_km2 = self.cell_area_km2
         return area_km2 * 1_000_000.0 if area_km2 is not None else None
 
-    def write_state_raster(self, usos: np.ndarray, path: str | Path, *, year: int) -> Path:
-        """Escreve um vetor de estados de volta à grade raster original."""
+    def write_state_raster(self, state_values: np.ndarray, path: str | Path, *, year: int) -> Path:
+        """Write model state codes back to the source raster grid."""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        if len(usos) != self.n_cells:
-            raise ValueError("O vetor de estados não corresponde à grade carregada.")
-        values = np.asarray(usos)
+        if len(state_values) != self.n_cells:
+            raise ValueError("The state vector does not match the loaded raster grid.")
+        values = np.asarray(state_values)
         if values.size and (
             int(values.min()) < 0 or int(values.max()) > np.iinfo(np.uint16).max
         ):
-            raise ValueError("Os códigos de estado devem caber em um raster UInt16.")
+            raise ValueError("Model state codes must fit in a UInt16 raster.")
         output_dtype = (
             np.uint8
             if not values.size or int(values.max()) <= np.iinfo(np.uint8).max
@@ -127,6 +123,10 @@ class RasterInputSet:
                 model="BRMANGUE cellular model",
                 year=str(year),
                 nodata_description="0 = outside valid input envelope",
+                model_state_catalog=json.dumps(
+                    self.metadata.get("model_state_catalog", {}),
+                    ensure_ascii=False,
+                ),
                 custom_model_classes=json.dumps(
                     self.metadata.get("custom_model_classes", []),
                     ensure_ascii=False,
@@ -137,18 +137,18 @@ class RasterInputSet:
 
 def _same_grid(reference: rasterio.io.DatasetReader, other: rasterio.io.DatasetReader, name: str) -> None:
     if other.shape != reference.shape:
-        raise ValueError(f"{name} possui dimensões {other.shape}; esperado {reference.shape}.")
+        raise ValueError(f"{name} has dimensions {other.shape}; expected {reference.shape}.")
     if other.crs != reference.crs:
-        raise ValueError(f"{name} possui CRS {other.crs}; esperado {reference.crs}.")
+        raise ValueError(f"{name} has CRS {other.crs}; expected {reference.crs}.")
     if not other.transform.almost_equals(reference.transform):
-        raise ValueError(f"{name} não está alinhado ao raster de uso e cobertura da terra.")
+        raise ValueError(f"{name} is not aligned with the land-cover raster.")
 
 
 def _read_mask(path: str | Path | None, reference: rasterio.io.DatasetReader) -> np.ndarray:
     if path is None:
         return np.ones(reference.shape, dtype=bool)
     with rasterio.open(path) as src:
-        _same_grid(reference, src, "Máscara")
+        _same_grid(reference, src, "Mask")
         data = src.read(1, masked=True)
         return (~np.ma.getmaskarray(data)) & (np.asarray(data.filled(0)) != 0)
 
@@ -189,37 +189,37 @@ def normalize_custom_model_classes(
             raw_name = item["name"]
             raw_color = item["color"]
         except (KeyError, TypeError, ValueError) as exc:
-            raise ValueError("Cada classe personalizada precisa de código, nome e cor.") from exc
+            raise ValueError("Each custom class requires a code, name, and color.") from exc
         try:
             code = int(raw_code)
         except (TypeError, ValueError, OverflowError) as exc:
-            raise ValueError("O código da classe personalizada deve ser um número inteiro.") from exc
+            raise ValueError("A custom class code must be an integer.") from exc
         if isinstance(raw_code, bool):
-            raise ValueError("O código da classe personalizada deve ser um número inteiro.")
+            raise ValueError("A custom class code must be an integer.")
         if not isinstance(raw_code, str) and raw_code != code:
-            raise ValueError("O código da classe personalizada deve ser um número inteiro.")
+            raise ValueError("A custom class code must be an integer.")
         if not isinstance(raw_name, str) or not isinstance(raw_color, str):
-            raise ValueError("O nome e a cor da classe personalizada devem ser textos.")
+            raise ValueError("Custom class name and color must be strings.")
         name = raw_name.strip()
         color = raw_color.strip()
         behavior = str(item.get("behavior", "fixed")).strip()
-        if code <= 10 or code > MAX_CUSTOM_MODEL_STATE:
+        if code < 1 or code > MAX_CUSTOM_MODEL_CLASS_CODE:
             raise ValueError(
-                f"O código da classe personalizada deve estar entre 11 e {MAX_CUSTOM_MODEL_STATE}."
+                f"A custom class code must be between 1 and {MAX_CUSTOM_MODEL_CLASS_CODE}."
             )
         if code in used_codes:
-            raise ValueError(f"O código de estado personalizado {code} está repetido.")
+            raise ValueError(f"Custom model class code {code} is duplicated.")
         if not name or len(name) > 80:
-            raise ValueError("O nome da classe deve ter entre 1 e 80 caracteres.")
+            raise ValueError("A class name must contain between 1 and 80 characters.")
         if name.casefold() in used_names:
-            raise ValueError(f"O nome da classe personalizada '{name}' está repetido.")
+            raise ValueError(f"Custom class name '{name}' is duplicated.")
         if not re.fullmatch(r"#[0-9a-fA-F]{6}", color):
             raise ValueError(
-                f"A cor da classe '{name}' deve estar no formato hexadecimal #RRGGBB."
+                f"Class color for '{name}' must use hexadecimal #RRGGBB format."
             )
-        if behavior not in CUSTOM_CLASS_BEHAVIORS:
+        if behavior not in CLASS_BEHAVIORS:
             raise ValueError(
-                f"O perfil de comportamento da classe '{name}' não é válido."
+                f"Behavior profile for class '{name}' is not valid."
             )
         used_codes.add(code)
         used_names.add(name.casefold())
@@ -236,31 +236,118 @@ def _map_land_cover_classes(
     values: np.ndarray,
     mapping: dict[str, list[int]] | None = None,
     custom_class_mapping: dict[int, list[int]] | None = None,
-) -> tuple[np.ndarray, dict[str, Any]]:
-    mapping = mapping or DEFAULT_LAND_COVER_MAPPING
+    custom_classes: list[dict[str, Any]] | None = None,
+    *,
+    custom_mapping_mode: bool = False,
+) -> tuple[np.ndarray, dict[str, Any], dict[str, Any]]:
     custom_class_mapping = custom_class_mapping or {}
-    usos = np.full(values.shape, AREA_ANTROPIZADA, dtype=np.int16)
-    usos[np.isin(values, mapping["mangrove"])] = MANGUE
-    usos[np.isin(values, mapping["water"])] = MAR
-    usos[np.isin(values, mapping["natural_accommodation_candidate"])] = VEGETACAO_TERRESTRE
-    for state_code, source_codes in custom_class_mapping.items():
-        if source_codes:
-            usos[np.isin(values, source_codes)] = int(state_code)
-    # Managed-use and explicit-restriction classes use the blocked state in
-    # the current rule set.
-    classes_seen, counts = np.unique(values, return_counts=True)
-    source_to_model = {key: list(vals) for key, vals in mapping.items()}
-    source_to_model.update(
-        {
-            f"custom_{int(code)}": list(source_codes)
-            for code, source_codes in custom_class_mapping.items()
+    class_definitions: list[dict[str, Any]] = []
+    source_to_model: dict[str, list[int]] = {}
+    state_values = np.zeros(values.shape, dtype=np.uint16)
+
+    if custom_mapping_mode:
+        classes_by_code = {int(item["code"]): item for item in custom_classes or []}
+        if not classes_by_code:
+            raise ValueError("Custom mapping mode requires at least one model class.")
+        source_assignments: dict[int, int] = {}
+        for class_code, source_codes in custom_class_mapping.items():
+            if int(class_code) not in classes_by_code:
+                raise ValueError(f"Custom class {class_code} has no class definition.")
+            for source_code in source_codes:
+                source_code = int(source_code)
+                previous = source_assignments.get(source_code)
+                if previous is not None:
+                    raise ValueError(
+                        f"Raster code {source_code} is assigned to more than one custom class."
+                    )
+                source_assignments[source_code] = int(class_code)
+        for source_code in np.unique(values):
+            if int(source_code) not in source_assignments:
+                raise ValueError(
+                    f"Raster code {int(source_code)} has no custom class assignment."
+                )
+        for source_code, class_code in source_assignments.items():
+            state_values[values == source_code] = class_code
+        class_definitions = [dict(item) for item in custom_classes or []]
+        source_to_model = {
+            f"custom_{int(code)}": [int(value) for value in codes]
+            for code, codes in custom_class_mapping.items()
         }
-    )
-    return usos, {
+        unknown_source_policy = "Every included raster code must have a custom class assignment."
+    else:
+        effective_mapping = mapping or DEFAULT_LAND_COVER_MAPPING
+        behavior_by_source: dict[int, str] = {}
+        source_profile_map = {
+            "mangrove": "mangrove",
+            "water": "water",
+            "natural_accommodation_candidate": "natural_vegetation",
+            "bare_soil": "bare_soil",
+            "natural_vegetation": "natural_vegetation",
+            "anthropized": "anthropized",
+            "managed_land_use_candidate": "anthropized",
+            "explicit_restriction": "anthropized",
+        }
+        for role, source_codes in effective_mapping.items():
+            behavior = source_profile_map.get(str(role), "anthropized")
+            for source_code in source_codes:
+                source_code = int(source_code)
+                previous = behavior_by_source.get(source_code)
+                if previous is not None and previous != behavior:
+                    raise ValueError(
+                        f"Raster code {source_code} belongs to multiple model profiles."
+                    )
+                behavior_by_source[source_code] = behavior
+        observed_codes = {int(code) for code in np.unique(values)}
+        custom_source_codes = {
+            int(source_code)
+            for source_codes in custom_class_mapping.values()
+            for source_code in source_codes
+        }
+        for source_code in observed_codes:
+            if source_code in custom_source_codes:
+                continue
+            behavior_by_source.setdefault(source_code, "anthropized")
+        behaviors = sorted(set(behavior_by_source.values()))
+        reserved_codes = {int(item["code"]) for item in custom_classes or []}
+        available_codes = (code for code in range(1, MAX_CUSTOM_MODEL_CLASS_CODE + 1) if code not in reserved_codes)
+        state_code_by_behavior = {
+            behavior: next(available_codes) for behavior in behaviors
+        }
+        for source_code, behavior in behavior_by_source.items():
+            state_values[values == source_code] = state_code_by_behavior[behavior]
+        for behavior, code in sorted(state_code_by_behavior.items(), key=lambda item: item[1]):
+            name, color = STANDARD_CLASS_STYLES[behavior]
+            class_definitions.append({
+                "code": code,
+                "name": name,
+                "color": color,
+                "behavior": behavior,
+            })
+        for custom_code, source_codes in custom_class_mapping.items():
+            if int(custom_code) not in reserved_codes:
+                raise ValueError(f"Custom class {custom_code} has no class definition.")
+            for source_code in source_codes:
+                source_code = int(source_code)
+                if source_code in behavior_by_source:
+                    raise ValueError(
+                        f"Raster code {source_code} is assigned to both a standard and a custom class."
+                    )
+                state_values[values == source_code] = int(custom_code)
+        class_definitions.extend(dict(item) for item in custom_classes or [])
+        source_to_model = {str(key): [int(value) for value in vals] for key, vals in effective_mapping.items()}
+        source_to_model.update({
+            f"custom_{int(code)}": [int(value) for value in vals]
+            for code, vals in custom_class_mapping.items()
+        })
+        unknown_source_policy = "anthropized"
+
+    model_state_catalog = build_model_state_catalog(class_definitions)
+    classes_seen, counts = np.unique(values, return_counts=True)
+    return state_values, {
         "source_to_model": source_to_model,
-        "unknown_source_codes_policy": "AREA_ANTROPIZADA",
+        "unknown_source_codes_policy": unknown_source_policy,
         "source_code_counts_valid": {str(int(code)): int(count) for code, count in zip(classes_seen, counts)},
-    }
+    }, model_state_catalog
 
 
 def load_raster_inputs(
@@ -279,6 +366,7 @@ def load_raster_inputs(
     mapping: dict[str, list[int]] | None = None,
     custom_class_mapping: dict[int, list[int]] | None = None,
     custom_classes: list[dict[str, Any]] | None = None,
+    class_mapping_mode: str = "standard",
     exclude_source_codes: list[int] | None = None,
 ) -> RasterInputSet:
     """Load aligned land-cover and elevation rasters.
@@ -289,14 +377,14 @@ def load_raster_inputs(
     """
     if land_cover_path is not None:
         if mapbiomas_path is not None:
-            raise ValueError("Informe apenas land_cover_path ou mapbiomas_path.")
+            raise ValueError("Provide only one of land_cover_path or mapbiomas_path.")
         mapbiomas_path = land_cover_path
     if terrain_path is not None:
         if elevation_path is not None:
-            raise ValueError("Informe apenas terrain_path ou elevation_path.")
+            raise ValueError("Provide only one of terrain_path or elevation_path.")
         elevation_path = terrain_path
     if mapbiomas_path is None or elevation_path is None:
-        raise ValueError("Os rasters de uso/cobertura e elevação são obrigatórios.")
+        raise ValueError("Land-cover and elevation rasters are required.")
     if land_cover_band is not None:
         mapbiomas_band = int(land_cover_band)
     if land_cover_year is not None:
@@ -308,25 +396,27 @@ def load_raster_inputs(
     if not elevation_path.exists():
         raise FileNotFoundError(elevation_path)
     if mapbiomas_band < 1:
-        raise ValueError("mapbiomas_band deve ser positivo.")
+        raise ValueError("mapbiomas_band must be positive.")
     if soil_enabled is None:
         soil_enabled = soil_path is not None
     if soil_enabled and soil_path is None:
-        raise ValueError("soil_enabled=True exige soil_path.")
+        raise ValueError("soil_enabled=True requires soil_path.")
 
     custom_definitions = normalize_custom_model_classes(custom_classes)
-    custom_state_codes = {int(item["code"]) for item in custom_definitions}
+    custom_class_codes = {int(item["code"]) for item in custom_definitions}
     normalized_custom_mapping = {
         int(code): [int(source_code) for source_code in source_codes]
         for code, source_codes in (custom_class_mapping or {}).items()
     }
-    unknown_custom_codes = set(normalized_custom_mapping).difference(custom_state_codes)
+    unknown_custom_codes = set(normalized_custom_mapping).difference(custom_class_codes)
     if unknown_custom_codes:
         raise ValueError(
-            "O mapeamento contém classes personalizadas sem definição: "
+            "The mapping contains custom classes without definitions: "
             f"{sorted(unknown_custom_codes)}."
         )
-    effective_mapping = mapping or DEFAULT_LAND_COVER_MAPPING
+    if class_mapping_mode not in {"standard", "custom"}:
+        raise ValueError("class_mapping_mode must be 'standard' or 'custom'.")
+    effective_mapping = {} if class_mapping_mode == "custom" else (mapping or DEFAULT_LAND_COVER_MAPPING)
     source_assignments: dict[int, str] = {}
     for role, source_codes in effective_mapping.items():
         for source_code in source_codes:
@@ -336,15 +426,15 @@ def load_raster_inputs(
             previous_role = source_assignments.get(source_code)
             if previous_role is not None:
                 raise ValueError(
-                    f"O código de origem {source_code} foi atribuído a mais de uma classe "
-                    f"({previous_role} e custom_{custom_code})."
+                    f"Source code {source_code} is assigned to more than one class "
+                    f"({previous_role} and custom_{custom_code})."
                 )
             source_assignments[source_code] = f"custom_{custom_code}"
 
     with rasterio.open(mapbiomas_path) as mb, rasterio.open(elevation_path) as dem:
         if mapbiomas_band > mb.count:
-            raise ValueError(f"O raster de uso/cobertura tem {mb.count} bandas; banda solicitada: {mapbiomas_band}.")
-        _same_grid(mb, dem, "Elevação")
+            raise ValueError(f"The land-cover raster has {mb.count} bands; requested band: {mapbiomas_band}.")
+        _same_grid(mb, dem, "Elevation")
         mapbiomas = mb.read(mapbiomas_band, masked=True)
         elevation = dem.read(1, masked=True)
         map_mask = ~np.ma.getmaskarray(mapbiomas)
@@ -372,11 +462,15 @@ def load_raster_inputs(
         )
         rows, cols = np.where(valid)
         if rows.size == 0:
-            raise ValueError("A interseção válida entre os rasters e a máscara está vazia.")
-        usos, mapping_meta = _map_land_cover_classes(
-            mb_values[valid], mapping, normalized_custom_mapping
+            raise ValueError("The valid intersection of the rasters and mask is empty.")
+        land_cover_state, mapping_meta, model_state_catalog = _map_land_cover_classes(
+            mb_values[valid],
+            mapping,
+            normalized_custom_mapping,
+            custom_definitions,
+            custom_mapping_mode=class_mapping_mode == "custom",
         )
-        alt2 = dem_values[valid]
+        relative_elevation = dem_values[valid]
 
         # Raster dimensions are safely below the int32 limit and compact
         # coordinates substantially reduce the setup footprint for large
@@ -392,14 +486,14 @@ def load_raster_inputs(
         }
         if soil_enabled and soil_path is not None:
             with rasterio.open(soil_path) as soil:
-                _same_grid(mb, soil, "Aptidão de mangue")
+                _same_grid(mb, soil, "Mangrove suitability")
                 soil_raw = soil.read(1, masked=True)
                 soil_valid = ~np.ma.getmaskarray(soil_raw)
                 soil_array = np.asarray(soil_raw.filled(SOIL_DISABLED_SENTINEL), dtype=np.float64)
                 selected = soil_array[valid]
                 selected_valid = soil_valid[valid] & np.isfinite(selected)
                 if np.any(selected_valid & (selected != np.round(selected))):
-                    raise ValueError("A camada de solo contém valores não inteiros.")
+                    raise ValueError("The soil layer contains non-integer values.")
                 soil_values[selected_valid] = np.round(selected[selected_valid]).astype(np.int16)
                 soil_meta.update({
                     "nodata_cells_on_model_domain": int(np.count_nonzero(~selected_valid)),
@@ -423,19 +517,15 @@ def load_raster_inputs(
         # must always be materialized as GeoTIFFs regardless of input driver.
         profile["driver"] = "GTiff"
         grid = BrMangueGrid(
-            usos=usos,
-            alt2=alt2,
-            classe_solos=soil_values,
-            col=cols,
-            lin=rows,
+            land_cover_state=land_cover_state,
+            relative_elevation=relative_elevation,
+            soil_class=soil_values,
+            column=cols,
+            row=rows,
             neighbors=neighbors,
             source_path=str(mapbiomas_path),
             crs_wkt=mb.crs.to_wkt() if mb.crs else None,
-            custom_state_codes=tuple(item["code"] for item in custom_definitions),
-            custom_state_behaviors={
-                int(item["code"]): str(item["behavior"])
-                for item in custom_definitions
-            },
+            model_state_catalog=model_state_catalog,
         )
         metadata = {
             "land_cover": {
@@ -448,11 +538,12 @@ def load_raster_inputs(
                 "mapping": mapping_meta,
             },
             "custom_model_classes": custom_definitions,
+            "model_state_catalog": model_state_catalog,
             "elevation": {
                 "path": str(elevation_path),
                 "nodata": dem.nodata,
-                "min_valid_m": float(np.nanmin(alt2)),
-                "max_valid_m": float(np.nanmax(alt2)),
+                "min_valid_m": float(np.nanmin(relative_elevation)),
+                "max_valid_m": float(np.nanmax(relative_elevation)),
             },
             "mask": {
                 "path": str(Path(mask_path).resolve()) if mask_path else None,
@@ -484,12 +575,6 @@ def load_raster_inputs(
                 "valid_row_max": int(rows.max()),
                 "valid_col_min": int(cols.min()),
                 "valid_col_max": int(cols.max()),
-            },
-            "model_class_codes": {
-                "MANGUE": MANGUE,
-                "VEGETACAO_TERRESTRE": VEGETACAO_TERRESTRE,
-                "MAR": MAR,
-                "AREA_ANTROPIZADA": AREA_ANTROPIZADA,
             },
         }
         return RasterInputSet(

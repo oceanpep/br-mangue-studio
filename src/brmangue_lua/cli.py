@@ -1,4 +1,4 @@
-"""Linha de comando para executar a tradução de paridade."""
+"""Command-line interface for running the parity model."""
 
 from __future__ import annotations
 
@@ -9,9 +9,9 @@ from .engine import ModelParameters, run_shapefile
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="BRMANGUE Lua-parity em Python")
-    parser.add_argument("--input", required=True, help="Shapefile da grade celular")
-    parser.add_argument("--output", default="outputs", help="Pasta de resultados")
+    parser = argparse.ArgumentParser(description="BRMANGUE Lua-parity model in Python")
+    parser.add_argument("--input", required=True, help="Cell-grid shapefile")
+    parser.add_argument("--output", default="outputs", help="Results folder")
     parser.add_argument("--final-time", type=int, default=100)
     parser.add_argument("--tide-height", type=float, default=6.0)
     parser.add_argument("--sea-level-rise-rate", type=float, default=0.5)
@@ -19,51 +19,51 @@ def build_parser() -> argparse.ArgumentParser:
         "--accretion-rate-mm",
         type=float,
         default=None,
-        help="Taxa constante de acreção em mm por passo; omitida preserva a fórmula Lua.",
+        help="Constant accretion rate in mm per step; omit it to preserve the Lua formula.",
     )
     parser.add_argument(
         "--engine",
         choices=("continuous", "blocks", "blocks-memory", "dissmodel"),
         default="continuous",
-        help="Modo de processamento da grade.",
+        help="Grid processing mode.",
     )
     parser.add_argument(
         "--block-size",
         type=int,
         default=10_000,
-        help="Número de células por bloco no modo blocks.",
+        help="Number of cells per block in blocks mode.",
     )
     parser.add_argument(
         "--dissmodel-runner",
         choices=("continuous", "blocks"),
         default="continuous",
-        help="Executor usado quando --engine dissmodel é selecionado.",
+        help="Executor used when --engine dissmodel is selected.",
     )
     parser.add_argument(
         "--show-chart",
         action="store_true",
-        help="Abre o gráfico ao vivo do DissModel.",
+        help="Open the live DissModel chart.",
     )
     parser.add_argument(
         "--fix-accretion-typo",
         action="store_true",
-        help="Usa ClasseSolos migrado na acreção, em vez de reproduzir o erro Lua.",
+        help="Use migrated soil class for accretion instead of reproducing the Lua behavior.",
     )
     parser.add_argument(
         "--strict-lua-schema",
         action="store_true",
-        help="Reproduz a ausência de ClasseSolos quando o shapefile só possui ClaseSolos.",
+        help="Reproduce the missing SoilClass field when the shapefile only contains ClaseSolos.",
     )
     parser.add_argument(
         "--allow-migration-without-soil",
         action="store_true",
-        help="Usa vegetação/solo exposto como candidatos à migração sem camada de solo.",
+        help="Use vegetation and bare soil as migration candidates when no soil layer is available.",
     )
     parser.add_argument(
         "--migration-maturity-years",
         type=int,
         default=3,
-        help="Anos completos antes de uma célula migrada poder propagar (padrão: 3; 0 ativa no passo seguinte).",
+        help="Complete years before a migrated cell can propagate (default: 3; 0 enables it on the next step).",
     )
     return parser
 
@@ -90,7 +90,7 @@ def main() -> None:
         show_dissmodel_chart=args.show_chart,
     )
     print(trajectory.to_string(index=False))
-    print(f"Resultados salvos em: {Path(args.output).resolve()}")
+    print(f"Results saved to: {Path(args.output).resolve()}")
 
 
 if __name__ == "__main__":
