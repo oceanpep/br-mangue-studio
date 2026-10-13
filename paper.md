@@ -42,6 +42,8 @@ General cellular-modelling environments such as TerraME provide flexible tools f
 
 The software separates raster preparation, model state and transition rules, simulation execution, and output generation. During preparation, aligned rasters are validated and valid cells are represented in a compact grid with neighbourhood indices. The model updates cell states annually from their current attributes, neighbourhood, and scenario parameters. Outputs include GeoTIFF states, trajectory and transition tables, run parameters, input hashes, timing, and available resource measurements.
 
+The class-mapping interface also lets users define additional fixed model classes by name and colour and assign raster source codes to them. These classes are preserved in maps, raster outputs, metadata, and class-count tables in both execution engines; the existing transition rules continue to operate on the built-in states.
+
 The repository includes automated unit and raster-workflow tests, user documentation, and continuous integration across supported Python versions.
 
 The continuous engine keeps the model state in memory and avoids persistent state-file access. The persistent-block engine stores state and neighbourhood arrays in disk-backed memory maps and updates a configurable slice of cells at a time. It reduces resident state during simulation and can lower memory pressure, at the cost of storage space and additional I/O. Both engines load and prepare the input grid before simulation; the block engine therefore still requires sufficient memory during preparation and is not an out-of-core raster reader. Their outputs can be compared cell by cell to check computational equivalence. Optional reprojection creates aligned copies and leaves source rasters unchanged.
