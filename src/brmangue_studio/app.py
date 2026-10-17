@@ -1,9 +1,8 @@
-"""Aplicação desktop BR-MANGUE Studio.
+"""BR-MANGUE Studio desktop application.
 
-A interface monta um projeto a partir de GeoTIFFs escolhidos pelo usuário e
-chama exclusivamente as funções públicas do pacote ``brmangue_lua``. Ela não
-altera rasters de entrada: todos os produtos são gravados em uma pasta de
-resultados do projeto.
+The interface builds projects from user-selected GeoTIFFs and calls the
+public functions in ``brmangue_lua``. Input rasters remain unchanged; all
+products are written to the project's results folder.
 """
 
 from __future__ import annotations
@@ -50,18 +49,11 @@ try:
 except ImportError:  # pragma: no cover
     psutil = None
 
-from brmangue_lua.engine import (
-    AREA_ANTROPIZADA,
-    MANGUE,
-    MANGUE_INUNDADO,
-    MANGUE_MIGRADO,
-    MAR,
-    ModelParameters,
-    VEGETACAO_TERRESTRE,
-)
+from brmangue_lua.engine import ModelParameters
+from brmangue_lua.model_states import STANDARD_CLASS_STYLES, state_entry
 from brmangue_lua.raster_inputs import (
     DEFAULT_LAND_COVER_MAPPING,
-    MAX_CUSTOM_MODEL_STATE,
+    MAX_CUSTOM_MODEL_CLASS_CODE,
     RasterInputSet,
     load_raster_inputs,
     normalize_custom_model_classes,
@@ -106,48 +98,13 @@ CUSTOM_BEHAVIOR_LABELS = {
     "anthropized": "Anthropized area",
     "water": "Water body",
 }
-MODEL_COLORS = {
-    0: "#ffffff",
-    1: "#006d2c",
-    2: "#b2df8a",
-    3: "#2b8cbe",
-    4: "#fdae61",
-    5: "#777777",
-    6: "#fdae61",
-    7: "#999999",
-    8: "#7b3294",
-    9: "#e34a33",
-    10: "#999999",
-}
-MODEL_LABELS = {
-    1: "Mangrove",
-    2: "Natural vegetation",
-    3: "Water",
-    4: "Anthropized / blocked",
-    8: "Migrated mangrove",
-    9: "Flooded mangrove",
-}
-# The map uses the six standard visual classes. Flooded non-mangrove states
-# remain available in the detailed table and monitor, while their map colour
-# follows the corresponding parent land-cover class.
-DISPLAY_STATE_REMAP = {
-    5: 4,   # bare soil -> blocked/developed palette
-    6: 4,   # flooded bare soil -> blocked/developed palette
-    7: 4,   # flooded anthropized/blocked -> blocked/developed palette
-    10: 2,  # flooded natural vegetation -> natural vegetation palette
-}
-MODEL_STATE_NAMES = {
-    0: "nodata",
-    1: "mangrove",
-    2: "natural_vegetation",
-    3: "water",
-    4: "anthropized_blocked",
-    5: "bare_soil",
-    6: "flooded_bare_soil",
-    7: "flooded_anthropized_blocked",
-    8: "migrated_mangrove",
-    9: "flooded_mangrove",
-    10: "flooded_natural_vegetation",
+CHART_BEHAVIOR_COLORS = {
+    "mangrove": STANDARD_CLASS_STYLES["mangrove"][1],
+    "migrated_mangrove": "#7b3294",
+    "flooded_mangrove": "#e34a33",
+    "natural_vegetation": STANDARD_CLASS_STYLES["natural_vegetation"][1],
+    "water": STANDARD_CLASS_STYLES["water"][1],
+    "anthropized": STANDARD_CLASS_STYLES["anthropized"][1],
 }
 DEFAULT_CUSTOM_COLORS = (
     "#8c6bb1", "#d95f0e", "#1b9e77", "#e7298a", "#7570b3", "#66a61e",
@@ -162,12 +119,12 @@ FIGURE_COMPONENT_LABELS = {
 }
 
 
-def _model_colormap(custom_classes: list[dict[str, Any]] | None = None) -> tuple[ListedColormap, BoundaryNorm]:
-    """Return a discrete state palette including project-defined classes."""
-    colors = dict(MODEL_COLORS)
-    for item in custom_classes or []:
+def _model_colormap(state_catalog: dict[str, Any] | None = None) -> tuple[ListedColormap, BoundaryNorm]:
+    """Build a discrete palette from the active project's state catalog."""
+    colors = {0: "#ffffff"}
+    for raw_code, item in (state_catalog or {}).get("states", {}).items():
         try:
-            colors[int(item["code"])] = str(item["color"])
+            colors[int(raw_code)] = str(item["color"])
         except (KeyError, TypeError, ValueError):
             continue
     highest_code = max(colors)
@@ -179,23 +136,22 @@ def _model_colormap(custom_classes: list[dict[str, Any]] | None = None) -> tuple
 
 
 def _model_legend_handles(
-    custom_classes: list[dict[str, Any]] | None = None,
+    state_catalog: dict[str, Any] | None = None,
     language_code: str = "en",
 ) -> list[Patch]:
-    handles = [
-        Patch(facecolor=MODEL_COLORS[code], label=translate(label, language_code))
-        for code, label in MODEL_LABELS.items()
+    """Create legend entries for every class and derived state in the catalog."""
+    states = (state_catalog or {}).get("states", {})
+    if states:
+        return [
+            Patch(facecolor=str(item.get("color", "#b8c2cc")), label=translate(str(item.get("name", "Class")), language_code))
+            for _code, item in sorted(states.items(), key=lambda pair: int(pair[0]))
+        ]
+    return [
+        Patch(facecolor=color, label=translate(name, language_code))
+        for name, color in (value for value in STANDARD_CLASS_STYLES.values())
     ]
-    handles.extend(
-        Patch(
-            facecolor=str(item["color"]),
-            label=f"{translate('Custom class', language_code)}: {item['name']}",
-        )
-        for item in custom_classes or []
-    )
-    return handles
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -615,16 +571,16 @@ def _write_transition_report(
     land_cover_path: str | Path,
     band: int,
     inputs: RasterInputSet,
-    final_usos: np.ndarray,
+    final_state: np.ndarray,
     code_roles: dict[int, str],
     output_path: str | Path,
 ) -> Path:
     """Relate source classes and final states, retaining custom-class identity."""
     with rasterio.open(land_cover_path) as src:
         source_codes = src.read(band)[inputs.valid_rows, inputs.valid_cols]
-    destination_codes = np.asarray(final_usos)
+    destination_codes = np.asarray(final_state)
     if source_codes.size != destination_codes.size:
-        raise ValueError("O raster de origem e o estado final devem ter o mesmo número de células.")
+        raise ValueError("The source raster and final state must contain the same number of cells.")
     pair_counts: dict[tuple[int, int], int] = {}
     pair_dtype = np.dtype([("source", np.int32), ("destination", np.int32)])
     for start in range(0, source_codes.size, TRANSITION_REPORT_CHUNK_CELLS):
@@ -640,18 +596,7 @@ def _write_transition_report(
         int(item["code"]): item
         for item in inputs.metadata.get("custom_model_classes", [])
     }
-    state_labels = {
-        1: "MANGUE",
-        2: "VEGETACAO_TERRESTRE",
-        3: "MAR",
-        4: "AREA_ANTROPIZADA",
-        5: "SOLO_DESCOBERTO",
-        6: "SOLO_DESCOBERTO_INUNDADO",
-        7: "AREA_ANTROPIZADA_INUNDADO",
-        8: "MANGUE_MIGRADO",
-        9: "MANGUE_INUNDADO",
-        10: "VEGETACAO_TERRESTRE_INUNDADO",
-    }
+    state_catalog = inputs.metadata.get("model_state_catalog", {})
     rows: list[dict[str, Any]] = []
     for (source_code, destination_code), count in sorted(pair_counts.items()):
         role = code_roles.get(source_code, "Unmapped")
@@ -666,9 +611,11 @@ def _write_transition_report(
             custom_name = str(custom_definition.get("name", ""))
             behavior = str(custom_definition.get("behavior", "fixed"))
             role = f"Custom class: {custom_name}" if custom_name else role
-        destination = state_labels.get(
-            destination_code,
-            custom_classes.get(destination_code, {}).get("name", f"CUSTOM_{destination_code}"),
+        destination_entry = state_entry(state_catalog, destination_code)
+        destination = (
+            str(destination_entry.get("name", f"Class {destination_code}"))
+            if destination_entry
+            else f"Class {destination_code}"
         )
         rows.append(
             {
@@ -723,7 +670,7 @@ def _display_values_for_inputs(
 def _display_elevation_for_inputs(inputs: RasterInputSet) -> np.ndarray:
     """Return a display-sized elevation image without requiring the full grid."""
     if inputs.grid is not None:
-        return _display_values_for_inputs(inputs, inputs.grid.alt2, dtype=np.float64, fill_value=np.nan)
+        return _display_values_for_inputs(inputs, inputs.grid.relative_elevation, dtype=np.float64, fill_value=np.nan)
 
     grid_meta = inputs.metadata.get("grid", {})
     row_min = int(grid_meta.get("valid_row_min", 0))
@@ -774,7 +721,7 @@ def _save_annual_figure_file(
     trajectory: pd.DataFrame,
     year: int,
     language_code: str = "en",
-    custom_classes: list[dict[str, Any]] | None = None,
+    state_catalog: dict[str, Any] | None = None,
 ) -> Path:
     """Write four independent annual figures and return the state-map path."""
     figure_root = run_dir / "figures"
@@ -785,11 +732,9 @@ def _save_annual_figure_file(
         for component in FIGURE_COMPONENTS
     }
 
-    display_state = np.asarray(state, dtype=np.int32).copy()
-    for source, target in DISPLAY_STATE_REMAP.items():
-        display_state[np.asarray(state) == source] = target
+    display_state = np.asarray(state, dtype=np.int32)
     image = _display_values_for_inputs(inputs, display_state, dtype=np.int32, fill_value=0)
-    cmap, norm = _model_colormap(custom_classes)
+    cmap, norm = _model_colormap(state_catalog)
     state_fig = Figure(figsize=(7.2, 5.6), dpi=120)
     state_ax = state_fig.add_subplot(111)
     state_ax.imshow(image, cmap=cmap, norm=norm, interpolation="nearest")
@@ -802,7 +747,7 @@ def _save_annual_figure_file(
     state_ax.set_xlabel(translate("Raster columns", language_code))
     state_ax.set_ylabel(translate("Raster rows", language_code))
     state_fig.legend(
-        handles=_model_legend_handles(custom_classes, language_code),
+        handles=_model_legend_handles(state_catalog, language_code),
         loc="lower center", bbox_to_anchor=(0.5, 0.01), ncol=3, fontsize=8, title=translate("Model states", language_code),
     )
     state_fig.subplots_adjust(left=0.09, right=0.98, top=0.91, bottom=0.24)
@@ -877,10 +822,10 @@ def _generate_annual_figures(
 ) -> list[Path]:
     """Generate annual figures from saved rasters outside the UI thread."""
     states_dir = run_dir / "states"
-    custom_classes = inputs.metadata.get("custom_model_classes", [])
+    state_catalog = inputs.metadata.get("model_state_catalog", {})
     paths: list[Path] = []
     for year in trajectory.get("calendar_year", pd.Series(dtype=int)).astype(int):
-        state_path = states_dir / f"usos_{int(year)}.tif"
+        state_path = states_dir / f"state_{int(year)}.tif"
         if not state_path.exists():
             continue
         with rasterio.open(state_path) as src:
@@ -888,7 +833,7 @@ def _generate_annual_figures(
         paths.append(
             _save_annual_figure_file(
                 inputs, run_dir, state, trajectory, int(year), language_code,
-                custom_classes=custom_classes,
+                state_catalog=state_catalog,
             )
         )
     index = []
@@ -954,14 +899,14 @@ def _write_simulation_spreadsheet(
     trajectory_frame = trajectory.copy()
     count_rows: list[dict[str, Any]] = []
     state_paths: list[tuple[int, Path]] = []
-    initial_path = next(run_dir.glob("initial_usos_*.tif"), None)
+    initial_path = next(run_dir.glob("initial_state_*.tif"), None)
     if initial_path is not None:
         try:
             initial_year = int(initial_path.stem.rsplit("_", 1)[-1])
             state_paths.append((initial_year, initial_path))
         except ValueError:
             pass
-    for path in sorted((run_dir / "states").glob("usos_*.tif")):
+    for path in sorted((run_dir / "states").glob("state_*.tif")):
         try:
             state_paths.append((int(path.stem.rsplit("_", 1)[-1]), path))
         except ValueError:
@@ -969,18 +914,13 @@ def _write_simulation_spreadsheet(
     for year, path in state_paths:
         with rasterio.open(path) as src:
             values = np.asarray(src.read(1)[inputs.valid_rows, inputs.valid_cols], dtype=np.int32)
-        counts = np.bincount(np.clip(values, 0, 10), minlength=11)
         row: dict[str, Any] = {"calendar_year": year, "valid_cells": int(inputs.n_cells)}
         cell_area_km2 = inputs.cell_area_km2
         if cell_area_km2 is not None:
             row["valid_cells_km2"] = float(inputs.n_cells * cell_area_km2)
-        for code, name in MODEL_STATE_NAMES.items():
-            row[f"state_{code}_{name}_cells"] = int(counts[code])
-            if cell_area_km2 is not None:
-                row[f"state_{code}_{name}_km2"] = float(counts[code] * cell_area_km2)
-        for item in inputs.metadata.get("custom_model_classes", []):
-            code = int(item["code"])
-            name = re.sub(r"[^a-z0-9]+", "_", str(item["name"]).casefold()).strip("_")
+        for raw_code, definition in inputs.metadata.get("model_state_catalog", {}).get("states", {}).items():
+            code = int(raw_code)
+            name = re.sub(r"[^a-z0-9]+", "_", str(definition.get("name", f"class_{code}")).casefold()).strip("_")
             name = name or f"class_{code}"
             class_count = int(np.count_nonzero(values == code))
             row[f"state_{code}_{name}_cells"] = class_count
@@ -1001,7 +941,7 @@ def _write_simulation_spreadsheet(
 
 
 class BRMangueStudio(tk.Tk):
-    """Janela principal do BR-MANGUE Studio."""
+    """Main BR-MANGUE Studio window."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -1063,8 +1003,8 @@ class BRMangueStudio(tk.Tk):
         self.after(1000, self._update_resources)
 
     def _build_variables(self) -> None:
-        # Nomes de interface genéricos. Os aliases antigos permanecem para
-        # abrir projetos 0.1 sem quebrar a compatibilidade.
+        # Generic interface labels are used while legacy aliases remain
+        # accepted so version 0.1 projects continue to load.
         self.land_cover_var = tk.StringVar()
         self.elevation_var = tk.StringVar()
         self.mapbiomas_var = self.land_cover_var
@@ -1283,13 +1223,15 @@ class BRMangueStudio(tk.Tk):
             self.custom_class_behavior_var.set(self._display_custom_behavior(behavior))
         self._refresh_custom_class_list()
         self._refresh_model_legend()
-        if hasattr(self, "source_choice"):
-            source = translate(self.source_choice_var.get(), "en")
-            self.source_choice.configure(values=tuple(
-                translate(value, self.language_code)
-                for value in ("Cellular rules", "Raster input validation", "Raster runner")
-            ))
-            self.source_choice_var.set(translate(source, self.language_code))
+        if hasattr(self, "rule_table"):
+            for column, heading in (
+                ("source_code", "Raster code"),
+                ("pixels", "Pixels"),
+                ("model_class", "Assigned model class"),
+                ("behavior", "Transition profile"),
+            ):
+                self.rule_table.heading(column, text=translate(heading, self.language_code))
+            self._refresh_rule_summary()
         if hasattr(self, "engine_combo"):
             self._sync_engine_choice()
         if hasattr(self, "monitor_text"):
@@ -1297,10 +1239,10 @@ class BRMangueStudio(tk.Tk):
         if hasattr(self, "class_chart"):
             self.class_bar_labels = {
                 "mangrove": translate("Mangrove", self.language_code),
-                "migrated_mangrove": translate("Migrated", self.language_code),
+                "migrated_mangrove": translate("Migrated mangrove", self.language_code),
                 "flooded_mangrove": translate("Flooded", self.language_code),
                 "vegetation": translate("Vegetation", self.language_code),
-                "sea": translate("Water", self.language_code),
+                "water": translate("Water", self.language_code),
                 "anthropized": translate("Developed", self.language_code),
             }
             self._redraw_class_chart()
@@ -1600,6 +1542,7 @@ class BRMangueStudio(tk.Tk):
         """Reset source assignments when switching mapping workflows."""
         if self.class_counts:
             self._rebuild_class_rows(preserve_current=False)
+        self._refresh_rule_summary()
 
     def _initial_source_role(self, code: int) -> str:
         if self.class_mapping_mode_var.get() == "custom":
@@ -1612,14 +1555,16 @@ class BRMangueStudio(tk.Tk):
             return
         for child in frame.winfo_children():
             child.destroy()
+        catalog = self.inputs.metadata.get("model_state_catalog", {}) if self.inputs else {}
         items = [
-            (code, translate(label, self.language_code), MODEL_COLORS[code])
-            for code, label in MODEL_LABELS.items()
+            (int(code), translate(str(item.get("name", f"Class {code}")), self.language_code), str(item.get("color", "#b8c2cc")))
+            for code, item in sorted(catalog.get("states", {}).items(), key=lambda pair: int(pair[0]))
         ]
-        items.extend(
-            (int(item["code"]), str(item["name"]), str(item["color"]))
-            for item in self.custom_model_classes
-        )
+        if not items:
+            items = [
+                (index, translate(name, self.language_code), color)
+                for index, (name, color) in enumerate(STANDARD_CLASS_STYLES.values(), start=1)
+            ]
         for code, label, color in items:
             item_frame = ttk.Frame(frame)
             item_frame.pack(side="left", anchor="w", padx=(0, 10), pady=(0, 2))
@@ -1667,14 +1612,14 @@ class BRMangueStudio(tk.Tk):
             self._show_message("showwarning", "Custom class", "Custom class names must be unique.")
             return
         used_codes = {int(item["code"]) for item in self.custom_model_classes}
-        code = 11
+        code = 1
         while code in used_codes:
             code += 1
-        if code > MAX_CUSTOM_MODEL_STATE:
+        if code > MAX_CUSTOM_MODEL_CLASS_CODE:
             limit_message = translate(
-                "The model supports custom state codes through {limit}.",
+                "The model supports custom class codes through {limit}.",
                 self.language_code,
-            ).format(limit=MAX_CUSTOM_MODEL_STATE)
+            ).format(limit=MAX_CUSTOM_MODEL_CLASS_CODE)
             self._show_message(
                 "showerror", "Custom class", limit_message,
             )
@@ -1703,6 +1648,7 @@ class BRMangueStudio(tk.Tk):
         self._refresh_model_legend()
         if self.class_counts:
             self._rebuild_class_rows(preserve_current=True)
+        self._refresh_rule_summary()
 
     def _remove_custom_class(self, code: int) -> None:
         if any(self._canonical_role(variable.get()) == f"custom:{code}" for variable in self.class_vars.values()):
@@ -1718,6 +1664,7 @@ class BRMangueStudio(tk.Tk):
         self._refresh_model_legend()
         if self.class_counts:
             self._rebuild_class_rows(preserve_current=True)
+        self._refresh_rule_summary()
 
     def _build_parameter_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(1, weight=1)
@@ -1890,26 +1837,58 @@ class BRMangueStudio(tk.Tk):
         ttk.Button(animation_controls, text="Open animations", command=self.open_animations_folder).pack(side="left")
         ttk.Button(animation_controls, text="Open annual figures", command=self.open_figures_folder).pack(side="left", padx=4)
 
-        source_tab.rowconfigure(1, weight=1)
+        source_tab.rowconfigure(0, weight=1)
         source_tab.columnconfigure(0, weight=1)
-        source_controls = ttk.Frame(source_tab)
-        source_controls.grid(row=0, column=0, sticky="ew", pady=(0, 6))
-        ttk.Label(source_controls, text="Rule module").pack(side="left")
-        self.source_choice_var = tk.StringVar(value=translate("Cellular rules", self.language_code))
-        self.source_choice = ttk.Combobox(
-            source_controls, textvariable=self.source_choice_var,
-            values=tuple(translate(value, self.language_code) for value in ("Cellular rules", "Raster input validation", "Raster runner")),
-            state="readonly", width=26,
+        active_rules_tab = source_tab
+
+        active_rules_tab.columnconfigure(0, weight=1)
+        active_rules_tab.rowconfigure(3, weight=1)
+        ttk.Label(
+            active_rules_tab,
+            text="This view lists the raster classes and rule profiles assigned in the current project.",
+            wraplength=680,
+            foreground="#5d6b78",
+        ).grid(row=0, column=0, sticky="w", pady=(0, 8))
+        self.rule_mapping_mode_var = tk.StringVar()
+        ttk.Label(
+            active_rules_tab,
+            textvariable=self.rule_mapping_mode_var,
+            font=("Segoe UI", 10, "bold"),
+            foreground="#17324d",
+        ).grid(row=1, column=0, sticky="w", pady=(0, 4))
+        self.rule_summary_status_var = tk.StringVar()
+        ttk.Label(
+            active_rules_tab,
+            textvariable=self.rule_summary_status_var,
+            wraplength=680,
+            foreground="#5d6b78",
+        ).grid(row=2, column=0, sticky="w", pady=(0, 8))
+        rule_table_frame = ttk.Frame(active_rules_tab)
+        rule_table_frame.grid(row=3, column=0, sticky="nsew")
+        rule_table_frame.rowconfigure(0, weight=1)
+        rule_table_frame.columnconfigure(0, weight=1)
+        self.rule_table = ttk.Treeview(
+            rule_table_frame,
+            columns=("source_code", "pixels", "model_class", "behavior"),
+            show="headings",
+            height=18,
         )
-        self.source_choice.pack(side="left", padx=8)
-        self.source_choice.bind("<<ComboboxSelected>>", lambda _: self._show_source_code())
-        ttk.Button(source_controls, text="Refresh source", command=self._show_source_code).pack(side="left")
-        self.source_text = tk.Text(source_tab, wrap="none", state="disabled", background="#f7f9fb", foreground="#243746")
-        source_scroll = ttk.Scrollbar(source_tab, orient="vertical", command=self.source_text.yview)
-        self.source_text.configure(yscrollcommand=source_scroll.set)
-        self.source_text.grid(row=1, column=0, sticky="nsew")
-        source_scroll.grid(row=1, column=1, sticky="ns")
-        self._show_source_code()
+        for column, heading, width in (
+            ("source_code", "Raster code", 100),
+            ("pixels", "Pixels", 110),
+            ("model_class", "Assigned model class", 210),
+            ("behavior", "Transition profile", 230),
+        ):
+            self.rule_table.heading(column, text=heading)
+            self.rule_table.column(column, width=width, minwidth=70, stretch=True)
+        self.rule_table.grid(row=0, column=0, sticky="nsew")
+        rule_table_scroll = ttk.Scrollbar(
+            rule_table_frame, orient="vertical", command=self.rule_table.yview
+        )
+        rule_table_scroll.grid(row=0, column=1, sticky="ns")
+        self.rule_table.configure(yscrollcommand=rule_table_scroll.set)
+
+        self._refresh_rule_summary()
         self._draw_placeholder()
 
     def _draw_visual_canvases(self) -> None:
@@ -1929,32 +1908,92 @@ class BRMangueStudio(tk.Tk):
         self.after_idle(reset)
 
     def _legend_handles(self) -> list[Patch]:
-        classes = self.inputs.metadata.get("custom_model_classes", []) if self.inputs else []
-        return _model_legend_handles(classes, self.language_code)
+        catalog = self.inputs.metadata.get("model_state_catalog", {}) if self.inputs else {}
+        return _model_legend_handles(catalog, self.language_code)
 
-    def _show_source_code(self) -> None:
-        files = {
-            "Cellular rules": "engine.py",
-            "Raster input validation": "raster_inputs.py",
-            "Raster runner": "raster_runner.py",
+    def _refresh_rule_summary(self) -> None:
+        """Show the current project's class assignments and behavior profiles."""
+        table = getattr(self, "rule_table", None)
+        if table is None:
+            return
+        for row in table.get_children():
+            table.delete(row)
+
+        custom_mode = self.class_mapping_mode_var.get() == "custom"
+        mode_label = "Custom class mapping" if custom_mode else "Standard class mapping"
+        self.rule_mapping_mode_var.set(translate(mode_label, self.language_code))
+
+        custom_by_code = {
+            int(item["code"]): item for item in self.custom_model_classes
         }
-        filename = files.get(translate(self.source_choice_var.get(), "en"), "engine.py")
-        roots = []
-        if getattr(sys, "_MEIPASS", None):
-            roots.append(Path(sys._MEIPASS) / "brmangue_lua")
-        roots.append(Path(__file__).resolve().parents[1] / "brmangue_lua")
-        source_path = next((root / filename for root in roots if (root / filename).exists()), None)
-        if source_path is None:
-            text = translate_runtime(f"Source file not bundled: {filename}", self.language_code)
+        used_custom_codes: set[int] = set()
+        unassigned_codes: list[int] = []
+
+        for code in sorted(self.class_counts):
+            variable = self.class_vars.get(code)
+            role = (
+                self._canonical_role(variable.get())
+                if variable is not None
+                else self._canonical_role(self._initial_source_role(code))
+            )
+            if role == UNASSIGNED_ROLE:
+                model_class = translate("Unassigned", self.language_code)
+                behavior = translate("No rule assigned", self.language_code)
+                unassigned_codes.append(code)
+            elif role == "Exclude":
+                model_class = translate("Exclude", self.language_code)
+                behavior = translate("Excluded from simulation", self.language_code)
+            elif role.startswith("custom:"):
+                try:
+                    custom_code = int(role.split(":", 1)[1])
+                except ValueError:
+                    custom_code = -1
+                item = custom_by_code.get(custom_code)
+                if item is None:
+                    model_class = translate("Unassigned", self.language_code)
+                    behavior = translate("No rule assigned", self.language_code)
+                    unassigned_codes.append(code)
+                else:
+                    used_custom_codes.add(custom_code)
+                    model_class = f"{item['name']} · {translate('State', self.language_code)} {custom_code}"
+                    behavior = self._display_custom_behavior(
+                        str(item.get("behavior", "fixed"))
+                    )
+            else:
+                model_class = self._display_role(role)
+                behavior = translate("Built-in rule set", self.language_code)
+
+            table.insert(
+                "",
+                "end",
+                values=(code, f"{self.class_counts[code]:,}", model_class, behavior),
+            )
+
+        for code, item in sorted(custom_by_code.items()):
+            if code in used_custom_codes:
+                continue
+            table.insert(
+                "",
+                "end",
+                values=(
+                    "—",
+                    "—",
+                    f"{item['name']} · {translate('State', self.language_code)} {code}",
+                    self._display_custom_behavior(str(item.get("behavior", "fixed"))),
+                ),
+            )
+
+        if not self.class_counts:
+            status = "Inspect a categorical raster to see its class assignments here."
+            if self.custom_model_classes:
+                status = "No raster codes have been inspected yet. The custom classes below are defined and ready for assignment."
+        elif custom_mode and unassigned_codes:
+            status = "Custom mode starts with no assignments. Assign every raster code to a custom class or choose Exclude before loading inputs."
+        elif custom_mode:
+            status = "Each raster code follows the behavior profile shown for its assigned custom class."
         else:
-            try:
-                text = source_path.read_text(encoding="utf-8")
-            except OSError as exc:
-                text = translate_runtime(f"Unable to read {source_path}: {exc}", self.language_code)
-        self.source_text.configure(state="normal")
-        self.source_text.delete("1.0", "end")
-        self.source_text.insert("1.0", text)
-        self.source_text.configure(state="disabled")
+            status = "Each raster code follows its assigned standard model class."
+        self.rule_summary_status_var.set(translate(status, self.language_code))
 
     def _build_right(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
@@ -1968,19 +2007,19 @@ class BRMangueStudio(tk.Tk):
         self.class_chart.grid(row=4, column=0, sticky="ew")
         self.class_chart.bind("<Configure>", lambda _event: self._redraw_class_chart())
         self.class_bar_colors = {
-            "mangrove": MODEL_COLORS[1],
-            "migrated_mangrove": MODEL_COLORS[8],
-            "flooded_mangrove": MODEL_COLORS[9],
-            "vegetation": MODEL_COLORS[2],
-            "sea": MODEL_COLORS[3],
-            "anthropized": MODEL_COLORS[4],
+            "mangrove": CHART_BEHAVIOR_COLORS["mangrove"],
+            "migrated_mangrove": CHART_BEHAVIOR_COLORS["migrated_mangrove"],
+            "flooded_mangrove": CHART_BEHAVIOR_COLORS["flooded_mangrove"],
+            "vegetation": CHART_BEHAVIOR_COLORS["natural_vegetation"],
+            "water": CHART_BEHAVIOR_COLORS["water"],
+            "anthropized": CHART_BEHAVIOR_COLORS["anthropized"],
         }
         self.class_bar_labels = {
             "mangrove": translate("Mangrove", self.language_code),
-            "migrated_mangrove": translate("Migrated", self.language_code),
+            "migrated_mangrove": translate("Migrated mangrove", self.language_code),
             "flooded_mangrove": translate("Flooded", self.language_code),
             "vegetation": translate("Vegetation", self.language_code),
-            "sea": translate("Water", self.language_code),
+            "water": translate("Water", self.language_code),
             "anthropized": translate("Developed", self.language_code),
         }
         self.class_change_values: dict[str, int] = {key: 0 for key in self.class_bar_colors}
@@ -2185,6 +2224,7 @@ class BRMangueStudio(tk.Tk):
             if saved_role not in role_options:
                 saved_role = default_role
             var = tk.StringVar(value=saved_role)
+            var.trace_add("write", lambda *_args: self._refresh_rule_summary())
             self.class_vars[code] = var
             combo = ttk.Combobox(
                 row,
@@ -2249,6 +2289,7 @@ class BRMangueStudio(tk.Tk):
                 mapping=mapping,
                 custom_class_mapping=custom_mapping,
                 custom_classes=self.custom_model_classes,
+                class_mapping_mode=self.class_mapping_mode_var.get(),
                 exclude_source_codes=excluded,
             )
             _validate_class_coverage(
@@ -2273,10 +2314,8 @@ class BRMangueStudio(tk.Tk):
             self.inputs = None
             self._show_message("showerror", "Input validation", str(exc))
 
-    def _make_display(self, usos: np.ndarray) -> tuple[np.ndarray, tuple[int, int, int, int]]:
-        values = np.asarray(usos, dtype=np.int32).copy()
-        for source, target in DISPLAY_STATE_REMAP.items():
-            values[np.asarray(usos) == source] = target
+    def _make_display(self, land_cover_state: np.ndarray) -> tuple[np.ndarray, tuple[int, int, int, int]]:
+        values = np.asarray(land_cover_state, dtype=np.int32)
         return self._make_display_values(values, dtype=np.int32, fill_value=0)
 
     def _make_display_values(
@@ -2297,10 +2336,10 @@ class BRMangueStudio(tk.Tk):
         stride = max(1, int(max(crop.shape) / 700))
         return crop[::stride, ::stride], (r0, r1, c0, c1)
 
-    def _show_map(self, ax: Any, usos: np.ndarray, title: str) -> None:
-        image, _ = self._make_display(usos)
-        custom_classes = self.inputs.metadata.get("custom_model_classes", []) if self.inputs else []
-        cmap, norm = _model_colormap(custom_classes)
+    def _show_map(self, ax: Any, land_cover_state: np.ndarray, title: str) -> None:
+        image, _ = self._make_display(land_cover_state)
+        state_catalog = self.inputs.metadata.get("model_state_catalog", {}) if self.inputs else {}
+        cmap, norm = _model_colormap(state_catalog)
         ax.clear()
         ax.imshow(image, cmap=cmap, norm=norm, interpolation="nearest")
         # The surrounding LabelFrame supplies the panel title.
@@ -2342,9 +2381,9 @@ class BRMangueStudio(tk.Tk):
 
     def _draw_input_maps(self) -> None:
         assert self.inputs is not None
-        self._show_map(self.ax_initial, self.inputs.grid.usos, translate_runtime(f"Initial state — {self.year_var.get()}", self.language_code))
-        self._show_elevation(self.ax_elevation, self.inputs.grid.alt2, translate("Elevation / relative surface", self.language_code))
-        self._show_map(self.ax_current, self.inputs.grid.usos, translate_runtime("Current state — not started", self.language_code))
+        self._show_map(self.ax_initial, self.inputs.grid.land_cover_state, translate_runtime(f"Initial state — {self.year_var.get()}", self.language_code))
+        self._show_elevation(self.ax_elevation, self.inputs.grid.relative_elevation, translate("Elevation / relative surface", self.language_code))
+        self._show_map(self.ax_current, self.inputs.grid.land_cover_state, translate_runtime("Current state — not started", self.language_code))
         self.ax_trajectory.clear()
         self.ax_trajectory.set_xlabel(translate("Calendar year", self.language_code))
         self.ax_trajectory.set_ylabel(translate("Cells", self.language_code))
@@ -2372,7 +2411,7 @@ class BRMangueStudio(tk.Tk):
             # The core preserves the Lua convention (metres per model step).
             # The desktop field is deliberately expressed in mm per year.
             sea_level_rise_rate=float(self.slr_var.get()) / 1000.0,
-            legacy_lua_accretion_typo=True,
+            legacy_lua_accretion_typo=False,
             allow_migration_without_soil=(not soil_enabled) and bool(self.migration_without_soil_var.get()),
             accretion_rate_mm=accretion,
             migration_maturity_years=migration_maturity_years,
@@ -2493,7 +2532,7 @@ class BRMangueStudio(tk.Tk):
                 except (OSError, TypeError, ValueError):
                     model_elapsed_seconds = None
             final_year = int(initial_year + parameters.final_time)
-            final_path = self.run_dir / f"final_usos_{final_year}.tif"
+            final_path = self.run_dir / f"final_state_{final_year}.tif"
             final_state = None
             if final_path.exists():
                 with rasterio.open(final_path) as src:
@@ -2603,7 +2642,7 @@ class BRMangueStudio(tk.Tk):
 
     def _handle_step(self, event: dict[str, Any]) -> None:
         summary = dict(event["summary"])
-        self.last_state = np.asarray(event["usos"], dtype=np.int16)
+        self.last_state = np.asarray(event["land_cover_state"], dtype=np.uint16)
         self.trajectory_records.append(summary)
         completed = len(self.trajectory_records)
         total = max(int(self._parameters().final_time), 1)
@@ -2689,7 +2728,7 @@ class BRMangueStudio(tk.Tk):
             frame,
             year,
             self.language_code,
-            custom_classes=self.inputs.metadata.get("custom_model_classes", []),
+            state_catalog=self.inputs.metadata.get("model_state_catalog", {}),
         )
         self.annual_figure_paths.append(path)
 
@@ -2931,7 +2970,7 @@ class BRMangueStudio(tk.Tk):
             + (f" ({float(loss_area):,.4f} km²)\n" if loss_area is not None else "\n")
             + f"Net annual change: {net:+,} cells"
             + (f" ({float(net_area):+,.4f} km²)\n" if net_area is not None else "\n")
-            + f"Elevation range: {float(summary.get('min_alt2', 0)):.3f}–{float(summary.get('max_alt2', 0)):.3f}\n"
+            + f"Elevation range: {float(summary.get('min_elevation', 0)):.3f}–{float(summary.get('max_elevation', 0)):.3f}\n"
             + f"Elapsed: {_format_duration(elapsed)}"
         )
 
@@ -3081,7 +3120,7 @@ class BRMangueStudio(tk.Tk):
                 return str(candidate.resolve())
 
             saved_inputs = payload.get("inputs", {})
-            # Aceita projetos 0.1 que ainda usavam os nomes de provedores.
+            # Accept version 0.1 projects that still used provider-specific names.
             saved_land_cover = saved_inputs.get("land_cover", saved_inputs.get("mapbiomas", ""))
             for variable, value in [
                 (self.land_cover_var, saved_land_cover),

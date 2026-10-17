@@ -68,9 +68,9 @@ no processo Python.
 O declínio rápido do mangue é consequência direta das regras e dos parâmetros
 herdados do exemplo Lua: a elevação da água é aplicada a cada passo e uma
 célula de mangue que satisfaz a regra de inundação passa à classe
-`MANGUE_INUNDADO`. A camada de solo foi desativada, mas o fallback de
+estado inundado derivado da classe de mangue. A camada de solo foi desativada, mas o fallback de
 uso/cobertura permite que vegetação terrestre e solo exposto elegíveis recebam
-`MANGUE_MIGRADO`; por isso, um novo ensaio sem solo pode registrar migração.
+`Migrated mangrove`; por isso, um novo ensaio sem solo pode registrar migração.
 A magnitude da inundação não deve ser
 interpretada como previsão para São Luís antes de harmonizar datum vertical,
 maré, taxa regional de nível do mar e parâmetros ecológicos.

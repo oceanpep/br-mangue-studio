@@ -11,13 +11,15 @@ authors:
   - name: Felipe Martins Sousa
     affiliation: "1"
   - name: Denilson da Silva Bezerra
-    affiliation: "2"
+    affiliation: "1"
+  - name: Sergio Souza Costa
+    affiliation: "1"
+  - name: Ricardo Luvizotto Santos
+    affiliation: "1"
 affiliations:
   - name: Universidade Federal do Maranhão, Brazil
     index: 1
-  - name: Instituto Nacional de Pesquisas Espaciais, Brazil
-    index: 2
-date: 1 October 2026
+date: 17 October 2026
 bibliography: paper.bib
 ---
 
@@ -95,6 +97,13 @@ engines record the engine, input hashes, parameters, annual trajectories,
 resource samples, and output manifest so that speed claims can be separated
 from scientific equivalence. Optional CRS reprojection writes aligned copies
 without modifying source rasters.
+
+The default annual sediment-accretion increment follows the linear relationship
+`Y = 1.693 + 0.939 x`, with `x` as the annual sea-level-rise rate in mm/year and
+`Y` as accretion in mm/year [@alongi2008; @tomaz2019]. It is applied to states
+configured with mangrove behavior, including migrated mangrove, and does not
+depend on the optional soil-suitability raster. A user-specified accretion rate
+replaces this default.
 
 # Research impact statement
 

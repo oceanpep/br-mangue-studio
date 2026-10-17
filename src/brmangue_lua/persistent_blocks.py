@@ -1,18 +1,12 @@
-"""Motor em blocos persistente para a tradução Lua/TerraME.
-
-O estado fica em ``numpy.memmap`` e apenas o intervalo de células do bloco é
-percorrido por vez. A vizinhança é materializada como índices de até oito
-vizinhos, o que preserva a ordem e a semântica de ``cell.past`` do TerraME
-sem carregar uma lista de objetos por célula.
-"""
+"""Disk-backed block execution for large cellular grids."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+import gc
 import json
 import time
-import gc
 from typing import Any
 
 import numpy as np
@@ -20,33 +14,23 @@ import pandas as pd
 
 try:
     import psutil
-except ImportError:  # pragma: no cover - optional diagnostic only
+except ImportError:  # pragma: no cover - optional diagnostics
     psutil = None
 
-from .engine import (
-    AREA_ANTROPIZADA,
-    AREA_ANTROPIZADA_INUNDADO,
-    CANAL_FLUVIAL,
-    MANGUE,
-    MANGUE_INUNDADO,
-    MANGUE_MIGRADO,
-    MAR,
-    ModelParameters,
-    SOLO_DESCOBERTO,
-    SOLO_DESCOBERTO_INUNDADO,
-    SOLO_MANGUE,
-    SOLO_MANGUE_MIGRADO,
-    VEGETACAO_TERRESTRE,
-    VEGETACAO_TERRESTRE_INUNDADO,
-    is_sea_or_flooded,
-    mangrove_extent_metrics,
+from .engine import ModelParameters, SOIL_PROFILE_CODES, is_sea_or_flooded, mangrove_extent_metrics
+from .model_states import (
+    count_model_states,
+    flooded_state_code,
+    migrated_mangrove_code,
+    mangrove_accretion_codes,
+    state_kind,
 )
 
 
 STATE_DTYPES: dict[str, np.dtype[Any]] = {
-    "usos": np.dtype("int16"),
-    "alt2": np.dtype("float64"),
-    "classe_solos": np.dtype("int16"),
+    "land_cover_state": np.dtype("uint16"),
+    "relative_elevation": np.dtype("float64"),
+    "soil_class": np.dtype("int16"),
     "migration_age": np.dtype("int16"),
 }
 
@@ -57,7 +41,7 @@ def _memmap(path: Path, dtype: np.dtype[Any], shape: tuple[int, ...], mode: str)
 
 @dataclass
 class PersistentBlockRunner:
-    """Executor com dois estados alternados persistidos em disco."""
+    """Run annual transitions over disk-backed arrays in cell order."""
 
     root: Path
     n_cells: int
@@ -65,10 +49,9 @@ class PersistentBlockRunner:
     neighbors: np.memmap
     state_a: dict[str, np.memmap]
     state_b: dict[str, np.memmap]
-    custom_state_codes: tuple[int, ...] = ()
-    custom_state_behaviors: dict[int, str] = field(default_factory=dict)
-    _migration_candidate_states: frozenset[int] = field(default_factory=frozenset, repr=False)
-    _migration_source_states: frozenset[int] = field(default_factory=frozenset, repr=False)
+    model_state_catalog: dict[str, Any] = field(default_factory=dict)
+    migration_candidate_states: frozenset[int] = field(default_factory=frozenset, repr=False)
+    migration_source_states: frozenset[int] = field(default_factory=frozenset, repr=False)
     current_slot: str = "a"
     years_completed: int = 0
     last_transition_metrics: dict[str, int] = field(default_factory=dict, init=False, repr=False)
@@ -109,78 +92,68 @@ class PersistentBlockRunner:
         source_path: str | None = None,
         strict_lua_schema: bool = False,
     ) -> "PersistentBlockRunner":
-        """Cria workspace a partir de uma grade já carregada em arrays."""
+        """Create persistent state files from an in-memory grid."""
         root = Path(root).resolve()
         if root.exists() and any(root.iterdir()):
-            raise FileExistsError(f"A pasta de workspace não está vazia: {root}")
+            raise FileExistsError(f"Workspace folder is not empty: {root}")
         root.mkdir(parents=True, exist_ok=True)
         if block_size < 1:
-            raise ValueError("block_size deve ser maior ou igual a 1.")
+            raise ValueError("block_size must be greater than or equal to 1.")
 
-        n = grid.size
-
-        state: dict[str, dict[str, np.memmap]] = {}
+        cell_count = grid.size
+        slots: dict[str, dict[str, np.memmap]] = {}
+        source_arrays = {
+            "land_cover_state": grid.land_cover_state,
+            "relative_elevation": grid.relative_elevation,
+            "soil_class": grid.soil_class,
+            "migration_age": grid.migration_age,
+        }
         for slot in ("a", "b"):
-            slot_dir = root / f"estado_{slot}"
+            slot_dir = root / f"state_{slot}"
             slot_dir.mkdir()
-            state[slot] = {}
+            slots[slot] = {}
             for name, dtype in STATE_DTYPES.items():
-                state[slot][name] = _memmap(
-                    slot_dir / f"{name}.dat", dtype, (n,), "w+"
-                )
-                source = {
-                    "usos": grid.usos,
-                    "alt2": grid.alt2,
-                    "classe_solos": grid.classe_solos,
-                    "migration_age": grid.migration_age,
-                }[name]
-                state[slot][name][:] = source
-                state[slot][name].flush()
+                target = _memmap(slot_dir / f"{name}.dat", dtype, (cell_count,), "w+")
+                target[:] = source_arrays[name]
+                target.flush()
+                slots[slot][name] = target
 
-        neighbors = _memmap(root / "neighbors.dat", np.dtype("int32"), (n, 8), "w+")
+        neighbors = _memmap(root / "neighbors.dat", np.dtype("int32"), (cell_count, 8), "w+")
         neighbors[:] = -1
-        for i, values in enumerate(grid.neighbors):
+        for index, values in enumerate(grid.neighbors):
             values_array = np.asarray(values, dtype=np.int32)
             if values_array.size:
-                neighbors[i, : min(values_array.size, 8)] = values_array[:8]
+                neighbors[index, : min(values_array.size, 8)] = values_array[:8]
         neighbors.flush()
 
+        catalog = json.loads(json.dumps(grid.model_state_catalog))
         metadata = {
-            "engine": "python_lua_parity_persistent_blocks",
+            "engine": "python_persistent_blocks",
             "input": source_path or grid.source_path,
-            "cells": n,
+            "cells": cell_count,
             "block_size": int(block_size),
             "neighbor_count": 8,
             "strict_lua_schema": bool(strict_lua_schema),
-            "state_dtype": {name: str(dtype) for name, dtype in STATE_DTYPES.items()},
-            "custom_model_state_codes": list(grid.custom_state_codes),
-            "custom_model_state_behaviors": {
-                str(code): behavior
-                for code, behavior in grid.custom_state_behaviors.items()
-            },
+            "state_dtypes": {name: str(dtype) for name, dtype in STATE_DTYPES.items()},
+            "model_state_catalog": catalog,
         }
         (root / "metadata.json").write_text(
             json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        # A geometria e os vetores temporários usados para construir o
-        # workspace não permanecem vivos durante a simulação.
-        custom_state_codes = grid.custom_state_codes
-        custom_state_behaviors = dict(grid.custom_state_behaviors)
-        migration_candidate_states = grid._migration_candidate_states
-        migration_source_states = grid._migration_source_states
+        migration_candidates = grid._migration_candidate_states
+        migration_sources = grid._migration_source_states
         del grid
         gc.collect()
         return cls(
             root=root,
-            n_cells=n,
+            n_cells=cell_count,
             block_size=int(block_size),
             neighbors=neighbors,
-            state_a=state["a"],
-            state_b=state["b"],
-            custom_state_codes=custom_state_codes,
-            custom_state_behaviors=custom_state_behaviors,
-            _migration_candidate_states=migration_candidate_states,
-            _migration_source_states=migration_source_states,
+            state_a=slots["a"],
+            state_b=slots["b"],
+            model_state_catalog=catalog,
+            migration_candidate_states=migration_candidates,
+            migration_source_states=migration_sources,
         )
 
     @property
@@ -192,153 +165,127 @@ class PersistentBlockRunner:
         return self.state_b if self.current_slot == "a" else self.state_a
 
     def summary(self) -> dict[str, int | float]:
-        usos = self.current["usos"]
-        alt2 = self.current["alt2"]
-        summary: dict[str, int | float] = {
-            "mangrove": int(np.count_nonzero(usos == MANGUE)),
-            "vegetation": int(np.count_nonzero(usos == VEGETACAO_TERRESTRE)),
-            "sea": int(np.count_nonzero(usos == MAR)),
-            "anthropized": int(np.count_nonzero(usos == AREA_ANTROPIZADA)),
-            "bare": int(np.count_nonzero(usos == SOLO_DESCOBERTO)),
-            "flooded_bare": int(np.count_nonzero(usos == SOLO_DESCOBERTO_INUNDADO)),
-            "flooded_anthropized": int(np.count_nonzero(usos == AREA_ANTROPIZADA_INUNDADO)),
-            "migrated_mangrove": int(np.count_nonzero(usos == MANGUE_MIGRADO)),
-            "flooded_mangrove": int(np.count_nonzero(usos == MANGUE_INUNDADO)),
-            "flooded_natural": int(np.count_nonzero(usos == VEGETACAO_TERRESTRE_INUNDADO)),
-        }
-        for code in self.custom_state_codes:
-            summary[f"custom_{code}"] = int(np.count_nonzero(usos == code))
-        summary["min_alt2"] = float(np.nanmin(alt2))
-        summary["max_alt2"] = float(np.nanmax(alt2))
-        return summary
+        current = self.current
+        result: dict[str, int | float] = count_model_states(
+            current["land_cover_state"], self.model_state_catalog
+        )
+        elevation = current["relative_elevation"]
+        result["min_elevation"] = float(np.nanmin(elevation))
+        result["max_elevation"] = float(np.nanmax(elevation))
+        return result
 
-    @staticmethod
-    def _apply_flooding(
-        current_usos: np.memmap,
-        past_usos: np.memmap,
-        index: int,
-        custom_behaviors: dict[int, str],
-    ) -> None:
-        previous = int(past_usos[index])
-        current_usos[index] = {
-            MANGUE: MANGUE_INUNDADO,
-            VEGETACAO_TERRESTRE: VEGETACAO_TERRESTRE_INUNDADO,
-            AREA_ANTROPIZADA: AREA_ANTROPIZADA_INUNDADO,
-            SOLO_DESCOBERTO: SOLO_DESCOBERTO_INUNDADO,
-        }.get(previous, {
-            "mangrove": MANGUE_INUNDADO,
-            "natural_vegetation": VEGETACAO_TERRESTRE_INUNDADO,
-            "bare_soil": SOLO_DESCOBERTO_INUNDADO,
-            "anthropized": AREA_ANTROPIZADA_INUNDADO,
-        }.get(custom_behaviors.get(previous), int(current_usos[index])))
+    def _apply_flooding(self, current_states: np.memmap, previous_states: np.memmap, index: int) -> None:
+        previous_code = int(previous_states[index])
+        if state_kind(self.model_state_catalog, previous_code) != "class":
+            return
+        target_code = flooded_state_code(self.model_state_catalog, previous_code)
+        if target_code is not None:
+            current_states[index] = target_code
 
     def step(self, time_index: int, parameters: ModelParameters) -> dict[str, int | float]:
-        """Executa um passo, mantendo apenas os arrays persistentes e um bloco.
-
-        Os dois estados alternados implementam a fotografia ``past``. O estado
-        inativo começa como cópia do estado anterior e recebe as atualizações
-        correntes. Os blocos são percorridos na ordem original das células.
-        """
-        past = self.current
+        """Apply one transition while preserving the shared previous-state snapshot."""
+        previous = self.current
         current = self.inactive
         for name in STATE_DTYPES:
-            np.copyto(current[name], past[name])
+            np.copyto(current[name], previous[name])
 
-        nmrm = time_index * parameters.sea_level_rise_rate
-        nmrm_m = nmrm * 1000
-        accretion_rate_mm = (
+        previous_states = previous["land_cover_state"]
+        previous_elevation = previous["relative_elevation"]
+        previous_migration_age = previous["migration_age"]
+        states = current["land_cover_state"]
+        elevation = current["relative_elevation"]
+        soil = current["soil_class"]
+        migration_age = current["migration_age"]
+        migrated_code = migrated_mangrove_code(self.model_state_catalog)
+        accretion_eligible_states = frozenset(mangrove_accretion_codes(self.model_state_catalog))
+
+        sea_level = time_index * parameters.sea_level_rise_rate
+        accretion_mm = (
             parameters.accretion_rate_mm
             if parameters.accretion_rate_mm is not None
-            else 1.693 + (0.939 * nmrm_m)
+            else 1.693 + (0.939 * parameters.sea_level_rise_rate * 1000)
         )
-        accretion_rate_m = accretion_rate_mm / 1000
-        tidal_influence_zone = parameters.tide_height + nmrm
+        accretion_m = accretion_mm / 1000
+        tidal_zone = parameters.tide_height + sea_level
 
-        past_usos = past["usos"]
-        past_alt2 = past["alt2"]
-        usos = current["usos"]
-        alt2 = current["alt2"]
-        solos = current["classe_solos"]
-        past_migration_age = past["migration_age"]
-        migration_age = current["migration_age"]
-
-        for start in range(0, self.n_cells, self.block_size):
-            stop = min(start + self.block_size, self.n_cells)
-            for index in range(start, stop):
-                if int(past_usos[index]) == MANGUE_MIGRADO:
-                    age = min(int(past_migration_age[index]) + 1, np.iinfo(np.int16).max)
+        for block_start in range(0, self.n_cells, self.block_size):
+            block_stop = min(block_start + self.block_size, self.n_cells)
+            for index in range(block_start, block_stop):
+                if migrated_code is not None and int(previous_states[index]) == migrated_code:
+                    age = min(int(previous_migration_age[index]) + 1, np.iinfo(np.int16).max)
                     migration_age[index] = age
-                elif int(usos[index]) == MANGUE_MIGRADO:
-                    # Converted earlier in this same step: retain age zero.
+                elif migrated_code is not None and int(states[index]) == migrated_code:
                     age = -1
                 else:
                     age = -1
                     migration_age[index] = -1
 
-                if is_sea_or_flooded(int(past_usos[index]), self.custom_state_behaviors) and past_alt2[index] >= 0:
-                    lower: list[int] = []
-                    for neighbor in self.neighbors[index]:
-                        if neighbor >= 0 and past_alt2[neighbor] < past_alt2[index]:
-                            lower.append(int(neighbor))
-                    neighbor_count = 1 + len(lower)
-                    flow = parameters.sea_level_rise_rate / neighbor_count
-                    alt2[index] += flow
-                    for neighbor in lower:
-                        alt2[neighbor] += flow
-                        if not is_sea_or_flooded(int(past_usos[neighbor]), self.custom_state_behaviors):
-                            self._apply_flooding(
-                                usos, past_usos, neighbor, self.custom_state_behaviors
-                            )
+                if is_sea_or_flooded(int(previous_states[index]), self.model_state_catalog) and previous_elevation[index] >= 0:
+                    lower_neighbors = [
+                        int(neighbor)
+                        for neighbor in self.neighbors[index]
+                        if neighbor >= 0 and previous_elevation[neighbor] < previous_elevation[index]
+                    ]
+                    flow = parameters.sea_level_rise_rate / (1 + len(lower_neighbors))
+                    elevation[index] += flow
+                    for neighbor in lower_neighbors:
+                        elevation[neighbor] += flow
+                        if not is_sea_or_flooded(int(previous_states[neighbor]), self.model_state_catalog):
+                            self._apply_flooding(states, previous_states, neighbor)
 
-                soil_source = int(solos[index]) in (SOLO_MANGUE, CANAL_FLUVIAL)
-                mature_migrated_soil_source = (
-                    int(usos[index]) == MANGUE_MIGRADO
-                    and age >= parameters.migration_maturity_years
-                    and int(solos[index]) == SOLO_MANGUE_MIGRADO
+                soil_source = int(soil[index]) in (
+                    SOIL_PROFILE_CODES["mangrove_soil"],
+                    SOIL_PROFILE_CODES["channel"],
                 )
-                if soil_source or mature_migrated_soil_source:
+                established_soil_source = (
+                    migrated_code is not None
+                    and int(states[index]) == migrated_code
+                    and age >= parameters.migration_maturity_years
+                    and int(soil[index]) == SOIL_PROFILE_CODES["migrated_mangrove_soil"]
+                )
+                if soil_source or established_soil_source:
                     for neighbor in self.neighbors[index]:
-                        if neighbor >= 0 and (
-                            int(usos[neighbor]) in self._migration_candidate_states
-                            and int(solos[neighbor]) != SOLO_MANGUE
-                            and alt2[neighbor] <= tidal_influence_zone
+                        if neighbor < 0:
+                            continue
+                        if (
+                            int(states[neighbor]) in self.migration_candidate_states
+                            and int(soil[neighbor]) != SOIL_PROFILE_CODES["mangrove_soil"]
+                            and elevation[neighbor] <= tidal_zone
                         ):
-                            solos[neighbor] = SOLO_MANGUE_MIGRADO
+                            soil[neighbor] = SOIL_PROFILE_CODES["migrated_mangrove_soil"]
 
-                migration_source = int(usos[index]) in self._migration_source_states or (
-                    int(usos[index]) == MANGUE_MIGRADO
+                is_source = int(states[index]) in self.migration_source_states or (
+                    migrated_code is not None
+                    and int(states[index]) == migrated_code
                     and age >= parameters.migration_maturity_years
                 )
-                if migration_source:
+                if is_source and migrated_code is not None:
                     for neighbor in self.neighbors[index]:
-                        if neighbor >= 0 and (
-                            int(usos[neighbor]) in self._migration_candidate_states
-                            and alt2[neighbor] <= tidal_influence_zone
-                            and (
-                                parameters.allow_migration_without_soil
-                                or int(solos[neighbor])
-                                in (SOLO_MANGUE_MIGRADO, SOLO_MANGUE)
-                            )
+                        if neighbor < 0:
+                            continue
+                        soil_eligible = parameters.allow_migration_without_soil or int(soil[neighbor]) in (
+                            SOIL_PROFILE_CODES["migrated_mangrove_soil"],
+                            SOIL_PROFILE_CODES["mangrove_soil"],
+                        )
+                        if (
+                            int(states[neighbor]) in self.migration_candidate_states
+                            and elevation[neighbor] <= tidal_zone
+                            and soil_eligible
                         ):
-                            usos[neighbor] = MANGUE_MIGRADO
+                            states[neighbor] = migrated_code
                             migration_age[neighbor] = 0
 
-                migrated_soil = (
-                    not parameters.legacy_lua_accretion_typo
-                    and int(solos[index]) == SOLO_MANGUE_MIGRADO
-                )
-                if (int(solos[index]) == SOLO_MANGUE) or (
-                    migrated_soil and not is_sea_or_flooded(
-                        int(usos[index]), self.custom_state_behaviors
-                    )
-                ):
-                    alt2[index] += accretion_rate_m
+                if parameters.legacy_lua_accretion_typo:
+                    apply_accretion = int(soil[index]) == SOIL_PROFILE_CODES["mangrove_soil"]
+                else:
+                    apply_accretion = int(states[index]) in accretion_eligible_states
+                if apply_accretion:
+                    elevation[index] += accretion_m
 
-        current["usos"].flush()
-        current["alt2"].flush()
-        current["classe_solos"].flush()
+        for array in current.values():
+            array.flush()
         self.last_transition_metrics = mangrove_extent_metrics(
-            past_usos, usos, self.custom_state_behaviors
+            previous_states, states, self.model_state_catalog
         )
         self.current_slot = "b" if self.current_slot == "a" else "a"
         self.years_completed += 1
@@ -354,9 +301,7 @@ class PersistentBlockRunner:
             row = {"year": time_index, **self.step(time_index, parameters)}
             rows.append(row)
             if process is not None:
-                self.peak_rss_bytes = max(
-                    self.peak_rss_bytes, process.memory_info().rss
-                )
+                self.peak_rss_bytes = max(self.peak_rss_bytes, process.memory_info().rss)
         self.elapsed_seconds = time.perf_counter() - started
         return pd.DataFrame(rows)
 
@@ -377,37 +322,33 @@ def run_persistent_shapefile(
 ) -> pd.DataFrame:
     output_dir = Path(output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    workspace = output_dir / "workspace"
     runner = PersistentBlockRunner.create_from_shapefile(
         input_path,
-        workspace,
+        output_dir / "workspace",
         block_size=block_size,
         strict_lua_schema=strict_lua_schema,
     )
     try:
         trajectory = runner.run(parameters)
         trajectory.to_csv(output_dir / "trajectory.csv", index=False)
-        metadata = json.loads((workspace / "metadata.json").read_text(encoding="utf-8"))
-        metadata.update(
-            {
-                "processing_mode": "blocks_persistent",
+        metadata = {
+            "engine": "python_persistent_blocks",
+            "input": str(Path(input_path).resolve()),
+            "cells": runner.n_cells,
+            "block_size": block_size,
+            "model_state_catalog": runner.model_state_catalog,
+            "parameters": {
+                "start": parameters.start,
                 "final_time": parameters.final_time,
-                "parameters": {
-                    "start": parameters.start,
-                    "final_time": parameters.final_time,
-                    "area_cell": parameters.area_cell,
-                    "tide_height": parameters.tide_height,
-                    "sea_level_rise_rate": parameters.sea_level_rise_rate,
-                    "legacy_lua_accretion_typo": parameters.legacy_lua_accretion_typo,
-                    "allow_migration_without_soil": parameters.allow_migration_without_soil,
-                    "accretion_rate_mm": parameters.accretion_rate_mm,
-                    "migration_maturity_years": parameters.migration_maturity_years,
-                },
-                "elapsed_seconds": getattr(runner, "elapsed_seconds", None),
-                "rss_before_bytes": getattr(runner, "rss_before_bytes", None),
-                "peak_rss_bytes": getattr(runner, "peak_rss_bytes", None),
-            }
-        )
+                "area_cell": parameters.area_cell,
+                "tide_height": parameters.tide_height,
+                "sea_level_rise_rate": parameters.sea_level_rise_rate,
+                "legacy_lua_accretion_typo": parameters.legacy_lua_accretion_typo,
+                "allow_migration_without_soil": parameters.allow_migration_without_soil,
+                "accretion_rate_mm": parameters.accretion_rate_mm,
+                "migration_maturity_years": parameters.migration_maturity_years,
+            },
+        }
         (output_dir / "metadata.json").write_text(
             json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
         )
