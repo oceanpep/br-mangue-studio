@@ -81,6 +81,60 @@ def test_migration_without_soil_uses_configured_candidate_profiles():
     assert migrated_code in grid.land_cover_state
 
 
+def test_accretion_without_soil_applies_to_mangrove_behaviors_only():
+    grid = make_grid()
+    grid.soil_class.fill(-999)
+    grid.land_cover_state[0] = grid.model_state_catalog["migrated_mangrove_code"]
+    initial = grid.relative_elevation.copy()
+    mangrove_code = grid.model_state_catalog["states"]["20"]["code"]
+    grid.land_cover_state[grid.land_cover_state == mangrove_code] = mangrove_code
+    grid.step(1, ModelParameters(
+        final_time=1,
+        sea_level_rise_rate=0.0,
+        accretion_rate_mm=2.3,
+    ))
+    eligible_codes = [
+        int(code)
+        for code, state in grid.model_state_catalog["states"].items()
+        if state.get("behavior") == "mangrove"
+    ]
+    eligible = np.isin(grid.land_cover_state, eligible_codes)
+    assert np.allclose(grid.relative_elevation[eligible] - initial[eligible], 0.0023)
+    assert np.allclose(grid.relative_elevation[~eligible], initial[~eligible])
+
+
+def test_default_accretion_uses_annual_rate_not_accumulated_rise():
+    grid = make_grid()
+    grid.soil_class.fill(-999)
+    grid.land_cover_state.fill(20)
+    initial = grid.relative_elevation.copy()
+    grid.step(15, ModelParameters(
+        final_time=15,
+        sea_level_rise_rate=0.0034,
+    ))
+    expected_step_m = (1.693 + 0.939 * 3.4) / 1000
+    assert np.allclose(grid.relative_elevation - initial, expected_step_m)
+
+
+def test_legacy_soil_gated_accretion_can_reproduce_old_runs():
+    grid = make_grid()
+    initial = grid.relative_elevation.copy()
+    grid.step(1, ModelParameters(
+        final_time=1,
+        sea_level_rise_rate=0.0,
+        accretion_rate_mm=2.3,
+        legacy_lua_accretion_typo=True,
+    ))
+    mangrove_on_suitable_soil = (grid.land_cover_state == 20) & (
+        grid.soil_class == SOIL_PROFILE_CODES["mangrove_soil"]
+    )
+    assert np.allclose(
+        grid.relative_elevation[mangrove_on_suitable_soil]
+        - initial[mangrove_on_suitable_soil],
+        0.0023,
+    )
+
+
 def test_migrated_mangrove_becomes_source_only_after_maturity_delay():
     rows = []
     for column in range(5):
@@ -139,6 +193,40 @@ def test_persistent_blocks_preserve_migration_age(tmp_path):
         assert runner.current["migration_age"].tolist() == [-1, 3, 0, -1, -1]
     finally:
         runner.close()
+
+
+def test_persistent_blocks_match_state_based_accretion_without_soil(tmp_path):
+    frame = make_frame()
+    catalog = make_catalog()
+    migrated = catalog["migrated_mangrove_code"]
+    frame.loc[(frame["Column"] == 0) & (frame["Row"] == 1), "LandCoverState"] = migrated
+    frame["SoilClass"] = -999
+    parameters = ModelParameters(
+        final_time=2,
+        sea_level_rise_rate=0.0,
+        accretion_rate_mm=2.3,
+    )
+    continuous = BrMangueGrid.from_geodataframe(frame, model_state_catalog=catalog)
+    initial_elevation = continuous.relative_elevation.copy()
+    expected = continuous.run(parameters)
+    blocks = PersistentBlockRunner.create_from_grid(
+        BrMangueGrid.from_geodataframe(frame, model_state_catalog=catalog),
+        tmp_path / "accretion-workspace",
+        block_size=2,
+    )
+    try:
+        actual = blocks.run(parameters)
+        assert expected.equals(actual)
+        active = np.isin(
+            blocks.current["land_cover_state"],
+            [20, migrated],
+        )
+        assert np.allclose(
+            blocks.current["relative_elevation"][active] - initial_elevation[active],
+            0.0046,
+        )
+    finally:
+        blocks.close()
 
 
 def test_mangrove_extent_metrics_use_catalog_states():

@@ -23,8 +23,8 @@ rasters, project files, and simulation results remain on your computer.
 
 | Platform | Availability | Verified environment |
 | --- | --- | --- |
-| Windows 10/11, 64-bit | Stable 1.2.0 | Windows desktop release |
-| Linux x86_64 | Research preview 1.2.0 | Built on Ubuntu 22.04 LTS; application startup verified on Ubuntu 26.04.1 LTS |
+| Windows 10/11, 64-bit | Stable 1.3.0 | Windows desktop release |
+| Linux x86_64 | Research preview 1.3.0 | Built on Ubuntu 22.04 LTS; application startup verified on Ubuntu 26.04.1 LTS |
 
 The interface is available in English and Brazilian Portuguese. English is the
 default for a new installation; choose a language in the application header.
@@ -40,6 +40,9 @@ for the complete compatibility notes and checksums.
 
 - Reads categorical land-cover and elevation GeoTIFFs; soil-suitability and
   study-area mask rasters are optional.
+- Applies sediment accretion to model classes configured with mangrove
+  behavior, including migrated mangrove, without requiring a soil-suitability
+  raster. Users can enter a constant accretion rate or use the annual default.
 - Lets you map source raster codes to standard or project-defined model
   classes, with custom names and colours, and save the configuration in a
   project. Each custom class can reuse the existing rules for mangrove,

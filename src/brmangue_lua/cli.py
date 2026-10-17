@@ -47,7 +47,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--fix-accretion-typo",
         action="store_true",
-        help="Use migrated soil class for accretion instead of reproducing the Lua behavior.",
+        help="Deprecated compatibility flag; current state-based accretion is already the default.",
+    )
+    parser.add_argument(
+        "--legacy-lua-accretion-typo",
+        action="store_true",
+        help="Reproduce the earlier soil-gated accretion behavior for comparison with old runs.",
     )
     parser.add_argument(
         "--strict-lua-schema",
@@ -74,7 +79,7 @@ def main() -> None:
         final_time=args.final_time,
         tide_height=args.tide_height,
         sea_level_rise_rate=args.sea_level_rise_rate,
-        legacy_lua_accretion_typo=not args.fix_accretion_typo,
+        legacy_lua_accretion_typo=args.legacy_lua_accretion_typo,
         allow_migration_without_soil=args.allow_migration_without_soil,
         accretion_rate_mm=args.accretion_rate_mm,
         migration_maturity_years=args.migration_maturity_years,
