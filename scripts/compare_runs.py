@@ -19,7 +19,7 @@ import rasterio
 
 
 def _final_raster(run_dir: Path) -> Path | None:
-    candidates = sorted(run_dir.glob("final_usos_*.tif"))
+    candidates = sorted(run_dir.glob("final_state_*.tif"))
     return candidates[-1] if candidates else None
 
 
@@ -92,4 +92,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -32,7 +32,7 @@ _AREA_COLUMNS = (
     "migrated_mangrove",
     "flooded_mangrove",
     "vegetation",
-    "sea",
+    "water",
     "anthropized",
     "bare",
     "flooded_bare",
@@ -60,16 +60,20 @@ def _add_area_columns(inputs: RasterInputSet, trajectory: pd.DataFrame) -> pd.Da
 
 def _summary_grid(grid: BrMangueGrid) -> dict[str, int | float]:
     result: dict[str, int | float] = grid.class_counts()
-    result["min_alt2"] = float(np.nanmin(grid.alt2))
-    result["max_alt2"] = float(np.nanmax(grid.alt2))
+    result["min_elevation"] = float(np.nanmin(grid.relative_elevation))
+    result["max_elevation"] = float(np.nanmax(grid.relative_elevation))
     return result
 
 
 def _state_arrays(runner: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     if isinstance(runner, PersistentBlockRunner):
         current = runner.current
-        return current["usos"], current["alt2"], current["classe_solos"]
-    return runner.usos, runner.alt2, runner.classe_solos
+        return (
+            current["land_cover_state"],
+            current["relative_elevation"],
+            current["soil_class"],
+        )
+    return runner.land_cover_state, runner.relative_elevation, runner.soil_class
 
 
 def _transition_metrics(runner: Any, summary: dict[str, Any]) -> dict[str, int]:
@@ -159,8 +163,8 @@ def _directory_size_bytes(path: Path) -> int:
 
 
 def _write_state(inputs: RasterInputSet, runner: Any, path: Path, year: int) -> None:
-    usos, _, _ = _state_arrays(runner)
-    inputs.write_state_raster(np.asarray(usos), path, year=year)
+    land_cover_state, _, _ = _state_arrays(runner)
+    inputs.write_state_raster(np.asarray(land_cover_state), path, year=year)
 
 
 def run_raster_simulation(
@@ -182,11 +186,11 @@ def run_raster_simulation(
     written to the following calendar year.
     """
     if parameters.final_time < parameters.start:
-        raise ValueError("final_time deve ser maior ou igual a start.")
+        raise ValueError("final_time must be greater than or equal to start.")
     if engine not in {"continuous", "blocks", "dissmodel"}:
-        raise ValueError("engine deve ser continuous, blocks ou dissmodel.")
+        raise ValueError("engine must be continuous, blocks, or dissmodel.")
     if dissmodel_runner not in {"continuous", "blocks"}:
-        raise ValueError("dissmodel_runner deve ser continuous ou blocks.")
+        raise ValueError("dissmodel_runner must be continuous or blocks.")
 
     run_started = time.perf_counter()
     output_dir = Path(output_dir).resolve()
@@ -196,8 +200,12 @@ def run_raster_simulation(
         states_dir.mkdir(parents=True, exist_ok=True)
     write_input_metadata(inputs, output_dir / "input_metadata.json")
     if inputs.grid is None:
-        raise ValueError("Os rasters precisam ser carregados antes de iniciar a simulação.")
-    inputs.write_state_raster(inputs.grid.usos, output_dir / f"initial_usos_{initial_year}.tif", year=initial_year)
+        raise ValueError("Load the input rasters before starting the simulation.")
+    inputs.write_state_raster(
+        inputs.grid.land_cover_state,
+        output_dir / f"initial_state_{initial_year}.tif",
+        year=initial_year,
+    )
     initial_class_counts = dict(inputs.grid.class_counts())
 
     runner: Any
@@ -313,14 +321,14 @@ def run_raster_simulation(
                 }
                 rows.append(row)
                 if save_annual_states:
-                    _write_state(inputs, runner, states_dir / f"usos_{calendar_year}.tif", calendar_year)
+                    _write_state(inputs, runner, states_dir / f"state_{calendar_year}.tif", calendar_year)
                 if step_callback is not None:
-                    usos, _, _ = _state_arrays(runner)
+                    land_cover_state, _, _ = _state_arrays(runner)
                     step_callback(
                         {
                             "calendar_year": calendar_year,
                             "summary": dict(row),
-                            "usos": np.asarray(usos, dtype=np.int16).copy(),
+                            "land_cover_state": np.asarray(land_cover_state, dtype=np.uint16).copy(),
                             "processed_cells": int(len(rows) * inputs.n_cells),
                         }
                     )
@@ -334,7 +342,7 @@ def run_raster_simulation(
             trajectory["calendar_year"] = trajectory["year"].astype(int) + int(initial_year)
             # DissModel records already contain the cell-by-cell transition
             # metrics emitted by the runner.  Do not reconstruct them from the
-            # exact MANGUE count, because migration uses a distinct state code.
+            # exact base-class count, because migrated mangrove has its own state code.
             step_metrics = pd.DataFrame(rows)
             if not step_metrics.empty:
                 metric_columns = [
@@ -348,7 +356,7 @@ def run_raster_simulation(
                 )
             trajectory = _add_area_columns(inputs, trajectory)
             trajectory.to_csv(output_dir / "trajectory.csv", index=False)
-            _write_state(inputs, runner, output_dir / f"final_usos_{initial_year + parameters.final_time}.tif", initial_year + parameters.final_time)
+            _write_state(inputs, runner, output_dir / f"final_state_{initial_year + parameters.final_time}.tif", initial_year + parameters.final_time)
             rows = trajectory.to_dict(orient="records")
         else:
             for time_index in range(parameters.start, parameters.final_time + 1):
@@ -377,14 +385,14 @@ def run_raster_simulation(
                 if step_rss is not None:
                     peak_rss = max(peak_rss, step_rss)
                 if save_annual_states:
-                    _write_state(inputs, runner, states_dir / f"usos_{calendar_year}.tif", calendar_year)
+                    _write_state(inputs, runner, states_dir / f"state_{calendar_year}.tif", calendar_year)
                 if step_callback is not None:
-                    usos, _, _ = _state_arrays(runner)
+                    land_cover_state, _, _ = _state_arrays(runner)
                     step_callback(
                         {
                             "calendar_year": calendar_year,
                             "summary": dict(row),
-                            "usos": np.asarray(usos, dtype=np.int16).copy(),
+                            "land_cover_state": np.asarray(land_cover_state, dtype=np.uint16).copy(),
                             "processed_cells": int(len(rows) * inputs.n_cells),
                         }
                     )
@@ -399,9 +407,9 @@ def run_raster_simulation(
             runner.close()
 
     final_year = int(initial_year + parameters.final_time)
-    final_path = output_dir / f"final_usos_{final_year}.tif"
-    if save_annual_states and (states_dir / f"usos_{final_year}.tif").exists():
-        shutil.copy2(states_dir / f"usos_{final_year}.tif", final_path)
+    final_path = output_dir / f"final_state_{final_year}.tif"
+    if save_annual_states and (states_dir / f"state_{final_year}.tif").exists():
+        shutil.copy2(states_dir / f"state_{final_year}.tif", final_path)
     elif not final_path.exists():
         _write_state(inputs, runner, final_path, final_year)
 
@@ -470,6 +478,7 @@ def run_raster_simulation(
         "parameters": _parameters_metadata(parameters),
         "cells": inputs.n_cells,
         "custom_model_classes": inputs.metadata.get("custom_model_classes", []),
+        "model_state_catalog": inputs.metadata.get("model_state_catalog", {}),
         "cell_area_km2": inputs.cell_area_km2,
         "area_conversion": (
             "Projected CRS linear units converted to square kilometres"
@@ -535,10 +544,11 @@ def run_raster_simulation(
         "soil_enabled": bool(inputs.metadata["soil"]["enabled"]),
         "migration_without_soil": bool(parameters.allow_migration_without_soil),
         "soil_behavior_when_disabled": (
-            "land-cover fallback enables migration to vegetation or bare soil; "
-            "soil-dependent accretion remains inactive; flooding remains active"
+            "land-cover behavior governs migration candidates and mangrove "
+            "accretion; flooding remains active"
             if parameters.allow_migration_without_soil
-            else "soil-dependent migration and accretion rules are inactive; flooding remains active"
+            else "soil-dependent migration is inactive; mangrove accretion follows "
+            "land-cover behavior; flooding remains active"
         ),
         "input_metadata": "input_metadata.json",
     }
@@ -579,7 +589,7 @@ def load_and_run_raster_simulation(
     if terrain_path is not None:
         elevation_path = terrain_path
     if mapbiomas_path is None or elevation_path is None or output_dir is None or parameters is None:
-        raise ValueError("Informe os rasters de uso/cobertura, elevação, output_dir e parameters.")
+        raise ValueError("Provide the land-cover and elevation rasters, output_dir, and parameters.")
     load_kwargs = {
         key: kwargs.pop(key)
         for key in (

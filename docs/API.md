@@ -50,6 +50,15 @@ servir como fonte de propagação. O padrão é `3`; `0` é útil para testes de
 sensibilidade sem atraso biológico. A interface gráfica recebe a elevação do
 nível do mar em mm/ano e faz a conversão para metros.
 
+Por padrão, a acreção é aplicada a todos os estados com comportamento de
+manguezal no catálogo, inclusive mangue migrado, sem depender da camada de solo.
+Se `accretion_rate_mm` não for informado, o motor usa a relação linear
+`Y = 1.693 + 0.939 x`, em que `x` é a taxa anual de elevação do nível do mar
+(mm/ano) e `Y` é a taxa anual de acreção (mm/ano), atribuída a Alongi (2008)
+na literatura de modelagem da costa amazônica ([Tomaz et al., 2019](https://doi.org/10.5380/abclima.v25i0.60891); [Alongi, 2008](https://doi.org/10.1016/j.ecss.2007.08.024)). O incremento é anual e não cresce com a elevação acumulada. A opção `legacy_lua_accretion_typo`
+mantém a regra anterior condicionada à classe de solo para reproduzir resultados
+antigos.
+
 ## Rodar uma grade em memória
 
 ```python
@@ -104,12 +113,14 @@ python -m brmangue_lua.raster_cli `
 
 Use `python -m brmangue_lua.raster_cli --help` para ver todas as opções.
 
-## Códigos do modelo
+## Model states
 
-Os códigos públicos do núcleo estão em `brmangue_lua.engine`: `MANGUE`,
-`VEGETACAO_TERRESTRE`, `MAR`, `AREA_ANTROPIZADA`, estados inundados e
-`MANGUE_MIGRADO`. A interface gráfica apresenta nomes legíveis para esses
-códigos.
+The model no longer assigns fixed numeric codes to land-cover states. Each
+project stores its class codes, names, behavior profiles, colors, and derived
+states in `model_state_catalog`, written to run metadata and GeoTIFF tags.
+Flooded states are generated for floodable classes, and migration uses one
+derived state named `Migrated mangrove`. Read codes through the catalog rather
+than assuming that a number represents a particular class.
 
 Alterações nas regras ou nos códigos devem incluir testes, uma nota no
 `CHANGELOG.md` e uma comparação de estados com uma entrada fixa.

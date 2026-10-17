@@ -2,54 +2,64 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
-## [1.1.0] — 2026-10-06
+## [Unreleased]
 
-- Added a Portuguese (Brazil) interface alongside English, which remains the
-  default language for new installations.
-- Added an in-app language selector and saved the preference between sessions.
-- Localized the desktop workflow, status messages, simulation charts, and
-  annual figure labels without changing project-file values or data columns.
+## [1.3.0] — 2026-10-17
 
-## [1.0.1] — 2026-10-06
-
-- Frozen desktop builds now prefer their bundled, version-matched GDAL/PROJ
-  databases over coordinate-library paths inherited from the host computer.
-- Added a configurable maturation delay for migrated mangrove cells. The
-  default is three complete annual steps before a migrated cell can propagate;
-  continuous and persistent-block engines preserve the same age state.
-- Added `migration_maturity_years` to project files, command-line execution,
-  run metadata, and the user manual.
+- Apply sediment accretion to every state configured with mangrove behavior,
+  including migrated mangrove, without requiring the optional soil-suitability
+  raster. The default accretion rate uses the annual sea-level-rise rate; users
+  can still enter a fixed annual accretion rate or select the legacy soil-gated
+  rule for reproducing earlier runs.
+- Replace the fixed legacy land-cover state constants with a per-project state
+  catalog. Configured class codes, behavior profiles, colors, and flooded
+  states now drive continuous and persistent-block engines, output rasters,
+  maps, trajectories, and transition reports.
+- Use one derived state named `Migrated mangrove`; flooded states retain their
+  source class name, and all state codes are recorded in run metadata and
+  GeoTIFF tags.
+- Rename state-raster outputs to English and show configured class assignments
+  and behavior profiles in Model rules.
 
 ## [1.2.0] — 2026-10-12
 
-- Added optional project-defined classes to the class-mapping tab. Users can
-  name and colour additional states and select an existing behavior profile
-  for mangrove, natural vegetation, bare soil, anthropized land, or water.
-  Continuous and persistent-block engines apply the same migration, flooding,
-  and flow rules. Project files and metadata retain the selected profile, and
-  transition reports identify custom source classes after a derived transition.
-- Added a fully user-defined mapping mode. It hides the standard model classes,
-  starts every source code unassigned, and requires each code to be mapped to a
-  named class and behavior profile or explicitly excluded. The selected mode is
-  saved with the project; older projects continue to use standard mapping.
+- Add optional project-defined classes with custom names, colors, and existing
+  model behavior profiles.
+- Add fully user-defined class mapping. This mode starts with no standard
+  categories selected and requires every raster code to be assigned or
+  explicitly excluded.
+
+## [1.1.0] — 2026-10-06
+
+- Add a Brazilian Portuguese interface alongside English, the default language
+  for new installations.
+- Add an in-app language selector and save the preference between sessions.
+- Localize desktop workflows, status messages, charts, and annual figure labels
+  without changing project-file values or data columns.
+
+## [1.0.1] — 2026-10-06
+
+- Make frozen desktop builds prefer their bundled GDAL/PROJ databases over
+  coordinate-library paths inherited from the host computer.
+- Add a configurable maturation delay for migrated mangrove cells. The default
+  is three complete annual steps; both engines preserve the age state.
+- Add `migration_maturity_years` to project files, command-line execution, run
+  metadata, and the user manual.
 
 ## [1.0.0] — 2026-09-21
 
 This release consolidates the Python desktop application for the BR-MANGUE
 cellular model and prepares a reproducible release workflow.
 
-- Added continuous and persistent-block raster execution in the desktop
-  workflow.
-- Added annual trajectory, state-raster, transition, figure, and animation
+- Add continuous and persistent-block raster execution in the desktop workflow.
+- Add annual trajectory, state-raster, transition, figure, and animation
   outputs.
-- Added run metadata with input provenance and detailed timing, memory, CPU,
-  I/O, disk, throughput, and output-size measurements.
-- Added per-year performance fields and a periodic `resource_samples.csv`
-  trace.
-- Added CRS inspection and optional reprojection/alignment of input rasters.
-- Added automated tests, GitHub Actions, contribution guidance, issue
-  templates, citation metadata, and a reproducibility/benchmarking protocol.
-- Added the Portuguese user manual for the Windows executable.
+- Record input provenance and detailed timing, memory, CPU, I/O, disk,
+  throughput, and output-size measurements.
+- Add CRS inspection and optional reprojection/alignment of input rasters.
+- Add automated tests, contribution guidance, issue templates, citation
+  metadata, and a reproducibility/benchmarking protocol.
+- Add the Portuguese user manual for the Windows executable.
 
-The scientific equivalence of the continuous and block engines must be checked
-for each released build and documented with the benchmark protocol.
+The scientific equivalence of the continuous and block engines should be
+checked for each released build and documented with the benchmark protocol.
