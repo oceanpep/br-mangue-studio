@@ -14,70 +14,34 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import geopandas as gpd
 
-
-# Land-cover state codes used by the model.
-MANGUE = 1
-VEGETACAO_TERRESTRE = 2
-MAR = 3
-AREA_ANTROPIZADA = 4
-SOLO_DESCOBERTO = 5
-SOLO_DESCOBERTO_INUNDADO = 6
-AREA_ANTROPIZADA_INUNDADO = 7
-MANGUE_MIGRADO = 8
-MANGUE_INUNDADO = 9
-VEGETACAO_TERRESTRE_INUNDADO = 10
-
-# Soil-state codes used by the model.
-CANAL_FLUVIAL = 0
-SOLO_MANGUE = 3
-SOLO_MANGUE_MIGRADO = 9
-
-_FLOODED = frozenset(
-    {
-        MAR,
-        SOLO_DESCOBERTO_INUNDADO,
-        AREA_ANTROPIZADA_INUNDADO,
-        MANGUE_INUNDADO,
-        VEGETACAO_TERRESTRE_INUNDADO,
-    }
-)
-
-# Both states represent living/active mangrove extent.  A cell that changes
-# from MANGUE to MANGUE_MIGRADO has moved within this extent, not disappeared.
-ACTIVE_MANGROVE_STATES = frozenset({MANGUE, MANGUE_MIGRADO})
-
-# A user-defined class keeps its own code until one of these existing model
-# rules derives a new state. "fixed" preserves the legacy fixed-class mode.
-CUSTOM_CLASS_BEHAVIORS = frozenset(
-    {"fixed", "mangrove", "natural_vegetation", "bare_soil", "anthropized", "water"}
+from .model_states import (
+    active_mangrove_codes,
+    build_model_state_catalog,
+    count_model_states,
+    flooded_state_code,
+    mangrove_accretion_codes,
+    migrated_mangrove_code as get_migrated_mangrove_code,
+    state_entry,
+    state_kind,
 )
 
 
-def _custom_behavior(code: int, custom_behaviors: dict[int, str] | None) -> str | None:
-    return custom_behaviors.get(int(code)) if custom_behaviors else None
+SOIL_PROFILE_CODES = {
+    "channel": 0,
+    "mangrove_soil": 3,
+    "migrated_mangrove_soil": 9,
+}
 
 
 def mangrove_extent_metrics(
-    previous_usos: np.ndarray,
-    current_usos: np.ndarray,
-    custom_behaviors: dict[int, str] | None = None,
+    previous_states: np.ndarray,
+    current_states: np.ndarray,
+    state_catalog: dict[str, Any],
 ) -> dict[str, int]:
-    """Measure annual change in the active mangrove extent.
-
-    ``MANGUE_MIGRADO`` is included deliberately: the original count of the
-    exact ``MANGUE`` code falls when a cell migrates, although the mangrove
-    extent has not been lost.  Gross gains and losses are counted from the
-    cell-by-cell transition, and ``annual_net_change`` is their balance.
-    """
-    previous_active = np.isin(previous_usos, tuple(ACTIVE_MANGROVE_STATES))
-    current_active = np.isin(current_usos, tuple(ACTIVE_MANGROVE_STATES))
-    if custom_behaviors:
-        custom_mangrove_states = tuple(
-            code for code, behavior in custom_behaviors.items() if behavior == "mangrove"
-        )
-        if custom_mangrove_states:
-            previous_active |= np.isin(previous_usos, custom_mangrove_states)
-            current_active |= np.isin(current_usos, custom_mangrove_states)
+    """Measure annual change in mangrove states from the project catalog."""
+    active_codes = active_mangrove_codes(state_catalog)
+    previous_active = np.isin(previous_states, active_codes)
+    current_active = np.isin(current_states, active_codes)
     gain = int(np.count_nonzero(~previous_active & current_active))
     loss = int(np.count_nonzero(previous_active & ~current_active))
     return {
@@ -97,8 +61,9 @@ class ModelParameters:
     area_cell: float = 0.09
     tide_height: float = 6.0
     sea_level_rise_rate: float = 0.5
-    # Preserve the historical accretion switch for reproducibility.
-    legacy_lua_accretion_typo: bool = True
+    # Keep the historical soil-gated behavior available for reproducibility.
+    # The default applies accretion to all states with mangrove behavior.
+    legacy_lua_accretion_typo: bool = False
     # Allow land-cover classes to supply migration candidates when soil data
     # are unavailable. The default keeps soil-dependent migration disabled.
     allow_migration_without_soil: bool = False
@@ -111,61 +76,79 @@ class ModelParameters:
 
     def __post_init__(self) -> None:
         if int(self.migration_maturity_years) != self.migration_maturity_years:
-            raise ValueError("migration_maturity_years deve ser um número inteiro.")
+            raise ValueError("migration_maturity_years must be an integer.")
         if self.migration_maturity_years < 0:
-            raise ValueError("migration_maturity_years deve ser maior ou igual a zero.")
+            raise ValueError("migration_maturity_years must be greater than or equal to zero.")
 
 
 @dataclass
 class BrMangueGrid:
     """Cell grid and current simulation state."""
 
-    usos: np.ndarray
-    alt2: np.ndarray
-    classe_solos: np.ndarray
-    col: np.ndarray
-    lin: np.ndarray
+    land_cover_state: np.ndarray
+    relative_elevation: np.ndarray
+    soil_class: np.ndarray
+    column: np.ndarray
+    row: np.ndarray
     neighbors: tuple[tuple[int, ...], ...] | np.ndarray
     source_path: str | None = None
     crs_wkt: str | None = None
-    # Completed age of migrated cells; -1 means that the cell is not migrated.
+    model_state_catalog: dict[str, Any] = field(default_factory=dict)
     migration_age: np.ndarray | None = None
-    # Additional fixed model states defined by a project, e.g. 11 = cropland.
-    custom_state_codes: tuple[int, ...] = ()
-    custom_state_behaviors: dict[int, str] = field(default_factory=dict)
     _migration_candidate_states: frozenset[int] = field(default=frozenset(), init=False, repr=False)
     _migration_source_states: frozenset[int] = field(default=frozenset(), init=False, repr=False)
+    flooded_state_codes: dict[int, int] = field(default_factory=dict, init=False, repr=False)
+    migrated_state_code: int | None = field(default=None, init=False)
     last_transition_metrics: dict[str, int] = field(default_factory=dict, init=False, repr=False)
 
     def __post_init__(self) -> None:
         if self.migration_age is None:
-            self.migration_age = np.full(self.usos.shape, -1, dtype=np.int16)
-        elif self.migration_age.shape != self.usos.shape:
-            raise ValueError("migration_age deve ter o mesmo tamanho de usos.")
+            self.migration_age = np.full(self.land_cover_state.shape, -1, dtype=np.int16)
+        elif self.migration_age.shape != self.land_cover_state.shape:
+            raise ValueError("migration_age must have the same shape as land_cover_state.")
         else:
             self.migration_age = np.asarray(self.migration_age, dtype=np.int16)
-        self.custom_state_codes = tuple(int(code) for code in self.custom_state_codes)
-        self.custom_state_behaviors = {
-            int(code): str(behavior)
-            for code, behavior in self.custom_state_behaviors.items()
+        if not self.model_state_catalog:
+            base_codes = np.unique(self.land_cover_state)
+            self.model_state_catalog = build_model_state_catalog([
+                {
+                    "code": int(code),
+                    "name": f"Class {int(code)}",
+                    "behavior": "fixed",
+                    "color": "#8c6bb1",
+                }
+                for code in base_codes
+                if int(code) > 0
+            ])
+        self.model_state_catalog = {
+            **self.model_state_catalog,
+            "states": {
+                str(int(code)): dict(value)
+                for code, value in self.model_state_catalog.get("states", {}).items()
+            },
+            "flooded_codes": {
+                str(int(code)): int(value)
+                for code, value in self.model_state_catalog.get("flooded_codes", {}).items()
+            },
         }
-        if set(self.custom_state_behaviors.values()).difference(CUSTOM_CLASS_BEHAVIORS):
-            raise ValueError("Um perfil de comportamento de classe personalizada não é válido.")
+        self.flooded_state_codes = {
+            int(code): int(value)
+            for code, value in self.model_state_catalog.get("flooded_codes", {}).items()
+        }
+        self.migrated_state_code = get_migrated_mangrove_code(self.model_state_catalog)
         self._migration_candidate_states = frozenset(
-            {VEGETACAO_TERRESTRE, SOLO_DESCOBERTO}
-            | {
-                code
-                for code, behavior in self.custom_state_behaviors.items()
-                if behavior in {"natural_vegetation", "bare_soil"}
-            }
+            int(code)
+            for code, definition in self.model_state_catalog.get("states", {}).items()
+            if definition.get("kind") == "class"
+            and definition.get("behavior") in {"natural_vegetation", "bare_soil"}
         )
         self._migration_source_states = frozenset(
-            {MANGUE}
-            | {
-                code
-                for code, behavior in self.custom_state_behaviors.items()
-                if behavior == "mangrove"
-            }
+            int(code)
+            for code, definition in self.model_state_catalog.get("states", {}).items()
+            if definition.get("kind") == "class" and definition.get("behavior") == "mangrove"
+        )
+        self._accretion_eligible_states = frozenset(
+            mangrove_accretion_codes(self.model_state_catalog)
         )
 
     @classmethod
@@ -174,37 +157,45 @@ class BrMangueGrid:
         frame: "gpd.GeoDataFrame",
         source_path: str | None = None,
         *,
+        model_state_catalog: dict[str, Any] | None = None,
         strict_lua_schema: bool = False,
     ) -> "BrMangueGrid":
-        required = {"Usos", "Alt2", "Col", "Lin"}
-        missing = required.difference(frame.columns)
+        columns = {
+            "land_cover_state": "LandCoverState" if "LandCoverState" in frame else "Usos",
+            "relative_elevation": "RelativeElevation" if "RelativeElevation" in frame else "Alt2",
+            "column": "Column" if "Column" in frame else "Col",
+            "row": "Row" if "Row" in frame else "Lin",
+        }
+        missing = [name for name in columns.values() if name not in frame]
         if missing:
-            raise ValueError(f"A grade não possui os campos obrigatórios: {sorted(missing)}")
+            raise ValueError(f"The grid is missing required fields: {sorted(missing)}.")
 
-        soil_name = "ClasseSolos" if "ClasseSolos" in frame.columns else "ClaseSolos"
-        if soil_name not in frame.columns:
+        soil_name = next(
+            (name for name in ("SoilClass", "ClasseSolos", "ClaseSolos") if name in frame),
+            None,
+        )
+        if soil_name is None:
             if strict_lua_schema:
-                raise ValueError("A grade não possui o campo ClasseSolos exigido pelo modo estrito.")
-            raise ValueError("A grade precisa de uma coluna ClasseSolos ou ClaseSolos.")
+                raise ValueError("The strict grid schema requires the SoilClass field.")
+            raise ValueError("The grid requires a SoilClass field.")
 
-        col = frame["Col"].to_numpy(dtype=np.int64)
-        lin = frame["Lin"].to_numpy(dtype=np.int64)
-        neighbors = _build_moore_neighbors(col, lin)
-        # Accept the common spelling ``ClaseSolos`` while retaining a strict
-        # mode for datasets that require the canonical field name.
+        column = frame[columns["column"]].to_numpy(dtype=np.int64)
+        row = frame[columns["row"]].to_numpy(dtype=np.int64)
+        neighbors = _build_moore_neighbors(column, row)
         soil_values = frame[soil_name].to_numpy(dtype=np.int64, copy=True)
         if strict_lua_schema and "ClasseSolos" not in frame.columns:
             soil_values.fill(-999)
 
         return cls(
-            usos=frame["Usos"].to_numpy(dtype=np.int64, copy=True),
-            alt2=frame["Alt2"].to_numpy(dtype=np.float64, copy=True),
-            classe_solos=soil_values,
-            col=col,
-            lin=lin,
+            land_cover_state=frame[columns["land_cover_state"]].to_numpy(dtype=np.uint16, copy=True),
+            relative_elevation=frame[columns["relative_elevation"]].to_numpy(dtype=np.float64, copy=True),
+            soil_class=soil_values,
+            column=column,
+            row=row,
             neighbors=neighbors,
             source_path=source_path,
             crs_wkt=frame.crs.to_wkt() if frame.crs is not None else None,
+            model_state_catalog=model_state_catalog or {},
         )
 
     @classmethod
@@ -212,6 +203,7 @@ class BrMangueGrid:
         cls,
         path: str | Path,
         *,
+        model_state_catalog: dict[str, Any] | None = None,
         strict_lua_schema: bool = False,
     ) -> "BrMangueGrid":
         import geopandas as gpd
@@ -221,61 +213,39 @@ class BrMangueGrid:
         return cls.from_geodataframe(
             frame,
             source_path=str(path),
+            model_state_catalog=model_state_catalog,
             strict_lua_schema=strict_lua_schema,
         )
 
     @property
     def size(self) -> int:
-        return int(self.usos.size)
+        return int(self.land_cover_state.size)
 
     def copy(self) -> "BrMangueGrid":
         return BrMangueGrid(
-            usos=self.usos.copy(),
-            alt2=self.alt2.copy(),
-            classe_solos=self.classe_solos.copy(),
-            col=self.col.copy(),
-            lin=self.lin.copy(),
+            land_cover_state=self.land_cover_state.copy(),
+            relative_elevation=self.relative_elevation.copy(),
+            soil_class=self.soil_class.copy(),
+            column=self.column.copy(),
+            row=self.row.copy(),
             neighbors=self.neighbors,
             source_path=self.source_path,
             crs_wkt=self.crs_wkt,
+            model_state_catalog=self.model_state_catalog,
             migration_age=self.migration_age.copy(),
-            custom_state_codes=self.custom_state_codes,
-            custom_state_behaviors=dict(self.custom_state_behaviors),
         )
 
     def class_counts(self) -> dict[str, int]:
-        counts = {"mangrove": int(np.count_nonzero(self.usos == MANGUE))}
-        counts.update(
-            {
-                "vegetation": int(np.count_nonzero(self.usos == VEGETACAO_TERRESTRE)),
-                "sea": int(np.count_nonzero(self.usos == MAR)),
-                "anthropized": int(np.count_nonzero(self.usos == AREA_ANTROPIZADA)),
-                "bare": int(np.count_nonzero(self.usos == SOLO_DESCOBERTO)),
-                "flooded_bare": int(np.count_nonzero(self.usos == SOLO_DESCOBERTO_INUNDADO)),
-                "flooded_anthropized": int(np.count_nonzero(self.usos == AREA_ANTROPIZADA_INUNDADO)),
-                "migrated_mangrove": int(np.count_nonzero(self.usos == MANGUE_MIGRADO)),
-                "flooded_mangrove": int(np.count_nonzero(self.usos == MANGUE_INUNDADO)),
-                "flooded_natural": int(np.count_nonzero(self.usos == VEGETACAO_TERRESTRE_INUNDADO)),
-            }
-        )
-        for code in self.custom_state_codes:
-            counts[f"custom_{code}"] = int(np.count_nonzero(self.usos == code))
-        return counts
+        return count_model_states(self.land_cover_state, self.model_state_catalog)
 
-    def _apply_flooding(self, index: int, past_usos: np.ndarray) -> None:
-        """Apply a flooding transition using the previous land-cover state."""
-        previous = int(past_usos[index])
-        self.usos[index] = {
-            MANGUE: MANGUE_INUNDADO,
-            VEGETACAO_TERRESTRE: VEGETACAO_TERRESTRE_INUNDADO,
-            AREA_ANTROPIZADA: AREA_ANTROPIZADA_INUNDADO,
-            SOLO_DESCOBERTO: SOLO_DESCOBERTO_INUNDADO,
-        }.get(previous, {
-            "mangrove": MANGUE_INUNDADO,
-            "natural_vegetation": VEGETACAO_TERRESTRE_INUNDADO,
-            "bare_soil": SOLO_DESCOBERTO_INUNDADO,
-            "anthropized": AREA_ANTROPIZADA_INUNDADO,
-        }.get(self.custom_state_behaviors.get(previous), int(self.usos[index])))
+    def _apply_flooding(self, index: int, previous_states: np.ndarray) -> None:
+        """Replace a base class with its catalog-defined flooded state."""
+        previous = int(previous_states[index])
+        if state_kind(self.model_state_catalog, previous) != "class":
+            return
+        flooded_code = flooded_state_code(self.model_state_catalog, previous)
+        if flooded_code is not None:
+            self.land_cover_state[index] = flooded_code
 
     def step(
         self,
@@ -283,14 +253,14 @@ class BrMangueGrid:
         parameters: ModelParameters,
         *,
         indices: Iterable[int] | None = None,
-        _past_usos: np.ndarray | None = None,
-        _past_alt2: np.ndarray | None = None,
+        _past_states: np.ndarray | None = None,
+        _past_elevation: np.ndarray | None = None,
         _past_migration_age: np.ndarray | None = None,
     ) -> None:
         """Advance the grid by one time step."""
-        full_step = indices is None and _past_usos is None
-        past_usos = self.usos.copy() if _past_usos is None else _past_usos
-        past_alt2 = self.alt2.copy() if _past_alt2 is None else _past_alt2
+        full_step = indices is None and _past_states is None
+        past_states = self.land_cover_state.copy() if _past_states is None else _past_states
+        past_elevation = self.relative_elevation.copy() if _past_elevation is None else _past_elevation
         past_migration_age = (
             self.migration_age.copy()
             if _past_migration_age is None
@@ -300,11 +270,13 @@ class BrMangueGrid:
             indices = range(self.size)
 
         nmrm = time * parameters.sea_level_rise_rate
-        nmrm_m = nmrm * 1000
+        # Alongi (2008)'s regression relates annual sediment-accretion rate
+        # (mm/year) to annual mean sea-level-rise rate (mm/year). Use the
+        # scenario rate, not its accumulated rise at this step.
         accretion_rate_mm = (
             parameters.accretion_rate_mm
             if parameters.accretion_rate_mm is not None
-            else 1.693 + (0.939 * nmrm_m)
+            else 1.693 + (0.939 * parameters.sea_level_rise_rate * 1000)
         )
         accretion_rate_m = accretion_rate_mm / 1000
         tidal_influence_zone = parameters.tide_height + nmrm
@@ -315,10 +287,10 @@ class BrMangueGrid:
             # becomes migrated during this step is reset to zero below and
             # therefore cannot propagate immediately in the next step when a
             # positive maturation delay is configured.
-            if int(past_usos[index]) == MANGUE_MIGRADO:
+            if self.migrated_state_code is not None and int(past_states[index]) == self.migrated_state_code:
                 age = min(int(past_migration_age[index]) + 1, np.iinfo(np.int16).max)
                 self.migration_age[index] = age
-            elif int(self.usos[index]) == MANGUE_MIGRADO:
+            elif self.migrated_state_code is not None and int(self.land_cover_state[index]) == self.migrated_state_code:
                 # The cell was converted earlier in this same step. Keep the
                 # zero assigned by the source cell; it is not mature yet.
                 age = -1
@@ -326,77 +298,83 @@ class BrMangueGrid:
                 age = -1
                 self.migration_age[index] = -1
 
-            if is_sea_or_flooded(int(past_usos[index]), self.custom_state_behaviors) and past_alt2[index] >= 0:
+            if is_sea_or_flooded(int(past_states[index]), self.model_state_catalog) and past_elevation[index] >= 0:
                 lower = [
                     neighbor
                     for neighbor in self.neighbors[index]
-                    if int(neighbor) >= 0 and past_alt2[int(neighbor)] < past_alt2[index]
+                    if int(neighbor) >= 0 and past_elevation[int(neighbor)] < past_elevation[index]
                 ]
                 neighbor_count = 1 + len(lower)
                 flow = parameters.sea_level_rise_rate / neighbor_count
-                self.alt2[index] += flow
+                self.relative_elevation[index] += flow
 
                 for neighbor in lower:
-                    self.alt2[neighbor] += flow
-                    if not is_sea_or_flooded(int(past_usos[neighbor]), self.custom_state_behaviors):
-                        self._apply_flooding(neighbor, past_usos)
+                    self.relative_elevation[neighbor] += flow
+                    if not is_sea_or_flooded(int(past_states[neighbor]), self.model_state_catalog):
+                        self._apply_flooding(neighbor, past_states)
 
             # Migration uses the current soil, land-cover, and elevation values.
-            soil_source = int(self.classe_solos[index]) in (SOLO_MANGUE, CANAL_FLUVIAL)
+            soil_source = int(self.soil_class[index]) in (
+                SOIL_PROFILE_CODES["mangrove_soil"],
+                SOIL_PROFILE_CODES["channel"],
+            )
             mature_migrated_soil_source = (
-                int(self.usos[index]) == MANGUE_MIGRADO
+                self.migrated_state_code is not None
+                and int(self.land_cover_state[index]) == self.migrated_state_code
                 and age >= parameters.migration_maturity_years
-                and int(self.classe_solos[index]) == SOLO_MANGUE_MIGRADO
+                and int(self.soil_class[index]) == SOIL_PROFILE_CODES["migrated_mangrove_soil"]
             )
             if soil_source or mature_migrated_soil_source:
                 for neighbor in self.neighbors[index]:
                     if int(neighbor) < 0:
                         continue
                     if (
-                        int(self.usos[neighbor]) in self._migration_candidate_states
-                        and int(self.classe_solos[neighbor]) != SOLO_MANGUE
-                        and self.alt2[neighbor] <= tidal_influence_zone
+                        int(self.land_cover_state[neighbor]) in self._migration_candidate_states
+                        and int(self.soil_class[neighbor]) != SOIL_PROFILE_CODES["mangrove_soil"]
+                        and self.relative_elevation[neighbor] <= tidal_influence_zone
                     ):
-                        self.classe_solos[neighbor] = SOLO_MANGUE_MIGRADO
+                        self.soil_class[neighbor] = SOIL_PROFILE_CODES["migrated_mangrove_soil"]
 
             # Original mangrove is an immediate source. A migrated cell only
             # becomes a source after the configured establishment period.
-            migration_source = int(self.usos[index]) in self._migration_source_states or (
-                int(self.usos[index]) == MANGUE_MIGRADO
+            migration_source = int(self.land_cover_state[index]) in self._migration_source_states or (
+                self.migrated_state_code is not None
+                and int(self.land_cover_state[index]) == self.migrated_state_code
                 and age >= parameters.migration_maturity_years
             )
-            if migration_source:
+            if migration_source and self.migrated_state_code is not None:
                 for neighbor in self.neighbors[index]:
                     if int(neighbor) < 0:
                         continue
                     soil_or_landcover_eligible = parameters.allow_migration_without_soil or (
-                        int(self.classe_solos[neighbor])
-                        in (SOLO_MANGUE_MIGRADO, SOLO_MANGUE)
+                        int(self.soil_class[neighbor])
+                        in (
+                            SOIL_PROFILE_CODES["migrated_mangrove_soil"],
+                            SOIL_PROFILE_CODES["mangrove_soil"],
+                        )
                     )
                     if (
-                        int(self.usos[neighbor]) in self._migration_candidate_states
-                        and self.alt2[neighbor] <= tidal_influence_zone
+                        int(self.land_cover_state[neighbor]) in self._migration_candidate_states
+                        and self.relative_elevation[neighbor] <= tidal_influence_zone
                         and soil_or_landcover_eligible
                     ):
-                        self.usos[neighbor] = MANGUE_MIGRADO
+                        self.land_cover_state[neighbor] = self.migrated_state_code
                         self.migration_age[neighbor] = 0
 
             if parameters.legacy_lua_accretion_typo:
-                migrated_soil = False
+                # Historical option retained for reproducing earlier runs.
+                apply_accretion = int(self.soil_class[index]) == SOIL_PROFILE_CODES["mangrove_soil"]
             else:
-                migrated_soil = int(self.classe_solos[index]) == SOLO_MANGUE_MIGRADO
-
-            if (int(self.classe_solos[index]) == SOLO_MANGUE) or (
-                migrated_soil and not is_sea_or_flooded(int(self.usos[index]), self.custom_state_behaviors)
-            ):
-                self.alt2[index] += accretion_rate_m
+                apply_accretion = int(self.land_cover_state[index]) in self._accretion_eligible_states
+            if apply_accretion:
+                self.relative_elevation[index] += accretion_rate_m
 
         # ``run_blocks`` supplies one shared previous-state snapshot and calls
         # this method once per block.  The complete transition is assembled by
         # that caller; only a full-grid step can record it here directly.
         if full_step:
             self.last_transition_metrics = mangrove_extent_metrics(
-                past_usos, self.usos, self.custom_state_behaviors
+                past_states, self.land_cover_state, self.model_state_catalog
             )
         # The current arrays become the previous state at the next time step.
 
@@ -406,8 +384,8 @@ class BrMangueGrid:
             self.step(time, parameters)
             row: dict[str, float | int] = {"year": time}
             row.update(self.class_counts())
-            row["min_alt2"] = float(np.nanmin(self.alt2))
-            row["max_alt2"] = float(np.nanmax(self.alt2))
+            row["min_elevation"] = float(np.nanmin(self.relative_elevation))
+            row["max_elevation"] = float(np.nanmax(self.relative_elevation))
             rows.append(row)
         return pd.DataFrame(rows)
 
@@ -424,12 +402,12 @@ class BrMangueGrid:
         partitioning provides the execution path used by large-grid runners.
         """
         if block_size < 1:
-            raise ValueError("block_size deve ser maior ou igual a 1.")
+            raise ValueError("block_size must be greater than or equal to 1.")
 
         rows: list[dict[str, float | int]] = []
         for time in range(parameters.start, parameters.final_time + 1):
-            past_usos = self.usos.copy()
-            past_alt2 = self.alt2.copy()
+            past_states = self.land_cover_state.copy()
+            past_elevation = self.relative_elevation.copy()
             past_migration_age = self.migration_age.copy()
             for start in range(0, self.size, block_size):
                 stop = min(start + block_size, self.size)
@@ -437,17 +415,17 @@ class BrMangueGrid:
                     time,
                     parameters,
                     indices=range(start, stop),
-                    _past_usos=past_usos,
-                    _past_alt2=past_alt2,
+                    _past_states=past_states,
+                    _past_elevation=past_elevation,
                     _past_migration_age=past_migration_age,
                 )
             self.last_transition_metrics = mangrove_extent_metrics(
-                past_usos, self.usos, self.custom_state_behaviors
+                past_states, self.land_cover_state, self.model_state_catalog
             )
             row: dict[str, float | int] = {"year": time}
             row.update(self.class_counts())
-            row["min_alt2"] = float(np.nanmin(self.alt2))
-            row["max_alt2"] = float(np.nanmax(self.alt2))
+            row["min_elevation"] = float(np.nanmin(self.relative_elevation))
+            row["max_elevation"] = float(np.nanmax(self.relative_elevation))
             rows.append(row)
         return pd.DataFrame(rows)
 
@@ -464,6 +442,7 @@ class BrMangueGrid:
             "block_size": block_size,
             "source_path": self.source_path,
             "cells": self.size,
+            "model_state_catalog": self.model_state_catalog,
             "parameters": {
                 "start": parameters.start,
                 "final_time": parameters.final_time,
@@ -475,42 +454,40 @@ class BrMangueGrid:
                 "accretion_rate_mm": parameters.accretion_rate_mm,
                 "migration_maturity_years": parameters.migration_maturity_years,
             },
-            "classes": {
-                "MANGUE": MANGUE,
-                "VEGETACAO_TERRESTRE": VEGETACAO_TERRESTRE,
-                "MAR": MAR,
-                "AREA_ANTROPIZADA": AREA_ANTROPIZADA,
-                "SOLO_DESCOBERTO": SOLO_DESCOBERTO,
-                "SOLO_DESCOBERTO_INUNDADO": SOLO_DESCOBERTO_INUNDADO,
-                "AREA_ANTROPIZADA_INUNDADO": AREA_ANTROPIZADA_INUNDADO,
-                "MANGUE_MIGRADO": MANGUE_MIGRADO,
-                "MANGUE_INUNDADO": MANGUE_INUNDADO,
-                "VEGETACAO_TERRESTRE_INUNDADO": VEGETACAO_TERRESTRE_INUNDADO,
-            },
         }
 
 
 def is_sea_or_flooded(
-    uso: int,
-    custom_behaviors: dict[int, str] | None = None,
+    state_code: int,
+    state_catalog: dict[str, Any],
 ) -> bool:
-    return uso in _FLOODED or _custom_behavior(uso, custom_behaviors) == "water"
+    entry = state_entry(state_catalog, state_code)
+    return bool(
+        entry
+        and (
+            entry.get("kind") == "flooded"
+            or entry.get("behavior") == "water"
+        )
+    )
 
 
-def _build_moore_neighbors(col: np.ndarray, lin: np.ndarray) -> tuple[tuple[int, ...], ...]:
-    index_by_position = {(int(c), int(r)): i for i, (c, r) in enumerate(zip(col, lin))}
+def _build_moore_neighbors(column: np.ndarray, row: np.ndarray) -> tuple[tuple[int, ...], ...]:
+    index_by_position = {
+        (int(column_value), int(row_value)): index
+        for index, (column_value, row_value) in enumerate(zip(column, row))
+    }
     offsets: tuple[tuple[int, int], ...] = (
         (-1, -1), (-1, 0), (-1, 1),
         (0, -1), (0, 1),
         (1, -1), (1, 0), (1, 1),
     )
     result: list[tuple[int, ...]] = []
-    for c, r in zip(col, lin):
+    for column_value, row_value in zip(column, row):
         result.append(
             tuple(
-                index_by_position[(int(c) + dc, int(r) + dr)]
+                index_by_position[(int(column_value) + dc, int(row_value) + dr)]
                 for dc, dr in offsets
-                if (int(c) + dc, int(r) + dr) in index_by_position
+                if (int(column_value) + dc, int(row_value) + dr) in index_by_position
             )
         )
     return tuple(result)
@@ -561,7 +538,7 @@ def run_shapefile(
     elif engine == "blocks-memory":
         trajectory = grid.run_blocks(parameters, block_size=block_size)
     else:
-        raise ValueError("engine deve ser 'continuous', 'blocks' ou 'blocks-memory'.")
+        raise ValueError("engine must be 'continuous', 'blocks', or 'blocks-memory'.")
     trajectory.to_csv(output_dir / "trajectory.csv", index=False)
     (output_dir / "metadata.json").write_text(
         json.dumps(

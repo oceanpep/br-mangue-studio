@@ -34,6 +34,8 @@ jobs:
           python -m pip install -e . pyinstaller
       - name: Build standalone executable
         run: python -m PyInstaller packaging/BRMANGUE_Studio.spec --clean
+      - name: Smoke-test packaged executable
+        run: python scripts/smoke_packaged_application.py --executable dist/BRMANGUE_Studio.exe
       - name: Prepare versioned executable and checksum
         shell: pwsh
         run: |

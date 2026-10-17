@@ -454,8 +454,12 @@ decide se a taxa é regionalmente adequada.
 
 Representa um ganho superficial constante, em milímetros por ano, quando essa
 hipótese for adotada. Deixe vazio para manter a formulação padrão do modelo.
-Não confunda acreção com elevação do nível do mar: uma é mudança da superfície
-sedimentar; a outra é mudança relativa da água.
+Sem valor informado, o modelo estima a taxa anual de acreção pela relação
+`Y = 1.693 + 0.939 x`, atribuída a Alongi (2008) na aplicação de Tomaz et al.
+(2019), em que `x` é a taxa anual de elevação do nível do mar em mm/ano e `Y` é
+a acreção em mm/ano ([Tomaz et al., 2019](https://doi.org/10.5380/abclima.v25i0.60891)).
+O incremento é aplicado às classes com comportamento de manguezal, inclusive
+mangue migrado, sem depender da camada opcional de solo.
 
 ### 7.6 Migration maturation delay (years)
 
@@ -612,7 +616,9 @@ Cada execução cria uma pasta como `results/run_20260922T120000/`.
 | `input_metadata.json` | Metadados dos rasters e do mapeamento de classes |
 | `trajectory.csv` | Contagens, extensão ativa, ganhos/perdas brutos, saldo anual e indicadores para cada ano |
 | `resource_samples.csv` | Amostras de RAM, CPU, disco e processo |
-| `initial_usos_*.tif` | Estado inicial em raster |
+| `initial_state_*.tif` | Estado inicial em raster |
+| `states/state_*.tif` | Estado anual exportado em raster |
+| `final_state_*.tif` | Estado final exportado em raster |
 | `states/` | GeoTIFF do estado de cada ano, quando habilitado |
 | `figures/` | Figuras individuais de estado, elevação, trajetória e mudança |
 | `simulation.gif` | Animação combinada, quando gerada |

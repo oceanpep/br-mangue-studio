@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import shutil
 
 import matplotlib.pyplot as plt
@@ -118,10 +119,14 @@ def make_results() -> None:
     fig.savefig(ASSETS / "real_annual_change.png", facecolor="white", bbox_inches="tight")
     plt.close(fig)
 
-    colors = ["#00000000", GREEN, NATURAL, WATER, ORANGE, ORANGE, "#d98b4b", "#d97745", PURPLE, RED, "#5e9d5a"]
+    catalog = json.loads((RUN / "metadata.json").read_text(encoding="utf-8"))["model_state_catalog"]
+    highest_code = max(int(code) for code in catalog["states"])
+    colors = ["#00000000"] + ["#b8c2cc"] * highest_code
+    for code, item in catalog["states"].items():
+        colors[int(code)] = item["color"]
     cmap = ListedColormap(colors)
-    norm = BoundaryNorm(np.arange(-.5, 10.5, 1), cmap.N)
-    paths = [RUN / "initial_usos_2025.tif", RUN / "states" / "usos_2075.tif"]
+    norm = BoundaryNorm(np.arange(-.5, highest_code + 1.5, 1), cmap.N)
+    paths = [RUN / "initial_state_2025.tif", RUN / "states" / "state_2075.tif"]
     labels = ["Initial state · 2025", "Final state · 2075"]
     fig, axes = plt.subplots(1, 2, figsize=(8.8, 4.6), dpi=160)
     for ax, path, label in zip(axes, paths, labels):

@@ -94,6 +94,7 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
         mapping=mapping,
         custom_class_mapping=custom_mapping,
         custom_classes=custom_classes,
+        class_mapping_mode=config.get("class_mapping_mode", "standard"),
         exclude_source_codes=excluded,
     )
     _validate_class_coverage(
@@ -135,7 +136,7 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
         show_dissmodel_chart=False,
         save_annual_states=True,
     )
-    final_path = output_dir / f"final_usos_{final_year}.tif"
+    final_path = output_dir / f"final_state_{final_year}.tif"
     if final_path.exists():
         import rasterio
 
@@ -153,16 +154,17 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
     gif = _generate_animation(figures, output_dir)
     animations = _generate_component_animations(output_dir, figures)
     spreadsheet = _write_simulation_spreadsheet(inputs, output_dir, trajectory)
-    print(json.dumps({
-        "output_dir": str(output_dir),
-        "years": len(trajectory),
-        "final_year": int(trajectory["calendar_year"].iloc[-1]),
-        "annual_figures": len(figures),
-        "gif": str(gif) if gif else None,
-        "animations": {key: str(path) for key, path in animations.items()},
-        "spreadsheet": str(spreadsheet),
-        "cells": inputs.n_cells,
-    }, ensure_ascii=False))
+    if sys.stdout is not None:
+        print(json.dumps({
+            "output_dir": str(output_dir),
+            "years": len(trajectory),
+            "final_year": int(trajectory["calendar_year"].iloc[-1]),
+            "annual_figures": len(figures),
+            "gif": str(gif) if gif else None,
+            "animations": {key: str(path) for key, path in animations.items()},
+            "spreadsheet": str(spreadsheet),
+            "cells": inputs.n_cells,
+        }, ensure_ascii=False))
     return 0
 
 
