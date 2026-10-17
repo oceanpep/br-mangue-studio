@@ -151,7 +151,7 @@ def _model_legend_handles(
         for name, color in (value for value in STANDARD_CLASS_STYLES.values())
     ]
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -2411,7 +2411,7 @@ class BRMangueStudio(tk.Tk):
             # The core preserves the Lua convention (metres per model step).
             # The desktop field is deliberately expressed in mm per year.
             sea_level_rise_rate=float(self.slr_var.get()) / 1000.0,
-            legacy_lua_accretion_typo=True,
+            legacy_lua_accretion_typo=False,
             allow_migration_without_soil=(not soil_enabled) and bool(self.migration_without_soil_var.get()),
             accretion_rate_mm=accretion,
             migration_maturity_years=migration_maturity_years,

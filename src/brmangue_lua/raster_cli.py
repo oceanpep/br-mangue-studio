@@ -56,7 +56,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--fix-accretion-typo",
         action="store_true",
-        help="Enable the intended accretion rule for migrated soil.",
+        help="Deprecated compatibility flag; current state-based accretion is already the default.",
+    )
+    parser.add_argument(
+        "--legacy-lua-accretion-typo",
+        action="store_true",
+        help="Reproduce the earlier soil-gated accretion behavior for comparison with old runs.",
     )
     parser.add_argument(
         "--migration-maturity-years",
@@ -84,7 +89,7 @@ def main() -> None:
         final_time=steps,
         tide_height=args.tide_height,
         sea_level_rise_rate=args.sea_level_rise_rate,
-        legacy_lua_accretion_typo=not args.fix_accretion_typo,
+        legacy_lua_accretion_typo=args.legacy_lua_accretion_typo,
         allow_migration_without_soil=(not soil_enabled) and (not args.no_migration_without_soil),
         migration_maturity_years=args.migration_maturity_years,
     )

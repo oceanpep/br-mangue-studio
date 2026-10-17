@@ -454,8 +454,12 @@ decide se a taxa é regionalmente adequada.
 
 Representa um ganho superficial constante, em milímetros por ano, quando essa
 hipótese for adotada. Deixe vazio para manter a formulação padrão do modelo.
-Não confunda acreção com elevação do nível do mar: uma é mudança da superfície
-sedimentar; a outra é mudança relativa da água.
+Sem valor informado, o modelo estima a taxa anual de acreção pela relação
+`Y = 1.693 + 0.939 x`, atribuída a Alongi (2008) na aplicação de Tomaz et al.
+(2019), em que `x` é a taxa anual de elevação do nível do mar em mm/ano e `Y` é
+a acreção em mm/ano ([Tomaz et al., 2019](https://doi.org/10.5380/abclima.v25i0.60891)).
+O incremento é aplicado às classes com comportamento de manguezal, inclusive
+mangue migrado, sem depender da camada opcional de solo.
 
 ### 7.6 Migration maturation delay (years)
 

@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use BR-MANGUE Studio, please cite the release and the accompanying article."
 title: "BR-MANGUE Studio"
 type: software
-version: 1.2.0
-date-released: 2026-10-12
+version: 1.3.0
+date-released: 2026-10-17
 license: MIT
 abstract: >-
   Desktop research software for running and inspecting the BR-MANGUE spatial
@@ -17,6 +17,13 @@ authors:
     affiliation: Universidade Federal do Maranhão
   - family-names: Bezerra
     given-names: Denilson da Silva
+    affiliation: Universidade Federal do Maranhão
+  - family-names: Costa
+    given-names: Sergio Souza
+    affiliation: Universidade Federal do Maranhão
+  - family-names: Santos
+    given-names: Ricardo Luvizotto
+    affiliation: Universidade Federal do Maranhão
 repository-code: https://github.com/oceanpep/br-mangue-studio
 url: https://oceanpep.github.io/br-mangue-studio-site/
 keywords:
