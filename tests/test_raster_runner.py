@@ -93,6 +93,45 @@ def test_block_runner_releases_input_grid_and_reports_performance(tmp_path):
 
 
 @pytest.mark.parametrize("engine", ["continuous", "blocks"])
+def test_raster_accretion_uses_mangrove_behavior_without_soil_raster(tmp_path, engine):
+    land_cover_path = tmp_path / f"land_cover_{engine}.tif"
+    elevation_path = tmp_path / f"dem_{engine}.tif"
+    _write_raster(land_cover_path, np.array([[90]], dtype=np.uint8), dtype="uint8")
+    _write_raster(elevation_path, np.array([[1.0]], dtype=np.float32), dtype="float32", nodata=-9999)
+    classes = [{
+        "code": 300,
+        "name": "Mangrove stand",
+        "color": "#006d2c",
+        "behavior": "mangrove",
+    }]
+    inputs = load_raster_inputs(
+        land_cover_path,
+        elevation_path,
+        soil_enabled=False,
+        custom_class_mapping={300: [90]},
+        custom_classes=classes,
+        class_mapping_mode="custom",
+    )
+    output_dir = tmp_path / f"accretion_without_soil_{engine}"
+    trajectory = run_raster_simulation(
+        inputs,
+        output_dir,
+        ModelParameters(final_time=1, tide_height=0, sea_level_rise_rate=0.0034),
+        initial_year=2025,
+        engine=engine,
+        block_size=1,
+        save_annual_states=False,
+    )
+
+    expected_accretion_m = (1.693 + 0.939 * 3.4) / 1000
+    assert trajectory.loc[0, "min_elevation"] == pytest.approx(1.0 + expected_accretion_m)
+    metadata = json.loads((output_dir / "metadata.json").read_text(encoding="utf-8"))
+    assert metadata["soil_enabled"] is False
+    assert metadata["parameters"]["legacy_lua_accretion_typo"] is False
+    assert "mangrove accretion follows land-cover behavior" in metadata["soil_behavior_when_disabled"]
+
+
+@pytest.mark.parametrize("engine", ["continuous", "blocks"])
 def test_custom_class_code_survives_run_and_export(tmp_path, engine):
     land_cover_path = tmp_path / f"land_cover_{engine}.tif"
     elevation_path = tmp_path / f"dem_{engine}.tif"

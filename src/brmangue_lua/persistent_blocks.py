@@ -22,6 +22,7 @@ from .model_states import (
     count_model_states,
     flooded_state_code,
     migrated_mangrove_code,
+    mangrove_accretion_codes,
     state_kind,
 )
 
@@ -196,12 +197,13 @@ class PersistentBlockRunner:
         soil = current["soil_class"]
         migration_age = current["migration_age"]
         migrated_code = migrated_mangrove_code(self.model_state_catalog)
+        accretion_eligible_states = frozenset(mangrove_accretion_codes(self.model_state_catalog))
 
         sea_level = time_index * parameters.sea_level_rise_rate
         accretion_mm = (
             parameters.accretion_rate_mm
             if parameters.accretion_rate_mm is not None
-            else 1.693 + (0.939 * sea_level * 1000)
+            else 1.693 + (0.939 * parameters.sea_level_rise_rate * 1000)
         )
         accretion_m = accretion_mm / 1000
         tidal_zone = parameters.tide_height + sea_level
@@ -274,12 +276,10 @@ class PersistentBlockRunner:
                             migration_age[neighbor] = 0
 
                 if parameters.legacy_lua_accretion_typo:
-                    migrated_soil = False
+                    apply_accretion = int(soil[index]) == SOIL_PROFILE_CODES["mangrove_soil"]
                 else:
-                    migrated_soil = int(soil[index]) == SOIL_PROFILE_CODES["migrated_mangrove_soil"]
-                if int(soil[index]) == SOIL_PROFILE_CODES["mangrove_soil"] or (
-                    migrated_soil and not is_sea_or_flooded(int(states[index]), self.model_state_catalog)
-                ):
+                    apply_accretion = int(states[index]) in accretion_eligible_states
+                if apply_accretion:
                     elevation[index] += accretion_m
 
         for array in current.values():

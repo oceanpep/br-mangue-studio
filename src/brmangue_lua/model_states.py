@@ -161,6 +161,16 @@ def active_mangrove_codes(catalog: dict[str, Any]) -> tuple[int, ...]:
     return tuple(sorted(codes))
 
 
+def mangrove_accretion_codes(catalog: dict[str, Any]) -> tuple[int, ...]:
+    """Return every model state with mangrove behavior for accretion."""
+    return tuple(sorted(
+        int(code)
+        for code, item in catalog.get("states", {}).items()
+        if item.get("behavior") == "mangrove"
+        and item.get("kind") in {"class", "flooded", "migrated"}
+    ))
+
+
 def count_model_states(values: Any, catalog: dict[str, Any]) -> dict[str, int]:
     """Summarize dynamic class and derived-state counts for trajectory tables."""
     import numpy as np

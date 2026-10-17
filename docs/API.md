@@ -50,6 +50,15 @@ servir como fonte de propagação. O padrão é `3`; `0` é útil para testes de
 sensibilidade sem atraso biológico. A interface gráfica recebe a elevação do
 nível do mar em mm/ano e faz a conversão para metros.
 
+Por padrão, a acreção é aplicada a todos os estados com comportamento de
+manguezal no catálogo, inclusive mangue migrado, sem depender da camada de solo.
+Se `accretion_rate_mm` não for informado, o motor usa a relação linear
+`Y = 1.693 + 0.939 x`, em que `x` é a taxa anual de elevação do nível do mar
+(mm/ano) e `Y` é a taxa anual de acreção (mm/ano), atribuída a Alongi (2008)
+na literatura de modelagem da costa amazônica ([Tomaz et al., 2019](https://doi.org/10.5380/abclima.v25i0.60891); [Alongi, 2008](https://doi.org/10.1016/j.ecss.2007.08.024)). O incremento é anual e não cresce com a elevação acumulada. A opção `legacy_lua_accretion_typo`
+mantém a regra anterior condicionada à classe de solo para reproduzir resultados
+antigos.
+
 ## Rodar uma grade em memória
 
 ```python

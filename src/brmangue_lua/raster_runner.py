@@ -544,10 +544,11 @@ def run_raster_simulation(
         "soil_enabled": bool(inputs.metadata["soil"]["enabled"]),
         "migration_without_soil": bool(parameters.allow_migration_without_soil),
         "soil_behavior_when_disabled": (
-            "land-cover fallback enables migration to vegetation or bare soil; "
-            "soil-dependent accretion remains inactive; flooding remains active"
+            "land-cover behavior governs migration candidates and mangrove "
+            "accretion; flooding remains active"
             if parameters.allow_migration_without_soil
-            else "soil-dependent migration and accretion rules are inactive; flooding remains active"
+            else "soil-dependent migration is inactive; mangrove accretion follows "
+            "land-cover behavior; flooding remains active"
         ),
         "input_metadata": "input_metadata.json",
     }

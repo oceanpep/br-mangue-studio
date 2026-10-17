@@ -19,6 +19,7 @@ from .model_states import (
     build_model_state_catalog,
     count_model_states,
     flooded_state_code,
+    mangrove_accretion_codes,
     migrated_mangrove_code as get_migrated_mangrove_code,
     state_entry,
     state_kind,
@@ -60,8 +61,9 @@ class ModelParameters:
     area_cell: float = 0.09
     tide_height: float = 6.0
     sea_level_rise_rate: float = 0.5
-    # Preserve the historical accretion switch for reproducibility.
-    legacy_lua_accretion_typo: bool = True
+    # Keep the historical soil-gated behavior available for reproducibility.
+    # The default applies accretion to all states with mangrove behavior.
+    legacy_lua_accretion_typo: bool = False
     # Allow land-cover classes to supply migration candidates when soil data
     # are unavailable. The default keeps soil-dependent migration disabled.
     allow_migration_without_soil: bool = False
@@ -144,6 +146,9 @@ class BrMangueGrid:
             int(code)
             for code, definition in self.model_state_catalog.get("states", {}).items()
             if definition.get("kind") == "class" and definition.get("behavior") == "mangrove"
+        )
+        self._accretion_eligible_states = frozenset(
+            mangrove_accretion_codes(self.model_state_catalog)
         )
 
     @classmethod
@@ -265,11 +270,13 @@ class BrMangueGrid:
             indices = range(self.size)
 
         nmrm = time * parameters.sea_level_rise_rate
-        nmrm_m = nmrm * 1000
+        # Alongi (2008)'s regression relates annual sediment-accretion rate
+        # (mm/year) to annual mean sea-level-rise rate (mm/year). Use the
+        # scenario rate, not its accumulated rise at this step.
         accretion_rate_mm = (
             parameters.accretion_rate_mm
             if parameters.accretion_rate_mm is not None
-            else 1.693 + (0.939 * nmrm_m)
+            else 1.693 + (0.939 * parameters.sea_level_rise_rate * 1000)
         )
         accretion_rate_m = accretion_rate_mm / 1000
         tidal_influence_zone = parameters.tide_height + nmrm
@@ -355,15 +362,11 @@ class BrMangueGrid:
                         self.migration_age[neighbor] = 0
 
             if parameters.legacy_lua_accretion_typo:
-                migrated_soil = False
+                # Historical option retained for reproducing earlier runs.
+                apply_accretion = int(self.soil_class[index]) == SOIL_PROFILE_CODES["mangrove_soil"]
             else:
-                migrated_soil = int(self.soil_class[index]) == SOIL_PROFILE_CODES["migrated_mangrove_soil"]
-
-            if (int(self.soil_class[index]) == SOIL_PROFILE_CODES["mangrove_soil"]) or (
-                migrated_soil and not is_sea_or_flooded(
-                    int(self.land_cover_state[index]), self.model_state_catalog
-                )
-            ):
+                apply_accretion = int(self.land_cover_state[index]) in self._accretion_eligible_states
+            if apply_accretion:
                 self.relative_elevation[index] += accretion_rate_m
 
         # ``run_blocks`` supplies one shared previous-state snapshot and calls
