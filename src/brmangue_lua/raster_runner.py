@@ -439,6 +439,9 @@ def run_raster_simulation(
 
     if process is not None:
         peak_rss = max(peak_rss, process.memory_info().rss)
+    # Annual checkpoints can miss temporary state copies and output buffers.
+    # The sampler has stopped; fold all recorded observations into the peak.
+    peak_rss = max(peak_rss, max((sample["rss_bytes"] for sample in resource_samples), default=0))
     simulation_finished = time.perf_counter()
     rss_after = process.memory_info().rss if process else None
     memory_after = _safe_virtual_memory()
@@ -521,6 +524,7 @@ def run_raster_simulation(
             "rss_after_bytes": rss_after,
             "peak_rss_bytes": peak_rss,
             "peak_rss_gib": round(peak_rss / 1024**3, 6),
+            "peak_rss_scope": "Maximum of runner checkpoints and one-second resource samples; excludes input loading.",
             "system_memory_before": memory_before,
             "system_memory_after": memory_after,
             "disk_free_before_bytes": disk_free_before,

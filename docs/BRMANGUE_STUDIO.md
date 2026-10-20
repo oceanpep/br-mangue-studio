@@ -93,7 +93,7 @@ usado como elevação. O modelo não identifica nem exige um provedor específic
 ## Tela de abertura
 
 Ao iniciar o Studio, uma tela compacta apresenta o logotipo, a versão atual
-(`1.0.0`) e o estado de carregamento. Ela fecha automaticamente quando o
+e o estado de carregamento. Ela fecha automaticamente quando o
 workspace principal está pronto. O logotipo é empacotado junto com a versão
 executável e não depende de um caminho fixo no computador do usuário.
 
@@ -127,6 +127,25 @@ executável e não depende de um caminho fixo no computador do usuário.
    projeto. O projeto JSON registra todos os caminhos, associações e opções;
    quando os rasters estão no mesmo volume, os caminhos são gravados relativos
    à pasta do projeto para facilitar a transferência para outro computador.
+
+## Elevação do nível do mar: taxa ou trajetória
+
+Na aba **Simulation / Simulação**, o modo **Constant rate / Taxa constante**
+recebe a taxa em mm/ano. Para usar projeções com variação temporal, escolha
+**Year-based trajectory (CSV) / Trajetória por ano (CSV)**.
+
+- **Save CSV example / Salvar exemplo CSV** cria um arquivo sintético editável
+  em Excel ou LibreOffice Calc. Substitua os valores antes de usar na pesquisa.
+- **Format and data sources / Formato e fontes de dados** explica as colunas,
+  unidades, separadores e fontes NASA/IPCC AR6 no próprio aplicativo.
+- O CSV deve conter `year` e `sea_level_mm`, com níveis acumulados em mm,
+  pelo menos dois anos diferentes e cobertura de todo o período simulado.
+  Para 2025–2100, amostras decenais de 2020 a 2100 são suficientes.
+- O programa interpola os anos intermediários, desconta o nível do ano inicial
+  e mostra a curva em **Preview curve / Visualizar curva**. Os valores usados
+  em cada ano ficam em `sea_level_forcing.csv`.
+
+Detalhes e exemplos: [Sea-level trajectories](SEA_LEVEL_TRAJECTORIES.md).
 
 ## Unidades e cautelas
 
