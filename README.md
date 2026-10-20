@@ -9,6 +9,10 @@ spatial cellular-automaton scenarios of mangrove response to sea-level rise.
 Use aligned land-cover and elevation rasters, set the scenario, and inspect
 annual maps, trajectories, transitions, and reproducibility metadata.
 
+Version 1.4.0 adds optional annual sea-level trajectories
+alongside constant-rate scenarios. See [CSV trajectory setup](docs/SEA_LEVEL_TRAJECTORIES.md)
+for the file format, interpolation, baseline and reproducibility outputs.
+
 ![Annual-state simulation example for Ilha de São Luís](docs/assets/demo/simulation-ilha-sao-luis.gif)
 
 *Software demonstration with raster data from Ilha de São Luís. This run has no
@@ -23,8 +27,8 @@ rasters, project files, and simulation results remain on your computer.
 
 | Platform | Availability | Verified environment |
 | --- | --- | --- |
-| Windows 10/11, 64-bit | Stable 1.3.0 | Windows desktop release |
-| Linux x86_64 | Research preview 1.3.0 | Built on Ubuntu 22.04 LTS; application startup verified on Ubuntu 26.04.1 LTS |
+| Windows 10/11, 64-bit | Stable 1.4.0 | Windows desktop release |
+| Linux x86_64 | Research preview 1.4.0 | Built and tested on Ubuntu 22.04 LTS; packaged checks also passed on Ubuntu 26.04.1 LTS |
 
 The interface is available in English and Brazilian Portuguese. English is the
 default for a new installation; choose a language in the application header.
@@ -90,7 +94,7 @@ For example:
 
 ```bash
 python -m brmangue_lua.raster_cli \
-  --mapbiomas /data/land_cover.tif \
+  --land-cover /data/land_cover.tif \
   --elevation /data/elevation.tif \
   --initial-year 2025 --final-year 2050 \
   --engine blocks --block-size 10000 \
@@ -153,3 +157,5 @@ repository is distributed under the [MIT License](LICENSE). For reproducible
 software issues, use the [issue tracker](https://github.com/oceanpep/br-mangue-studio/issues)
 and follow the [support checklist](SUPPORT.md). Contributions follow the
 [Code of Conduct](CODE_OF_CONDUCT.md).
+
+The small boundary-regression data fixture carries CC BY 4.0; see [attribution](tests/fixtures/README.md). The software code remains MIT licensed.

@@ -2,7 +2,26 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
-## [Unreleased]
+## [1.4.0] — 2026-10-20
+
+- Add optional calendar-based sea-level trajectories alongside the default
+  constant annual rate. Import cumulative levels from CSV (`year,sea_level_mm`),
+  preview the curve, interpolate between supplied years, and rebase changes to
+  the initial raster year. Trajectories must cover the complete simulation;
+  values outside their time range are rejected.
+- Apply the corresponding annual increment in continuous and persistent-block
+  execution, including the optional rate-dependent accretion formula. Fixed
+  user-specified accretion remains independent of the sea-level curve.
+- Embed source samples and their checksum in saved projects, and export the
+  annual forcing table and provenance with each raster simulation. Provide
+  English and Brazilian Portuguese controls for the new mode.
+- Add in-app CSV examples and guidance on format, units, data sources,
+  and spreadsheet preparation, with matching bilingual website instructions.
+- Normalize constant and CSV forcing to the same numerical precision to avoid
+  round-off-dependent state differences at exact flooding boundaries. Add a
+  real-data boundary regression fixture and strict annual/decadal equivalence tests.
+- Include all periodic memory observations in the reported RSS peak, so
+  temporary allocations between annual checkpoints are represented.
 
 ## [1.3.0] — 2026-10-17
 

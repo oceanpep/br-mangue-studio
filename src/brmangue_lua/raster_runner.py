@@ -7,6 +7,7 @@ state arrays on disk for large domains.
 from __future__ import annotations
 
 from pathlib import Path
+from dataclasses import replace
 import json
 import shutil
 import time
@@ -98,7 +99,8 @@ def _parameters_metadata(parameters: ModelParameters) -> dict[str, Any]:
         "final_time": int(parameters.final_time),
         "area_cell": float(parameters.area_cell),
         "tide_height": float(parameters.tide_height),
-        "sea_level_rise_rate": float(parameters.sea_level_rise_rate),
+        "sea_level_rise_rate": float(parameters.sea_level_rise_rate) if parameters.sea_level_trajectory is None else None,
+        "sea_level_forcing": parameters.sea_level_metadata(),
         "legacy_lua_accretion_typo": bool(parameters.legacy_lua_accretion_typo),
         "allow_migration_without_soil": bool(parameters.allow_migration_without_soil),
         "accretion_rate_mm": parameters.accretion_rate_mm,
@@ -191,10 +193,18 @@ def run_raster_simulation(
         raise ValueError("engine must be continuous, blocks, or dissmodel.")
     if dissmodel_runner not in {"continuous", "blocks"}:
         raise ValueError("dissmodel_runner must be continuous or blocks.")
+    if parameters.sea_level_trajectory is not None and parameters.sea_level_reference_year != initial_year:
+        raise ValueError("Trajectory reference year must match the initial raster calendar year.")
+    if parameters.sea_level_trajectory is None and parameters.sea_level_reference_year != initial_year:
+        parameters = replace(parameters, sea_level_reference_year=initial_year)
 
     run_started = time.perf_counter()
     output_dir = Path(output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame([
+        {"model_step": step, "calendar_year": initial_year + step, **parameters.sea_level_record(step)}
+        for step in range(0, parameters.final_time + 1)
+    ]).to_csv(output_dir / "sea_level_forcing.csv", index=False)
     states_dir = output_dir / "states"
     if save_annual_states:
         states_dir.mkdir(parents=True, exist_ok=True)
@@ -311,6 +321,7 @@ def run_raster_simulation(
                 row: dict[str, Any] = {
                     "year": year_index,
                     "calendar_year": calendar_year,
+                    **parameters.sea_level_record(year_index),
                     **summary,
                     **transitions,
                     "step_elapsed_seconds": round(step_elapsed, 6),
@@ -347,6 +358,8 @@ def run_raster_simulation(
             if not step_metrics.empty:
                 metric_columns = [
                     "year",
+                    "sea_level_change_mm",
+                    "sea_level_increment_mm",
                     "step_elapsed_seconds",
                     "step_rss_bytes",
                     "step_cells_per_second",
@@ -373,6 +386,7 @@ def run_raster_simulation(
                 row: dict[str, Any] = {
                     "year": int(time_index),
                     "calendar_year": calendar_year,
+                    **parameters.sea_level_record(time_index),
                     **summary,
                     **transitions,
                     "step_elapsed_seconds": round(step_elapsed, 6),
@@ -425,6 +439,9 @@ def run_raster_simulation(
 
     if process is not None:
         peak_rss = max(peak_rss, process.memory_info().rss)
+    # Annual checkpoints can miss temporary state copies and output buffers.
+    # The sampler has stopped; fold all recorded observations into the peak.
+    peak_rss = max(peak_rss, max((sample["rss_bytes"] for sample in resource_samples), default=0))
     simulation_finished = time.perf_counter()
     rss_after = process.memory_info().rss if process else None
     memory_after = _safe_virtual_memory()
@@ -507,6 +524,7 @@ def run_raster_simulation(
             "rss_after_bytes": rss_after,
             "peak_rss_bytes": peak_rss,
             "peak_rss_gib": round(peak_rss / 1024**3, 6),
+            "peak_rss_scope": "Maximum of runner checkpoints and one-second resource samples; excludes input loading.",
             "system_memory_before": memory_before,
             "system_memory_after": memory_after,
             "disk_free_before_bytes": disk_free_before,

@@ -6,6 +6,7 @@ import argparse
 from pathlib import Path
 
 from .engine import ModelParameters
+from .sea_level import SeaLevelTrajectory
 from .raster_runner import load_and_run_raster_simulation
 
 
@@ -52,7 +53,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Rule executor used by DissModel.",
     )
     parser.add_argument("--tide-height", type=float, default=6.0)
-    parser.add_argument("--sea-level-rise-rate", type=float, default=0.5)
+    forcing = parser.add_mutually_exclusive_group()
+    forcing.add_argument("--sea-level-rise-rate", type=float, default=0.5, help="Constant rise in metres per annual step (legacy CLI units).")
+    forcing.add_argument("--sea-level-trajectory", type=Path, help="CSV with year and cumulative sea_level_mm columns; linearly interpolated and rebased to --initial-year.")
+    parser.add_argument("--accretion-rate-mm", type=float, default=None, help="Constant surface accretion in mm/year; omit to use the Alongi regression.")
     parser.add_argument(
         "--fix-accretion-typo",
         action="store_true",
@@ -92,6 +96,9 @@ def main() -> None:
         legacy_lua_accretion_typo=args.legacy_lua_accretion_typo,
         allow_migration_without_soil=(not soil_enabled) and (not args.no_migration_without_soil),
         migration_maturity_years=args.migration_maturity_years,
+        accretion_rate_mm=args.accretion_rate_mm,
+        sea_level_trajectory=SeaLevelTrajectory.from_csv(args.sea_level_trajectory) if args.sea_level_trajectory else None,
+        sea_level_reference_year=args.initial_year,
     )
     trajectory = load_and_run_raster_simulation(
         args.land_cover,
