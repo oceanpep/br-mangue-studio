@@ -7,6 +7,7 @@ later release.
 
 | Record | Scope |
 | --- | --- |
+| [CMMA five-year trajectory checks](CMMA_TRAJECTORIES_20261020.md) | Release 1.4.0; full prepared domain; CSV versus equivalent constant forcing; [JSON](CMMA_TRAJECTORIES_20261020.json) |
 | [Linux island pilot](ILHA_LINUX_20261001.md) | Continuous/block equivalence and annual raster outputs; original pilot extent |
 | [Linux pilot data](ILHA_LINUX_2025_2100.json) | Machine-readable measurements for the original Linux pilot |
 | [Archived Windows CMMA runs](CMMA_WINDOWS_2024_2100_20261001.md) | Historical descriptive timings; different class mappings prevent an engine-equivalence inference |
