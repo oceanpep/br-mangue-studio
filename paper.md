@@ -19,7 +19,7 @@ authors:
 affiliations:
   - name: Universidade Federal do Maranhão, Brazil
     index: 1
-date: 17 October 2026
+date: 20 October 2026
 bibliography: paper.bib
 ---
 
@@ -104,6 +104,15 @@ The default annual sediment-accretion increment follows the linear relationship
 configured with mangrove behavior, including migrated mangrove, and does not
 depend on the optional soil-suitability raster. A user-specified accretion rate
 replaces this default.
+
+Sea-level forcing can use either a constant annual rate or a calendar-based
+trajectory imported as cumulative levels. The trajectory is linearly
+interpolated and rebased to the initial raster year. Each annual update uses
+its own increment for water redistribution and rate-dependent accretion, while
+the tidal-influence threshold uses cumulative change. The application embeds
+source samples in saved projects and exports the annual forcing and provenance.
+Tests compare linear trajectories with equivalent constant rates, verify
+nonlinear increments against hand calculations, and compare execution modes.
 
 # Research impact statement
 

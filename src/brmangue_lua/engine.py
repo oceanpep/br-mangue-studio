@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 from typing import TYPE_CHECKING, Any
 
+from .sea_level import SeaLevelTrajectory
+
 if TYPE_CHECKING:
     import geopandas as gpd
 
@@ -73,12 +75,48 @@ class ModelParameters:
     # Zero is available for sensitivity tests that reproduce immediate
     # source activation; the Studio default is three years.
     migration_maturity_years: int = 3
+    sea_level_trajectory: SeaLevelTrajectory | None = None
+    sea_level_reference_year: int = 2025
 
     def __post_init__(self) -> None:
         if int(self.migration_maturity_years) != self.migration_maturity_years:
             raise ValueError("migration_maturity_years must be an integer.")
         if self.migration_maturity_years < 0:
             raise ValueError("migration_maturity_years must be greater than or equal to zero.")
+        if not np.isfinite(self.sea_level_rise_rate):
+            raise ValueError("Sea-level rise rate must be finite.")
+        if int(self.sea_level_reference_year) != self.sea_level_reference_year:
+            raise ValueError("Sea-level reference year must be a whole calendar year.")
+        if self.sea_level_trajectory is not None:
+            self.sea_level_trajectory.validate_period(
+                self.sea_level_reference_year,
+                self.sea_level_reference_year + self.final_time,
+            )
+
+    def sea_level_at(self, time: int) -> tuple[float, float]:
+        """Return cumulative change and this step's increment, both in metres."""
+        if self.sea_level_trajectory is None:
+            return time * self.sea_level_rise_rate, self.sea_level_rise_rate if time else 0.0
+        curve = self.sea_level_trajectory
+        initial = curve.level_mm(self.sea_level_reference_year)
+        current = curve.level_mm(self.sea_level_reference_year + time)
+        previous = curve.level_mm(self.sea_level_reference_year + max(time - 1, 0))
+        return (current - initial) / 1000.0, (current - previous) / 1000.0
+
+    def sea_level_record(self, time: int) -> dict[str, float]:
+        cumulative, increment = self.sea_level_at(time)
+        return {"sea_level_change_mm": cumulative * 1000.0, "sea_level_increment_mm": increment * 1000.0}
+
+    def sea_level_metadata(self) -> dict[str, Any]:
+        result: dict[str, Any] = {
+            "mode": "trajectory" if self.sea_level_trajectory is not None else "constant",
+            "reference_year": self.sea_level_reference_year,
+            "constant_rate_m_per_year": self.sea_level_rise_rate if self.sea_level_trajectory is None else None,
+        }
+        if self.sea_level_trajectory is not None:
+            result.update(self.sea_level_trajectory.to_dict())
+            result["subtracted_initial_level_mm"] = self.sea_level_trajectory.level_mm(self.sea_level_reference_year)
+        return result
 
 
 @dataclass
@@ -269,14 +307,14 @@ class BrMangueGrid:
         if indices is None:
             indices = range(self.size)
 
-        nmrm = time * parameters.sea_level_rise_rate
+        nmrm, annual_sea_level_increment = parameters.sea_level_at(time)
         # Alongi (2008)'s regression relates annual sediment-accretion rate
         # (mm/year) to annual mean sea-level-rise rate (mm/year). Use the
-        # scenario rate, not its accumulated rise at this step.
+        # current annual increment, not its accumulated rise at this step.
         accretion_rate_mm = (
             parameters.accretion_rate_mm
             if parameters.accretion_rate_mm is not None
-            else 1.693 + (0.939 * parameters.sea_level_rise_rate * 1000)
+            else 1.693 + (0.939 * annual_sea_level_increment * 1000)
         )
         accretion_rate_m = accretion_rate_mm / 1000
         tidal_influence_zone = parameters.tide_height + nmrm
@@ -305,7 +343,7 @@ class BrMangueGrid:
                     if int(neighbor) >= 0 and past_elevation[int(neighbor)] < past_elevation[index]
                 ]
                 neighbor_count = 1 + len(lower)
-                flow = parameters.sea_level_rise_rate / neighbor_count
+                flow = annual_sea_level_increment / neighbor_count
                 self.relative_elevation[index] += flow
 
                 for neighbor in lower:
@@ -382,7 +420,7 @@ class BrMangueGrid:
         rows: list[dict[str, float | int]] = []
         for time in range(parameters.start, parameters.final_time + 1):
             self.step(time, parameters)
-            row: dict[str, float | int] = {"year": time}
+            row: dict[str, float | int] = {"year": time, **parameters.sea_level_record(time)}
             row.update(self.class_counts())
             row["min_elevation"] = float(np.nanmin(self.relative_elevation))
             row["max_elevation"] = float(np.nanmax(self.relative_elevation))
@@ -422,7 +460,7 @@ class BrMangueGrid:
             self.last_transition_metrics = mangrove_extent_metrics(
                 past_states, self.land_cover_state, self.model_state_catalog
             )
-            row: dict[str, float | int] = {"year": time}
+            row: dict[str, float | int] = {"year": time, **parameters.sea_level_record(time)}
             row.update(self.class_counts())
             row["min_elevation"] = float(np.nanmin(self.relative_elevation))
             row["max_elevation"] = float(np.nanmax(self.relative_elevation))
@@ -448,7 +486,8 @@ class BrMangueGrid:
                 "final_time": parameters.final_time,
                 "area_cell": parameters.area_cell,
                 "tide_height": parameters.tide_height,
-                "sea_level_rise_rate": parameters.sea_level_rise_rate,
+                "sea_level_rise_rate": parameters.sea_level_rise_rate if parameters.sea_level_trajectory is None else None,
+                "sea_level_forcing": parameters.sea_level_metadata(),
                 "legacy_lua_accretion_typo": parameters.legacy_lua_accretion_typo,
                 "allow_migration_without_soil": parameters.allow_migration_without_soil,
                 "accretion_rate_mm": parameters.accretion_rate_mm,

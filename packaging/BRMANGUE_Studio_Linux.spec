@@ -3,6 +3,7 @@
 #   pyinstaller packaging/BRMANGUE_Studio_Linux.spec --clean
 
 from pathlib import Path
+import sys
 
 import pyproj
 import rasterio
@@ -39,10 +40,19 @@ for data_name in ("proj_data", "gdal_data"):
     if data_path.is_dir():
         datas.append((str(data_path), f"rasterio/{data_name}"))
 
+# Some standalone Python distributions keep Tcl/Tk outside the loader cache.
+# Bundle those runtime libraries explicitly when present beside Python.
+binaries = [
+    (str(library), ".")
+    for pattern in ("libtcl*.so*", "libtk*.so*")
+    for library in (Path(sys.base_prefix) / "lib").glob(pattern)
+    if library.is_file()
+]
+
 a = Analysis(
     [str(source_root / "brmangue_studio" / "__main__.py")],
     pathex=[str(source_root)],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],

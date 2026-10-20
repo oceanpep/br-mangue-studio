@@ -50,6 +50,7 @@ except ImportError:  # pragma: no cover
     psutil = None
 
 from brmangue_lua.engine import ModelParameters
+from brmangue_lua.sea_level import SeaLevelTrajectory, trajectory_from_project
 from brmangue_lua.model_states import STANDARD_CLASS_STYLES, state_entry
 from brmangue_lua.raster_inputs import (
     DEFAULT_LAND_COVER_MAPPING,
@@ -1018,6 +1019,10 @@ class BRMangueStudio(tk.Tk):
         self.final_year_var = tk.StringVar(value="2035")
         self.tide_height_var = tk.StringVar(value="6.0")
         self.slr_var = tk.StringVar(value="0.5")
+        self.sea_level_mode_var = tk.StringVar(value="constant")
+        self.sea_level_trajectory_path_var = tk.StringVar(value="")
+        self.sea_level_summary_var = tk.StringVar(value="")
+        self._sea_level_trajectory: SeaLevelTrajectory | None = None
         self.accretion_var = tk.StringVar(value="")
         self.migration_maturity_var = tk.StringVar(value="3")
         self.block_size_var = tk.StringVar(value="10000")
@@ -1234,6 +1239,8 @@ class BRMangueStudio(tk.Tk):
             self._refresh_rule_summary()
         if hasattr(self, "engine_combo"):
             self._sync_engine_choice()
+        if hasattr(self, "slr_entry"):
+            self._on_sea_level_mode_changed()
         if hasattr(self, "monitor_text"):
             self._set_monitor(self._monitor_text())
         if hasattr(self, "class_chart"):
@@ -1667,18 +1674,54 @@ class BRMangueStudio(tk.Tk):
         self._refresh_rule_summary()
 
     def _build_parameter_tab(self, parent: ttk.Frame) -> None:
+        outer = parent
+        outer.rowconfigure(0, weight=1)
+        outer.columnconfigure(0, weight=1)
+        canvas = tk.Canvas(outer, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
+        parent = ttk.Frame(canvas)
+        parent.bind("<Configure>", lambda _: canvas.configure(scrollregion=canvas.bbox("all")))
+        window_id = canvas.create_window((0, 0), window=parent, anchor="nw")
+        canvas.bind("<Configure>", lambda event: canvas.itemconfigure(window_id, width=event.width))
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.grid(row=0, column=0, sticky="nsew")
+        scrollbar.grid(row=0, column=1, sticky="ns")
         parent.columnconfigure(1, weight=1)
         fields = [
             ("Initial calendar year", self.initial_year_var),
             ("Final calendar year", self.final_year_var),
             ("Tidal influence height (m)", self.tide_height_var),
-            ("Sea-level rise (mm/year)", self.slr_var),
-            ("Constant surface accretion (mm/year, optional)", self.accretion_var),
-            ("Migration maturation delay (years)", self.migration_maturity_var),
-            ("Block size (cells)", self.block_size_var),
         ]
         for row, (label, variable) in enumerate(fields):
             ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=4)
+            ttk.Entry(parent, textvariable=variable, width=18).grid(row=row, column=1, sticky="ew", pady=4)
+        forcing = ttk.LabelFrame(parent, text="Sea-level forcing", padding=6)
+        forcing.grid(row=3, column=0, columnspan=2, sticky="ew", pady=6)
+        forcing.columnconfigure(0, weight=1)
+        ttk.Radiobutton(forcing, text="Constant rate", variable=self.sea_level_mode_var,
+                        value="constant", command=self._on_sea_level_mode_changed).grid(row=0, column=0, sticky="w")
+        ttk.Radiobutton(forcing, text="Year-based trajectory (CSV)", variable=self.sea_level_mode_var,
+                        value="trajectory", command=self._on_sea_level_mode_changed).grid(row=1, column=0, sticky="w")
+        ttk.Label(forcing, text="Sea-level rise (mm/year)").grid(row=2, column=0, sticky="w", pady=(5, 0))
+        self.slr_entry = ttk.Entry(forcing, textvariable=self.slr_var, width=18)
+        self.slr_entry.grid(row=3, column=0, sticky="ew", pady=(0, 4))
+        self.sea_level_path_entry = ttk.Entry(forcing, textvariable=self.sea_level_trajectory_path_var, state="readonly")
+        self.sea_level_path_entry.grid(row=4, column=0, columnspan=2, sticky="ew")
+        buttons = ttk.Frame(forcing)
+        buttons.grid(row=5, column=0, columnspan=2, sticky="ew", pady=4)
+        self.sea_level_browse_button = ttk.Button(buttons, text="Choose trajectory CSV", command=self._browse_sea_level_trajectory)
+        self.sea_level_browse_button.pack(side="left")
+        self.sea_level_preview_button = ttk.Button(buttons, text="Preview curve", command=self._preview_sea_level_trajectory)
+        self.sea_level_preview_button.pack(side="left", padx=4)
+        ttk.Label(forcing, text="CSV columns: year, sea_level_mm. Use cumulative levels relative to a common baseline.",
+                  wraplength=340, foreground="#5d6b78").grid(row=6, column=0, columnspan=2, sticky="w")
+        ttk.Label(forcing, textvariable=self.sea_level_summary_var, wraplength=340).grid(row=7, column=0, columnspan=2, sticky="w", pady=4)
+        for row, (label, variable) in enumerate([
+            ("Constant surface accretion (mm/year, optional)", self.accretion_var),
+            ("Migration maturation delay (years)", self.migration_maturity_var),
+            ("Block size (cells)", self.block_size_var),
+        ], 4):
+            ttk.Label(parent, text=label, wraplength=220).grid(row=row, column=0, sticky="w", pady=4)
             ttk.Entry(parent, textvariable=variable, width=18).grid(row=row, column=1, sticky="ew", pady=4)
         ttk.Label(parent, text="Processing engine").grid(row=7, column=0, sticky="w", pady=4)
         choices = ["Persistent blocks", "Continuous"]
@@ -1695,6 +1738,81 @@ class BRMangueStudio(tk.Tk):
         ttk.Checkbutton(parent, text="Enable optional mangrove suitability layer", variable=self.soil_enabled_var).grid(row=8, column=0, columnspan=2, sticky="w", pady=5)
         ttk.Checkbutton(parent, text="Allow migration without suitability layer", variable=self.migration_without_soil_var).grid(row=9, column=0, columnspan=2, sticky="w", pady=5)
         ttk.Label(parent, text="A migrated cell becomes a new propagation source only after the maturation delay. Use 0 for a sensitivity test without a biological delay.", wraplength=360, foreground="#5d6b78").grid(row=10, column=0, columnspan=2, sticky="w", pady=(10, 0))
+        for variable in (self.initial_year_var, self.final_year_var):
+            variable.trace_add("write", lambda *_: self._refresh_sea_level_summary())
+        self._on_sea_level_mode_changed()
+
+    def _on_sea_level_mode_changed(self) -> None:
+        trajectory_mode = self.sea_level_mode_var.get() == "trajectory"
+        self.slr_entry.configure(state="disabled" if trajectory_mode else "normal")
+        self.sea_level_path_entry.configure(state="readonly" if trajectory_mode else "disabled")
+        for button in (self.sea_level_browse_button, self.sea_level_preview_button):
+            button.configure(state="normal" if trajectory_mode else "disabled")
+        self._refresh_sea_level_summary()
+
+    def _require_sea_level_trajectory(self) -> SeaLevelTrajectory:
+        if self._sea_level_trajectory is None:
+            path = self.sea_level_trajectory_path_var.get()
+            if not path:
+                raise ValueError("Choose a trajectory CSV before running the simulation.")
+            self._sea_level_trajectory = SeaLevelTrajectory.from_csv(path)
+        self._sea_level_trajectory.validate_period(int(self.initial_year_var.get()), int(self.final_year_var.get()))
+        return self._sea_level_trajectory
+
+    def _browse_sea_level_trajectory(self) -> None:
+        path = filedialog.askopenfilename(
+            title=translate("Choose trajectory CSV", self.language_code),
+            filetypes=[("CSV", "*.csv"), (translate("All files", self.language_code), "*.*")],
+        )
+        if not path:
+            return
+        try:
+            curve = SeaLevelTrajectory.from_csv(path)
+        except Exception as exc:
+            self._show_message("showerror", "Sea-level forcing", str(exc))
+            return
+        self._sea_level_trajectory = curve
+        self.sea_level_trajectory_path_var.set(path)
+        self._refresh_sea_level_summary()
+
+    def _refresh_sea_level_summary(self) -> None:
+        if self.sea_level_mode_var.get() != "trajectory":
+            self.sea_level_summary_var.set("")
+            return
+        try:
+            curve = self._require_sea_level_trajectory()
+            first, last = int(self.initial_year_var.get()), int(self.final_year_var.get())
+            levels = [curve.level_mm(year) for year in range(first, last + 1)]
+            increments = np.diff(levels)
+            template = translate("{first}–{last}: {rise:.1f} mm rise; annual increments {minimum:.2f}–{maximum:.2f} mm/year.", self.language_code)
+            self.sea_level_summary_var.set(template.format(
+                first=first, last=last, rise=levels[-1] - levels[0],
+                minimum=float(increments.min()) if increments.size else 0,
+                maximum=float(increments.max()) if increments.size else 0,
+            ))
+        except (ValueError, OSError) as exc:
+            self.sea_level_summary_var.set(translate_runtime(str(exc), self.language_code))
+
+    def _preview_sea_level_trajectory(self) -> None:
+        try:
+            curve = self._require_sea_level_trajectory()
+            first, last = int(self.initial_year_var.get()), int(self.final_year_var.get())
+        except (ValueError, OSError) as exc:
+            self._show_message("showerror", "Sea-level forcing", str(exc))
+            return
+        window = tk.Toplevel(self)
+        window.title(translate("Sea-level trajectory", self.language_code))
+        figure = Figure(figsize=(7, 4), dpi=100, tight_layout=True)
+        axis = figure.add_subplot(111)
+        years = np.arange(first, last + 1)
+        initial = curve.level_mm(first)
+        axis.plot(years, [curve.level_mm(int(year)) - initial for year in years])
+        axis.set_xlabel(translate("Calendar year", self.language_code))
+        axis.set_ylabel(translate("Sea-level change since initial year (mm)", self.language_code))
+        axis.grid(alpha=0.3)
+        chart = FigureCanvasTkAgg(figure, master=window)
+        chart.get_tk_widget().pack(fill="both", expand=True)
+        chart.draw()
 
     def _build_center(self, parent: ttk.Frame) -> None:
         parent.rowconfigure(0, weight=1)
@@ -2404,13 +2522,16 @@ class BRMangueStudio(tk.Tk):
         if migration_maturity_years < 0:
             raise ValueError("Migration maturation delay must be zero or greater.")
         soil_enabled = bool(self.soil_enabled_var.get() and self.soil_var.get().strip())
+        curve = self._require_sea_level_trajectory() if self.sea_level_mode_var.get() == "trajectory" else None
         return ModelParameters(
             start=1,
             final_time=final - initial,
             tide_height=float(self.tide_height_var.get()),
             # The core preserves the Lua convention (metres per model step).
             # The desktop field is deliberately expressed in mm per year.
-            sea_level_rise_rate=float(self.slr_var.get()) / 1000.0,
+            sea_level_rise_rate=float(self.slr_var.get()) / 1000.0 if curve is None else 0.0,
+            sea_level_trajectory=curve,
+            sea_level_reference_year=initial,
             legacy_lua_accretion_typo=False,
             allow_migration_without_soil=(not soil_enabled) and bool(self.migration_without_soil_var.get()),
             accretion_rate_mm=accretion,
@@ -3011,6 +3132,10 @@ class BRMangueStudio(tk.Tk):
         self.inputs = None
         self.custom_model_classes = []
         self.class_mapping_mode_var.set("standard")
+        self.sea_level_mode_var.set("constant")
+        self.sea_level_trajectory_path_var.set("")
+        self._sea_level_trajectory = None
+        self._on_sea_level_mode_changed()
         self.custom_class_behavior_var.set(self._display_custom_behavior("fixed"))
         self.class_counts.clear()
         self.initial_class_counts = {}
@@ -3045,6 +3170,8 @@ class BRMangueStudio(tk.Tk):
             self.save_project_as()
             return
         _mapping, excluded, roles, _custom_mapping = self._mapping_from_ui()
+        curve = self._require_sea_level_trajectory() if self.sea_level_mode_var.get() == "trajectory" else None
+        constant_rate = float(self.slr_var.get()) if curve is None else 0.0
 
         def project_path(value: str) -> str:
             """Store paths relative to the project whenever possible."""
@@ -3060,7 +3187,7 @@ class BRMangueStudio(tk.Tk):
 
         payload = {
             "format": "brmangue-studio-project",
-            "version": "0.3.0",
+            "version": "0.4.0",
             "inputs": {
                 "land_cover": project_path(self.land_cover_var.get()),
                 "elevation": project_path(self.elevation_var.get()),
@@ -3086,8 +3213,11 @@ class BRMangueStudio(tk.Tk):
                 "initial_year": int(self.initial_year_var.get()),
                 "final_year": int(self.final_year_var.get()),
                 "tide_height_m": float(self.tide_height_var.get()),
-                "sea_level_rise_mm_per_year": float(self.slr_var.get()),
-                "sea_level_rise_m_per_model_step": float(self.slr_var.get()) / 1000.0,
+                "sea_level_mode": self.sea_level_mode_var.get(),
+                "sea_level_trajectory": curve.to_dict() if curve else None,
+                "sea_level_trajectory_file": project_path(self.sea_level_trajectory_path_var.get()) if curve else "",
+                "sea_level_rise_mm_per_year": constant_rate,
+                "sea_level_rise_m_per_model_step": constant_rate / 1000.0,
                 "accretion_rate_mm": self.accretion_var.get(),
                 "migration_maturity_years": int(self.migration_maturity_var.get()),
                 "block_size": int(self.block_size_var.get()),
@@ -3163,6 +3293,10 @@ class BRMangueStudio(tk.Tk):
             if self.engine_var.get() == "dissmodel" and not DISSMODEL_AVAILABLE:
                 self.engine_var.set("blocks")
             self._sync_engine_choice()
+            self.sea_level_mode_var.set(parameters.get("sea_level_mode", "constant"))
+            self._sea_level_trajectory = trajectory_from_project(parameters, self.project_file.parent)
+            self.sea_level_trajectory_path_var.set(input_path(parameters.get("sea_level_trajectory_file", "")))
+            self._on_sea_level_mode_changed()
             self.soil_enabled_var.set(bool(parameters.get("soil_enabled", False)))
             self.migration_without_soil_var.set(bool(parameters.get("allow_migration_without_soil", True)))
             self.project_status_var.set(f"Project: {self.project_file.parent}")

@@ -9,6 +9,10 @@ spatial cellular-automaton scenarios of mangrove response to sea-level rise.
 Use aligned land-cover and elevation rasters, set the scenario, and inspect
 annual maps, trajectories, transitions, and reproducibility metadata.
 
+The 1.4.0rc1 development version adds optional annual sea-level trajectories
+alongside constant-rate scenarios. See [CSV trajectory setup](docs/SEA_LEVEL_TRAJECTORIES.md)
+for the file format, interpolation, baseline and reproducibility outputs.
+
 ![Annual-state simulation example for Ilha de São Luís](docs/assets/demo/simulation-ilha-sao-luis.gif)
 
 *Software demonstration with raster data from Ilha de São Luís. This run has no

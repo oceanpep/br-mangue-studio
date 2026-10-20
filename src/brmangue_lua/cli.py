@@ -6,6 +6,7 @@ import argparse
 from pathlib import Path
 
 from .engine import ModelParameters, run_shapefile
+from .sea_level import SeaLevelTrajectory
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -14,7 +15,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", default="outputs", help="Results folder")
     parser.add_argument("--final-time", type=int, default=100)
     parser.add_argument("--tide-height", type=float, default=6.0)
-    parser.add_argument("--sea-level-rise-rate", type=float, default=0.5)
+    forcing = parser.add_mutually_exclusive_group()
+    forcing.add_argument("--sea-level-rise-rate", type=float, default=0.5, help="Constant rise in metres per annual step (legacy CLI units).")
+    forcing.add_argument("--sea-level-trajectory", type=Path, help="CSV with year and cumulative sea_level_mm columns.")
+    parser.add_argument("--initial-year", type=int, default=2025, help="Reference year for a sea-level trajectory.")
     parser.add_argument(
         "--accretion-rate-mm",
         type=float,
@@ -83,6 +87,8 @@ def main() -> None:
         allow_migration_without_soil=args.allow_migration_without_soil,
         accretion_rate_mm=args.accretion_rate_mm,
         migration_maturity_years=args.migration_maturity_years,
+        sea_level_trajectory=SeaLevelTrajectory.from_csv(args.sea_level_trajectory) if args.sea_level_trajectory else None,
+        sea_level_reference_year=args.initial_year,
     )
     trajectory = run_shapefile(
         args.input,
