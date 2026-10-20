@@ -6,6 +6,8 @@ on:
     paths:
       - ".github/workflows/build-linux.yml"
       - "packaging/BRMANGUE_Studio_Linux.spec"
+      - "packaging/linux/**"
+      - "scripts/package_linux.py"
       - "src/**"
       - "pyproject.toml"
       - "scripts/smoke_packaged_application.py"
@@ -14,6 +16,8 @@ on:
     paths:
       - ".github/workflows/build-linux.yml"
       - "packaging/BRMANGUE_Studio_Linux.spec"
+      - "packaging/linux/**"
+      - "scripts/package_linux.py"
       - "src/**"
       - "pyproject.toml"
       - "scripts/smoke_packaged_application.py"
@@ -41,11 +45,21 @@ jobs:
         run: .venv/bin/python scripts/smoke_packaged_application.py --executable dist/BRMANGUE_Studio_Linux_x86_64
       - name: Create SHA-256 checksum
         run: cd dist && sha256sum BRMANGUE_Studio_Linux_x86_64 > BRMANGUE_Studio_Linux_x86_64.sha256
+      - name: Create Linux download package
+        run: python3 scripts/package_linux.py --executable dist/BRMANGUE_Studio_Linux_x86_64
       - uses: actions/upload-artifact@v4
         with:
           name: BRMANGUE_Studio-Linux-x86_64
           path: |
             dist/BRMANGUE_Studio_Linux_x86_64
             dist/BRMANGUE_Studio_Linux_x86_64.sha256
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BRMANGUE_Studio-Linux-desktop-package
+          path: |
+            dist/BR-MANGUE_Studio-*-Linux-x86_64.tar.gz
+            dist/BR-MANGUE_Studio-*-Linux-x86_64.tar.gz.sha256
           if-no-files-found: error
           retention-days: 30
