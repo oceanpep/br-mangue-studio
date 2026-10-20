@@ -2,7 +2,7 @@
 
 Para o fluxo completo do executável, consulte o [Manual do usuário](MANUAL_USUARIO_BR_MANGUE_STUDIO.md).
 
-A versão de desenvolvimento 1.4.0rc1 acrescenta seleção entre taxa constante
+A versão 1.4.0 acrescenta seleção entre taxa constante
 e trajetória anual do nível do mar. Consulte o [guia das trajetórias CSV](SEA_LEVEL_TRAJECTORIES.md)
 para configurar níveis acumulados, interpolação e referência temporal.
 
