@@ -152,7 +152,7 @@ def _model_legend_handles(
         for name, color in (value for value in STANDARD_CLASS_STYLES.values())
     ]
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.4.0rc1"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
