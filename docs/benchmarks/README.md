@@ -15,3 +15,7 @@ See the [reproducibility protocol](../REPRODUCIBILITY_AND_BENCHMARKING.md)
 for time scopes, resource counters, comparison rules, and how to add a new
 record. Reports establish software operation for the stated inputs and
 parameters; ecological validation requires independent observations.
+
+Version 1.4.0 includes periodic resource observations when calculating the
+reported RSS peak. Earlier peak summaries can refer to annual checkpoints;
+check the record's measurement scope before comparing memory values.

@@ -94,14 +94,22 @@ class ModelParameters:
             )
 
     def sea_level_at(self, time: int) -> tuple[float, float]:
-        """Return cumulative change and this step's increment, both in metres."""
+        """Return cumulative and annual change in metres at 1e-12 m precision.
+
+        A shared numerical precision removes cancellation noise from CSV
+        interpolation, which can otherwise alter exact flooding boundaries.
+        """
         if self.sea_level_trajectory is None:
-            return time * self.sea_level_rise_rate, self.sea_level_rise_rate if time else 0.0
-        curve = self.sea_level_trajectory
-        initial = curve.level_mm(self.sea_level_reference_year)
-        current = curve.level_mm(self.sea_level_reference_year + time)
-        previous = curve.level_mm(self.sea_level_reference_year + max(time - 1, 0))
-        return (current - initial) / 1000.0, (current - previous) / 1000.0
+            cumulative = time * self.sea_level_rise_rate
+            increment = self.sea_level_rise_rate if time else 0.0
+        else:
+            curve = self.sea_level_trajectory
+            initial = curve.level_mm(self.sea_level_reference_year)
+            current = curve.level_mm(self.sea_level_reference_year + time)
+            previous = curve.level_mm(self.sea_level_reference_year + max(time - 1, 0))
+            cumulative = (current - initial) / 1000.0
+            increment = (current - previous) / 1000.0
+        return round(cumulative, 12), round(increment, 12)
 
     def sea_level_record(self, time: int) -> dict[str, float]:
         cumulative, increment = self.sea_level_at(time)
@@ -112,6 +120,7 @@ class ModelParameters:
             "mode": "trajectory" if self.sea_level_trajectory is not None else "constant",
             "reference_year": self.sea_level_reference_year,
             "constant_rate_m_per_year": self.sea_level_rise_rate if self.sea_level_trajectory is None else None,
+            "numerical_resolution_m": 1e-12,
         }
         if self.sea_level_trajectory is not None:
             result.update(self.sea_level_trajectory.to_dict())

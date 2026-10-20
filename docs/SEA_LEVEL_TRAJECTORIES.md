@@ -73,6 +73,11 @@ annual_increment_m(t) = (P(y0 + t) - P(y0 + t - 1)) / 1000
 tidal_influence_height_m(t) = tide_height + cumulative_change_m(t)
 ```
 
+Both forcing modes use a common numerical precision of `1e-12 m` for cumulative
+change and annual increments before applying cell rules. This removes binary
+round-off differences at exact flooding boundaries for equivalent linear curves
+and constant rates. The resolution is recorded in forcing metadata.
+
 The annual increment supplies the existing local water redistribution rule.
 The optional Alongi accretion regression uses that year's increment in mm/year.
 An explicit fixed accretion value remains constant. Continuous and persistent
