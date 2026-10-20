@@ -176,9 +176,23 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(add_help=True)
-    parser.add_argument("--batch-project", type=Path, help="Run a project without opening the GUI.")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--batch-project", type=Path, help="Run a project without opening the GUI.")
+    mode.add_argument("--install-shortcuts", action="store_true", help="Create Linux application shortcuts for this executable.")
     parser.add_argument("--output-dir", type=Path, help="Output directory for batch execution.")
     args = parser.parse_args()
+    if args.install_shortcuts:
+        from brmangue_studio.desktop_integration import create_linux_shortcuts
+
+        try:
+            result = create_linux_shortcuts()
+        except (OSError, ValueError) as exc:
+            if sys.stderr is not None:
+                print(str(exc), file=sys.stderr)
+            return 2
+        if sys.stdout is not None:
+            print(json.dumps(result, ensure_ascii=False))
+        return 0
     if args.batch_project:
         try:
             return _run_batch(args.batch_project, args.output_dir)
