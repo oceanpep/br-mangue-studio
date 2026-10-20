@@ -212,7 +212,7 @@ def test_studio_modes_languages_and_saved_embedded_curve(tmp_path, monkeypatch):
         SeaLevelTrajectory.from_csv(example).validate_period(2025, 2100)
         studio._show_sea_level_help()
         help_window = next(w for w in studio.winfo_children() if isinstance(w, tk.Toplevel))
-        help_text = next(w for w in help_window.winfo_children() if isinstance(w, tk.Text))
+        help_text = next(w for frame in help_window.winfo_children() for w in frame.winfo_children() if isinstance(w, tk.Text))
         assert 'Crie uma planilha' in help_text.get('1.0', 'end')
         help_window.destroy()
         studio.project_file = tmp_path / "saved.json"
