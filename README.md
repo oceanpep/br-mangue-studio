@@ -3,6 +3,7 @@
 [![Tests](https://github.com/oceanpep/br-mangue-studio/actions/workflows/tests.yml/badge.svg)](https://github.com/oceanpep/br-mangue-studio/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Citation](https://img.shields.io/badge/citation-CITATION.cff-blue.svg)](CITATION.cff)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23509308.svg)](https://doi.org/10.5281/zenodo.23509308)
 
 **BR-MANGUE Studio** is a desktop application for running and inspecting
 spatial cellular-automaton scenarios of mangrove response to sea-level rise.
@@ -152,7 +153,9 @@ model rules, outputs, or performance measurements.
 
 ## Citation, license, and support
 
-Cite the software release listed in [`CITATION.cff`](CITATION.cff). The
+Cite version 1.4.0 with DOI [10.5281/zenodo.23509309](https://doi.org/10.5281/zenodo.23509309),
+as listed in [`CITATION.cff`](CITATION.cff). The
+[concept DOI](https://doi.org/10.5281/zenodo.23509308) identifies the software across versions. The
 repository is distributed under the [MIT License](LICENSE). For reproducible
 software issues, use the [issue tracker](https://github.com/oceanpep/br-mangue-studio/issues)
 and follow the [support checklist](SUPPORT.md). Contributions follow the
