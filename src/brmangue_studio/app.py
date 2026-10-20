@@ -17,6 +17,7 @@ import subprocess
 import sys
 import threading
 import time
+import webbrowser
 from datetime import datetime
 from functools import lru_cache
 from typing import Any
@@ -50,7 +51,7 @@ except ImportError:  # pragma: no cover
     psutil = None
 
 from brmangue_lua.engine import ModelParameters
-from brmangue_lua.sea_level import SeaLevelTrajectory, trajectory_from_project
+from brmangue_lua.sea_level import TRAJECTORY_CSV_EXAMPLE, SeaLevelTrajectory, trajectory_from_project
 from brmangue_lua.model_states import STANDARD_CLASS_STYLES, state_entry
 from brmangue_lua.raster_inputs import (
     DEFAULT_LAND_COVER_MAPPING,
@@ -152,7 +153,7 @@ def _model_legend_handles(
         for name, color in (value for value in STANDARD_CLASS_STYLES.values())
     ]
 
-APP_VERSION = "1.4.0rc1"
+APP_VERSION = "1.4.0"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -1713,6 +1714,12 @@ class BRMangueStudio(tk.Tk):
         self.sea_level_browse_button.pack(side="left")
         self.sea_level_preview_button = ttk.Button(buttons, text="Preview curve", command=self._preview_sea_level_trajectory)
         self.sea_level_preview_button.pack(side="left", padx=4)
+        help_buttons = ttk.Frame(forcing)
+        help_buttons.grid(row=8, column=0, columnspan=2, sticky="w", pady=4)
+        self.sea_level_template_button = ttk.Button(help_buttons, text="Save CSV example", command=self._save_sea_level_example)
+        self.sea_level_template_button.pack(side="left")
+        self.sea_level_help_button = ttk.Button(help_buttons, text="Format and data sources", command=self._show_sea_level_help)
+        self.sea_level_help_button.pack(side="left", padx=4)
         ttk.Label(forcing, text="CSV columns: year, sea_level_mm. Use cumulative levels relative to a common baseline.",
                   wraplength=340, foreground="#5d6b78").grid(row=6, column=0, columnspan=2, sticky="w")
         ttk.Label(forcing, textvariable=self.sea_level_summary_var, wraplength=340).grid(row=7, column=0, columnspan=2, sticky="w", pady=4)
@@ -1749,6 +1756,48 @@ class BRMangueStudio(tk.Tk):
         for button in (self.sea_level_browse_button, self.sea_level_preview_button):
             button.configure(state="normal" if trajectory_mode else "disabled")
         self._refresh_sea_level_summary()
+
+    def _save_sea_level_example(self) -> None:
+        path = filedialog.asksaveasfilename(
+            title=translate("Save CSV example", self.language_code),
+            initialfile="sea_level_SYNTHETIC_example.csv", defaultextension=".csv",
+            filetypes=[("CSV", "*.csv")],
+        )
+        if not path:
+            return
+        try:
+            Path(path).write_text(TRAJECTORY_CSV_EXAMPLE, encoding="utf-8")
+        except OSError as exc:
+            self._show_message("showerror", "Sea-level forcing", str(exc))
+            return
+        self._show_message("showinfo", "Sea-level forcing",
+                           "Synthetic example saved. Replace its values with documented projections before research use.")
+
+    def _show_sea_level_help(self) -> None:
+        window = tk.Toplevel(self)
+        window.title(translate("Format and data sources", self.language_code))
+        window.geometry("680x600")
+        body = translate(
+            "Create a spreadsheet with two columns named year and sea_level_mm. Enter calendar years and cumulative sea levels in millimetres, all relative to the same baseline. Save as CSV (UTF-8). Commas or semicolons are accepted as separators; use decimal commas only with semicolons.\n\n"
+            "Use at least two different years in increasing order. The file must cover the entire simulation: for 2025–2100, decadal samples from 2020 to 2100 are sufficient. The model interpolates intermediate years and subtracts the initial-year level automatically.\n\n"
+            "Data sources: obtain regional projections from the NASA/IPCC AR6 tool, the IPCC AR6 archive, or the Earth Engine catalog. Select one location or documented regional summary, one scenario, and one percentile per file. Copy the years and cumulative total sea-level values into the two required columns. Source downloads may need reformatting. Convert metres to millimetres by multiplying by 1000, or centimetres by 10.\n\n"
+            "Use projected cumulative levels, not annual rates. Record the source, location, scenario, percentile, units, and reference period alongside the CSV. An observed annual trend can be entered directly in Constant rate.\n\n"
+            "Save CSV example creates a synthetic file for learning the format. Replace all example values before using it in research. Each run exports the actual annual forcing in sea_level_forcing.csv.",
+            self.language_code,
+        )
+        text = tk.Text(window, wrap="word", padx=14, pady=14)
+        text.insert("1.0", body)
+        text.configure(state="disabled")
+        text.pack(fill="both", expand=True)
+        links = ttk.Frame(window, padding=8)
+        links.pack(fill="x")
+        for label, url in [
+            ("NASA / IPCC AR6", "https://sealevel.nasa.gov/data_tools/17"),
+            ("IPCC AR6 archive", "https://doi.org/10.5281/zenodo.6382554"),
+            ("Earth Engine", "https://developers.google.com/earth-engine/datasets/catalog/IPCC_AR6_SLP"),
+        ]:
+            ttk.Button(links, text=translate(label, self.language_code),
+                       command=lambda address=url: webbrowser.open(address)).pack(side="left", padx=3)
 
     def _require_sea_level_trajectory(self) -> SeaLevelTrajectory:
         if self._sea_level_trajectory is None:

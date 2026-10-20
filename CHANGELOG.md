@@ -2,7 +2,7 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
-## [Unreleased]
+## [1.4.0] — 2026-10-20
 
 - Add optional calendar-based sea-level trajectories alongside the default
   constant annual rate. Import cumulative levels from CSV (`year,sea_level_mm`),
@@ -15,6 +15,8 @@ All notable changes to BR-MANGUE Studio are recorded here.
 - Embed source samples and their checksum in saved projects, and export the
   annual forcing table and provenance with each raster simulation. Provide
   English and Brazilian Portuguese controls for the new mode.
+- Add in-app CSV examples and guidance on format, units, data sources,
+  and spreadsheet preparation, with matching bilingual website instructions.
 
 ## [1.3.0] — 2026-10-17
 
