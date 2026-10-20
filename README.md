@@ -157,3 +157,5 @@ repository is distributed under the [MIT License](LICENSE). For reproducible
 software issues, use the [issue tracker](https://github.com/oceanpep/br-mangue-studio/issues)
 and follow the [support checklist](SUPPORT.md). Contributions follow the
 [Code of Conduct](CODE_OF_CONDUCT.md).
+
+The small boundary-regression data fixture carries CC BY 4.0; see [attribution](tests/fixtures/README.md). The software code remains MIT licensed.
