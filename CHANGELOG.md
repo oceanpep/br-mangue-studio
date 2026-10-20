@@ -4,6 +4,18 @@ All notable changes to BR-MANGUE Studio are recorded here.
 
 ## [Unreleased]
 
+- Add optional calendar-based sea-level trajectories alongside the default
+  constant annual rate. Import cumulative levels from CSV (`year,sea_level_mm`),
+  preview the curve, interpolate between supplied years, and rebase changes to
+  the initial raster year. Trajectories must cover the complete simulation;
+  values outside their time range are rejected.
+- Apply the corresponding annual increment in continuous and persistent-block
+  execution, including the optional rate-dependent accretion formula. Fixed
+  user-specified accretion remains independent of the sea-level curve.
+- Embed source samples and their checksum in saved projects, and export the
+  annual forcing table and provenance with each raster simulation. Provide
+  English and Brazilian Portuguese controls for the new mode.
+
 ## [1.3.0] — 2026-10-17
 
 - Apply sediment accretion to every state configured with mangrove behavior,

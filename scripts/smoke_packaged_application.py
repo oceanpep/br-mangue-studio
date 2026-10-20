@@ -104,7 +104,36 @@ def main() -> int:
                 if not np.all(final_state.read(1) == 300):
                     raise AssertionError(f"{engine}: unexpected final class state")
 
-    print("Packaged executable passed soil-free accretion smoke test for both engines.")
+            # Exercise the bundled CSV loader and a nonlinear cumulative curve.
+            curve = root / "sea_level.csv"
+            curve.write_text("year,sea_level_mm\n2025,400\n2026,401\n2028,411\n", encoding="utf-8")
+            payload = json.loads(project.read_text(encoding="utf-8"))
+            payload["parameters"].update({
+                "final_year": 2028,
+                "sea_level_mode": "trajectory",
+                "sea_level_trajectory_file": curve.name,
+            })
+            project.write_text(json.dumps(payload), encoding="utf-8")
+            output_curve = root / f"output_curve_{engine}"
+            result = subprocess.run(
+                [str(executable), "--batch-project", str(project), "--output-dir", str(output_curve)],
+                cwd=root, capture_output=True, text=True, timeout=180, check=False,
+            )
+            if result.returncode:
+                error_log = output_curve.parent / "brmangue_batch_error.log"
+                detail = error_log.read_text(encoding="utf-8") if error_log.exists() else result.stderr
+                raise RuntimeError(f"Packaged {engine} trajectory failed: {detail}")
+            forcing = pd.read_csv(output_curve / "sea_level_forcing.csv")
+            np.testing.assert_allclose(forcing.sea_level_change_mm, [0, 1, 6, 11])
+            np.testing.assert_allclose(forcing.sea_level_increment_mm, [0, 1, 5, 5])
+            trajectory = pd.read_csv(output_curve / "trajectory.csv")
+            expected_minimum = 1 + (3 * 1.693 + 0.939 * 11) / 1000
+            np.testing.assert_allclose(trajectory.iloc[-1].min_elevation, expected_minimum, atol=1e-9)
+            metadata = json.loads((output_curve / "metadata.json").read_text(encoding="utf-8"))
+            if metadata["parameters"]["sea_level_forcing"]["mode"] != "trajectory":
+                raise AssertionError(f"{engine}: trajectory provenance missing")
+
+    print("Packaged executable passed constant/trajectory and soil-free accretion checks for both engines.")
     return 0
 
 
