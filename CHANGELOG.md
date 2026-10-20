@@ -17,6 +17,8 @@ All notable changes to BR-MANGUE Studio are recorded here.
   English and Brazilian Portuguese controls for the new mode.
 - Add in-app CSV examples and guidance on format, units, data sources,
   and spreadsheet preparation, with matching bilingual website instructions.
+- Include all periodic memory observations in the reported RSS peak, so
+  temporary allocations between annual checkpoints are represented.
 
 ## [1.3.0] — 2026-10-17
 
