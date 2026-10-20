@@ -199,11 +199,11 @@ class PersistentBlockRunner:
         migrated_code = migrated_mangrove_code(self.model_state_catalog)
         accretion_eligible_states = frozenset(mangrove_accretion_codes(self.model_state_catalog))
 
-        sea_level = time_index * parameters.sea_level_rise_rate
+        sea_level, annual_sea_level_increment = parameters.sea_level_at(time_index)
         accretion_mm = (
             parameters.accretion_rate_mm
             if parameters.accretion_rate_mm is not None
-            else 1.693 + (0.939 * parameters.sea_level_rise_rate * 1000)
+            else 1.693 + (0.939 * annual_sea_level_increment * 1000)
         )
         accretion_m = accretion_mm / 1000
         tidal_zone = parameters.tide_height + sea_level
@@ -226,7 +226,7 @@ class PersistentBlockRunner:
                         for neighbor in self.neighbors[index]
                         if neighbor >= 0 and previous_elevation[neighbor] < previous_elevation[index]
                     ]
-                    flow = parameters.sea_level_rise_rate / (1 + len(lower_neighbors))
+                    flow = annual_sea_level_increment / (1 + len(lower_neighbors))
                     elevation[index] += flow
                     for neighbor in lower_neighbors:
                         elevation[neighbor] += flow
@@ -298,7 +298,7 @@ class PersistentBlockRunner:
         self.peak_rss_bytes = self.rss_before_bytes or 0
         rows: list[dict[str, int | float]] = []
         for time_index in range(parameters.start, parameters.final_time + 1):
-            row = {"year": time_index, **self.step(time_index, parameters)}
+            row = {"year": time_index, **parameters.sea_level_record(time_index), **self.step(time_index, parameters)}
             rows.append(row)
             if process is not None:
                 self.peak_rss_bytes = max(self.peak_rss_bytes, process.memory_info().rss)
@@ -342,7 +342,8 @@ def run_persistent_shapefile(
                 "final_time": parameters.final_time,
                 "area_cell": parameters.area_cell,
                 "tide_height": parameters.tide_height,
-                "sea_level_rise_rate": parameters.sea_level_rise_rate,
+                "sea_level_rise_rate": parameters.sea_level_rise_rate if parameters.sea_level_trajectory is None else None,
+                "sea_level_forcing": parameters.sea_level_metadata(),
                 "legacy_lua_accretion_typo": parameters.legacy_lua_accretion_typo,
                 "allow_migration_without_soil": parameters.allow_migration_without_soil,
                 "accretion_rate_mm": parameters.accretion_rate_mm,

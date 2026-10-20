@@ -30,6 +30,43 @@ def _write_raster(path: Path, values: np.ndarray, dtype: str, nodata: int | floa
         destination.write(values, 1)
 
 
+def _check_boundary_equivalence(executable: Path, root: Path) -> None:
+    """Exercise the real-data floating-point regression in the frozen app."""
+    fixture_path = Path(__file__).resolve().parents[1] / 'tests/fixtures/floating_point_tidal_boundary.npz'
+    with np.load(fixture_path) as fixture:
+        _write_raster(root/'boundary_cover.tif', fixture['land_cover'], 'uint8', 0)
+        _write_raster(root/'boundary_dem.tif', fixture['elevation'], 'float32', -9999)
+    (root/'boundary_curve.csv').write_text('year,sea_level_mm\n2020,-23.5\n2025,0\n2030,23.5\n', encoding='utf-8')
+    for engine in ('continuous', 'blocks'):
+        for mode in ('constant', 'trajectory'):
+            payload = {
+                'inputs': {'land_cover': 'boundary_cover.tif', 'elevation': 'boundary_dem.tif'},
+                'class_roles': {'5': 'Mangrove', '33': 'Water'},
+                'parameters': {'initial_year': 2025, 'final_year': 2030, 'engine': engine,
+                               'block_size': 32, 'tide_height_m': 6, 'accretion_rate_mm': 2.4,
+                               'migration_maturity_years': 3, 'allow_migration_without_soil': True,
+                               'soil_enabled': False, 'sea_level_mode': mode,
+                               'sea_level_rise_mm_per_year': 4.7,
+                               'sea_level_trajectory_file': 'boundary_curve.csv'},
+            }
+            project = root/f'boundary_{engine}_{mode}.json'
+            project.write_text(json.dumps(payload), encoding='utf-8')
+            output = root/f'boundary_{engine}_{mode}'
+            result = subprocess.run([str(executable), '--batch-project', str(project), '--output-dir', str(output)],
+                                    cwd=root, capture_output=True, text=True, timeout=180, check=False)
+            if result.returncode:
+                error_log = root/'brmangue_batch_error.log'
+                detail = error_log.read_text(encoding='utf-8') if error_log.exists() else result.stderr
+                raise RuntimeError(f'Packaged boundary regression failed: {detail}')
+            metadata = json.loads((output/'metadata.json').read_text(encoding='utf-8'))
+            samples = pd.read_csv(output/'resource_samples.csv')
+            assert metadata['parameters']['sea_level_forcing']['numerical_resolution_m'] == 1e-12
+            assert metadata['performance']['peak_rss_bytes'] >= int(samples.rss_bytes.max())
+        for year in range(2026, 2031):
+            with rasterio.open(root/f'boundary_{engine}_constant/states/state_{year}.tif') as a, rasterio.open(root/f'boundary_{engine}_trajectory/states/state_{year}.tif') as b:
+                np.testing.assert_array_equal(a.read(1), b.read(1))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--executable", required=True, type=Path)
@@ -104,7 +141,38 @@ def main() -> int:
                 if not np.all(final_state.read(1) == 300):
                     raise AssertionError(f"{engine}: unexpected final class state")
 
-    print("Packaged executable passed soil-free accretion smoke test for both engines.")
+            # Exercise the bundled CSV loader and a nonlinear cumulative curve.
+            curve = root / "sea_level.csv"
+            curve.write_text("year,sea_level_mm\n2025,400\n2026,401\n2028,411\n", encoding="utf-8")
+            payload = json.loads(project.read_text(encoding="utf-8"))
+            payload["parameters"].update({
+                "final_year": 2028,
+                "sea_level_mode": "trajectory",
+                "sea_level_trajectory_file": curve.name,
+            })
+            project.write_text(json.dumps(payload), encoding="utf-8")
+            output_curve = root / f"output_curve_{engine}"
+            result = subprocess.run(
+                [str(executable), "--batch-project", str(project), "--output-dir", str(output_curve)],
+                cwd=root, capture_output=True, text=True, timeout=180, check=False,
+            )
+            if result.returncode:
+                error_log = output_curve.parent / "brmangue_batch_error.log"
+                detail = error_log.read_text(encoding="utf-8") if error_log.exists() else result.stderr
+                raise RuntimeError(f"Packaged {engine} trajectory failed: {detail}")
+            forcing = pd.read_csv(output_curve / "sea_level_forcing.csv")
+            np.testing.assert_allclose(forcing.sea_level_change_mm, [0, 1, 6, 11])
+            np.testing.assert_allclose(forcing.sea_level_increment_mm, [0, 1, 5, 5])
+            trajectory = pd.read_csv(output_curve / "trajectory.csv")
+            expected_minimum = 1 + (3 * 1.693 + 0.939 * 11) / 1000
+            np.testing.assert_allclose(trajectory.iloc[-1].min_elevation, expected_minimum, atol=1e-9)
+            metadata = json.loads((output_curve / "metadata.json").read_text(encoding="utf-8"))
+            if metadata["parameters"]["sea_level_forcing"]["mode"] != "trajectory":
+                raise AssertionError(f"{engine}: trajectory provenance missing")
+
+        _check_boundary_equivalence(executable, root)
+
+    print("Packaged executable passed both forcing modes, soil-free accretion, and exact-boundary checks for both engines.")
     return 0
 
 

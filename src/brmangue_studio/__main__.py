@@ -23,6 +23,7 @@ def _resolve_input(project_dir: Path, value: str | None) -> Path | None:
 def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
     """Run a project without opening the graphical interface."""
     from brmangue_lua.engine import ModelParameters
+    from brmangue_lua.sea_level import trajectory_from_project
     from brmangue_lua.raster_inputs import (
         DEFAULT_LAND_COVER_MAPPING,
         load_raster_inputs,
@@ -83,6 +84,9 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
     accretion_text = str(params_config.get("accretion_rate_mm", "")).strip()
     accretion = float(accretion_text) if accretion_text else None
     soil_enabled = bool(params_config.get("soil_enabled", False) and soil_path is not None)
+    curve = trajectory_from_project(params_config, project_dir)
+    if curve is not None:
+        curve.validate_period(initial_year, final_year)
     inputs = load_raster_inputs(
         land_cover_path,
         elevation_path,
@@ -106,7 +110,7 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
         start=1,
         final_time=final_year - initial_year,
         tide_height=float(params_config.get("tide_height_m", 6.0)),
-        sea_level_rise_rate=float(
+        sea_level_rise_rate=0.0 if curve is not None else float(
             params_config.get(
                 "sea_level_rise_m_per_model_step",
                 float(params_config.get("sea_level_rise_mm_per_year", 0.0)) / 1000.0,
@@ -115,6 +119,8 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
         allow_migration_without_soil=bool(params_config.get("allow_migration_without_soil", False)),
         accretion_rate_mm=accretion,
         migration_maturity_years=int(params_config.get("migration_maturity_years", 3)),
+        sea_level_trajectory=curve,
+        sea_level_reference_year=initial_year,
     )
     engine = str(params_config.get("engine", "blocks"))
     block_size = int(params_config.get("block_size", 10_000))

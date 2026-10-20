@@ -83,3 +83,25 @@ The software article should include, at minimum:
 
 The CMMA benchmark is a performance and reproducibility experiment. It is not
 by itself an ecological validation of the model.
+
+## Calendar-based forcing checks (1.4.0)
+
+Before publishing a forcing update, compare a linear trajectory with its
+equivalent constant rate on the same grid and full period. Require identical
+annual state rasters and state/transition metrics; compare forcing values with
+a stated floating-point tolerance. Test nonlinear increments against hand
+calculations, both engines, embedded project samples, invalid CSVs, incomplete
+coverage, and English/Portuguese controls. Package tests must exercise both
+forcing modes on Windows and Linux.
+
+Keep full-domain five-year operation checks separate from small-tile checks
+and calibrated ecological experiments. Preserve input preparation, mapping,
+initial/final years, forcing samples, input and output hashes, time scope,
+source revision, process peak memory, and the independently observed loading
+peak. A single run per configuration supports descriptive timing only.
+
+From 1.4.0, the reported RSS peak is the maximum of runner checkpoints and
+all periodic resource samples. Earlier reports can omit temporary allocations
+between annual checkpoints. Preserve their raw metadata and, where the trace
+is available, record a separately derived peak with the method stated. Input
+loading and GUI post-processing remain outside the runner's simulation peak.

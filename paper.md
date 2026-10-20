@@ -19,7 +19,7 @@ authors:
 affiliations:
   - name: Universidade Federal do Maranhão, Brazil
     index: 1
-date: 17 October 2026
+date: 20 October 2026
 bibliography: paper.bib
 ---
 
@@ -105,6 +105,15 @@ configured with mangrove behavior, including migrated mangrove, and does not
 depend on the optional soil-suitability raster. A user-specified accretion rate
 replaces this default.
 
+Sea-level forcing can use either a constant annual rate or a calendar-based
+trajectory imported as cumulative levels. The trajectory is linearly
+interpolated and rebased to the initial raster year. Each annual update uses
+its own increment for water redistribution and rate-dependent accretion, while
+the tidal-influence threshold uses cumulative change. The application embeds
+source samples in saved projects and exports the annual forcing and provenance.
+Tests compare linear trajectories with equivalent constant rates, verify
+nonlinear increments against hand calculations, and compare execution modes.
+
 # Research impact statement
 
 The project provides a reproducible implementation of a published mangrove
@@ -116,7 +125,8 @@ Maranhão raster extent, both Linux engines completed 75 steps from 2025 to
 2100, processing 175,349,850 cell updates each. The initial state and all 75
 annual output rasters (2026–2100), as well as state and transition metrics,
 were identical cell by cell. Continuous mode took 567.5 s, and 10,000-cell
-blocks took 1,417.1 s; peak process RSS was 545 and 567 MB, respectively. The
+blocks took 1,417.1 s; the earlier runner reported process RSS peaks of 545
+and 567 MB, respectively. The
 same inputs were also reprojected to EPSG:31983 and aligned; a one-step run on
 the prepared copies matched between engines. An archived CMMA one-step
 comparison reported identical final rasters and trajectories; it took 123.6 s
@@ -126,7 +136,7 @@ annual raster export.
 Separate Windows archives record 76 steps from 2024 to 2100 on 78,007,309
 valid cells, with annual rasters for 2025–2100. They report 13,921 s for
 continuous mode and 15,065 s for 1,000,000-cell blocks (about 8 h combined),
-with peak process RSS of 5.02 and 5.81 GB, respectively. The two runs used
+with reported process RSS peaks of 5.02 and 5.81 GB, respectively. The two runs used
 different source-class mappings: codes 3 and 4, and codes 23 and 32, were
 assigned to different model classes; the block metadata also omits the
 migration-maturity parameter. These runs therefore provide descriptive
@@ -138,21 +148,29 @@ software verification and performance evidence, not independent ecological
 validation. The repository includes automated tests, a user manual, benchmark
 records, platform builds, and run-level metadata.
 
+A five-year forcing check on the complete prepared CMMA domain (77,061,011
+valid 30 m cells) compared an imported SSP2-4.5 trajectory with its equivalent
+4.7 mm/year constant rate over 2025–2030. Both runs completed 385,305,055 cell
+updates and produced identical states in all five annual raster pairs, with
+matching state and transition metrics. The dated benchmark record preserves
+inputs, parameters, hardware, timings and the distinction from ecological
+validation.
+
 # AI usage disclosure
 
-OpenAI Codex (GPT-6, accessed 1 October 2026) assisted with code and test
-review, benchmark-record analysis, and revisions to project documentation and
-this manuscript. Earlier project work also used generative AI for reference
-discovery and draft structuring; the authors must confirm the tool and model
-versions used for those earlier tasks before submission. The authors are
-responsible for verifying AI-assisted text, references, code, and results and
-for all scientific, technical, authorship, and licensing decisions.
+Consensus supported literature searches. ChatGPT and OpenAI Codex (Sol, Luna
+and Astra) assisted Python implementation, model structuring, code and test
+review, benchmark analysis, and revisions to documentation and this manuscript.
+The authors are responsible for validating the code, references and results,
+and for the scientific interpretation and authorship of this work.
 
 # Acknowledgements
 
 The project was developed from the BR-MANGUE model formulation and the
 coastal-mangrove modelling work of Bezerra and collaborators. The authors
 acknowledge the GEOTAM laboratory and the Universidade Federal do Maranhão
-for the research context in which the Studio is being developed.
+for the research context in which the Studio is being developed. This study
+was financed in part by the Coordenação de Aperfeiçoamento de Pessoal de Nível
+Superior - Brasil (CAPES) - Finance Code 001.
 
 # References
