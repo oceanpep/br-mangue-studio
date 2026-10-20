@@ -99,3 +99,9 @@ and calibrated ecological experiments. Preserve input preparation, mapping,
 initial/final years, forcing samples, input and output hashes, time scope,
 source revision, process peak memory, and the independently observed loading
 peak. A single run per configuration supports descriptive timing only.
+
+From 1.4.0, the reported RSS peak is the maximum of runner checkpoints and
+all periodic resource samples. Earlier reports can omit temporary allocations
+between annual checkpoints. Preserve their raw metadata and, where the trace
+is available, record a separately derived peak with the method stated. Input
+loading and GUI post-processing remain outside the runner's simulation peak.

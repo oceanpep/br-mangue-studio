@@ -17,6 +17,9 @@ All notable changes to BR-MANGUE Studio are recorded here.
   English and Brazilian Portuguese controls for the new mode.
 - Add in-app CSV examples and guidance on format, units, data sources,
   and spreadsheet preparation, with matching bilingual website instructions.
+- Normalize constant and CSV forcing to the same numerical precision to avoid
+  round-off-dependent state differences at exact flooding boundaries. Add a
+  real-data boundary regression fixture and strict annual/decadal equivalence tests.
 - Include all periodic memory observations in the reported RSS peak, so
   temporary allocations between annual checkpoints are represented.
 
