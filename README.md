@@ -10,6 +10,11 @@ spatial cellular-automaton scenarios of mangrove response to sea-level rise.
 Use aligned land-cover and elevation rasters, set the scenario, and inspect
 annual maps, trajectories, transitions, and reproducibility metadata.
 
+Version 1.4.2 applies the Linux window icon and adds application shortcuts.
+Use **Help → Create Linux shortcuts** to add the logo to the applications
+menu and create a launcher beside the executable. The Linux download archive
+also includes a shortcut helper and bilingual instructions.
+
 Version 1.4.1 fixes overlapping class labels on displays with larger fonts
 and adds horizontal scrolling for long class names.
 
@@ -31,8 +36,8 @@ rasters, project files, and simulation results remain on your computer.
 
 | Platform | Availability | Verified environment |
 | --- | --- | --- |
-| Windows 10/11, 64-bit | Stable 1.4.1 | Windows desktop release |
-| Linux x86_64 | Research preview 1.4.1 | Built and tested on Ubuntu 22.04 LTS; packaged checks also passed on Ubuntu 26.04.1 LTS |
+| Windows 10/11, 64-bit | Stable 1.4.2 | Windows desktop release |
+| Linux x86_64 | Research preview 1.4.2 | Built and tested on Ubuntu 22.04 LTS; packaged checks also passed on Ubuntu 26.04.1 LTS |
 
 The interface is available in English and Brazilian Portuguese. English is the
 default for a new installation; choose a language in the application header.
