@@ -2,6 +2,14 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [1.4.1] — 2026-10-20
+
+- Size Model rules table rows from the rendered font metrics so class labels
+  remain readable on displays with larger fonts or scaling.
+- Fit columns to class names, pixel counts, and translated headings, and add
+  horizontal scrolling for long names in narrower windows.
+- Preserve simulation rules, project settings, and raster outputs from 1.4.0.
+
 ## [1.4.0] — 2026-10-20
 
 - Add optional calendar-based sea-level trajectories alongside the default
