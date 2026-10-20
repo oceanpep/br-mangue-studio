@@ -11,3 +11,16 @@ BR-MANGUE Studio uses the GitHub–Zenodo integration. The repository must be en
 The automatic archive preserves the tagged source ZIP; executable assets remain linked from GitHub. Zenodo gives `.zenodo.json` priority over `CITATION.cff`; keep both consistent.
 
 Official instructions: https://help.zenodo.org/docs/github/describe-software/zenodo-json/
+
+## Verified public archive — 20 October 2026
+
+- Version 1.4.0: https://doi.org/10.5281/zenodo.23509309
+- All versions (concept DOI): https://doi.org/10.5281/zenodo.23509308
+- Public record: https://zenodo.org/records/23509309
+- Tagged source: `v1.4.0`, commit `29c602afeb0e2c6e479d1a90306f5d226b057645`.
+
+The automatic deposit was checked for version, the four creators and their
+UFMA affiliations, MIT license, and the source ZIP. Windows/Linux binaries
+and their SHA-256 checksums are on the matching GitHub release. The DOI was
+added to citation documentation after archiving; the tag was not changed.
+For a future release, update the version DOI only after its new record exists.
