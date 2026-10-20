@@ -11,7 +11,7 @@ from brmangue_lua.model_states import build_model_state_catalog
 from brmangue_lua.persistent_blocks import PersistentBlockRunner
 from brmangue_lua.raster_inputs import load_raster_inputs
 from brmangue_lua.raster_runner import run_raster_simulation
-from brmangue_lua.sea_level import SeaLevelTrajectory, trajectory_from_project
+from brmangue_lua.sea_level import TRAJECTORY_CSV_EXAMPLE, SeaLevelTrajectory, trajectory_from_project
 from brmangue_studio.__main__ import _run_batch
 
 
@@ -111,6 +111,16 @@ def test_no_extrapolation_and_full_period_required():
         ModelParameters(final_time=15, sea_level_reference_year=2030, sea_level_trajectory=curve)
 
 
+def test_downloadable_example_matches_app_example_and_covers_2025_to_2100(tmp_path):
+    from pathlib import Path
+    path = tmp_path / 'example.csv'
+    path.write_text(TRAJECTORY_CSV_EXAMPLE, encoding='utf-8')
+    curve = SeaLevelTrajectory.from_csv(path)
+    curve.validate_period(2025, 2100)
+    assert 'SYNTHETIC' in TRAJECTORY_CSV_EXAMPLE
+    assert (Path(__file__).parents[1] / 'examples/sea_level_SYNTHETIC_example.csv').read_text() == TRAJECTORY_CSV_EXAMPLE
+
+
 @pytest.mark.parametrize("text", ["year,sea_level_mm\n2025,100\n2030,125\n", "\ufeff# Synthetic test\nyear;sea_level_mm\n2025;100,0\n2030;125,0\n"])
 def test_csv_loading_and_embedded_project_survive_removal_of_source(tmp_path, text):
     path = tmp_path / "curve.csv"
@@ -192,6 +202,19 @@ def test_studio_modes_languages_and_saved_embedded_curve(tmp_path, monkeypatch):
             studio._apply_language()
             assert studio.sea_level_preview_button.cget("text") == button
             assert text in studio.sea_level_summary_var.get()
+        assert studio.sea_level_template_button.cget('text') == 'Salvar exemplo CSV'
+        assert studio.sea_level_help_button.cget('text') == 'Formato e fontes de dados'
+        example = tmp_path / 'example.csv'
+        monkeypatch.setattr(module.filedialog, 'asksaveasfilename', lambda **_: str(example))
+        monkeypatch.setattr(studio, '_show_message', lambda *args: None)
+        studio._save_sea_level_example()
+        assert example.read_text() == TRAJECTORY_CSV_EXAMPLE
+        SeaLevelTrajectory.from_csv(example).validate_period(2025, 2100)
+        studio._show_sea_level_help()
+        help_window = next(w for w in studio.winfo_children() if isinstance(w, tk.Toplevel))
+        help_text = next(w for w in help_window.winfo_children() if isinstance(w, tk.Text))
+        assert 'Crie uma planilha' in help_text.get('1.0', 'end')
+        help_window.destroy()
         studio.project_file = tmp_path / "saved.json"
         studio.save_project()
         payload = json.loads(studio.project_file.read_text())

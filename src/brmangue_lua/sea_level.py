@@ -12,6 +12,20 @@ from pathlib import Path
 from typing import Any
 
 
+TRAJECTORY_CSV_EXAMPLE = """# SYNTHETIC EXAMPLE ONLY. Replace values with documented projections before research use.
+year,sea_level_mm
+2020,0
+2030,40
+2040,90
+2050,150
+2060,220
+2070,300
+2080,390
+2090,490
+2100,600
+"""
+
+
 @dataclass(frozen=True)
 class SeaLevelTrajectory:
     """Samples relative to one common baseline; interpolation never extrapolates.
