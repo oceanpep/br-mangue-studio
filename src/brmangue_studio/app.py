@@ -70,6 +70,7 @@ from brmangue_studio.localization import (
     translate,
     translate_runtime,
 )
+from brmangue_studio.desktop_integration import LINUX_WINDOW_CLASS, create_linux_shortcuts
 
 try:
     from brmangue_lua.dissmodel_adapter import DISSMODEL_AVAILABLE
@@ -153,7 +154,7 @@ def _model_legend_handles(
         for name, color in (value for value in STANDARD_CLASS_STYLES.values())
     ]
 
-APP_VERSION = "1.4.1"
+APP_VERSION = "1.4.2"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -946,7 +947,7 @@ class BRMangueStudio(tk.Tk):
     """Main BR-MANGUE Studio window."""
 
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__(className=LINUX_WINDOW_CLASS if sys.platform.startswith("linux") else "Tk")
         self.language_code = load_language()
         self._widget_text_defaults: dict[tk.Misc, str] = {}
         self._notebook_tab_defaults: dict[tuple[ttk.Notebook, str], str] = {}
@@ -956,18 +957,7 @@ class BRMangueStudio(tk.Tk):
         self.geometry("1500x930")
         self.minsize(1120, 720)
         _center_window(self, 1500, 930)
-        icon_path = _resource_path("BR-MANGUE_BR_icon.ico")
-        try:
-            if icon_path.exists():
-                self.iconbitmap(default=str(icon_path))
-        except (OSError, tk.TclError):
-            icon_png = _resource_path("BR-MANGUE_BR_icon.png")
-            if icon_png.exists():
-                with Image.open(icon_png) as source:
-                    icon = source.convert("RGBA")
-                    icon.thumbnail((64, 64), Image.Resampling.LANCZOS)
-                    self._window_icon_photo = ImageTk.PhotoImage(icon, master=self)
-                self.iconphoto(True, self._window_icon_photo)
+        self._set_window_icon()
         self.project_file: Path | None = None
         self.inputs: RasterInputSet | None = None
         self.class_vars: dict[int, tk.StringVar] = {}
@@ -1003,6 +993,31 @@ class BRMangueStudio(tk.Tk):
         self._apply_language()
         self.after(100, self._poll_messages)
         self.after(1000, self._update_resources)
+
+    def _set_window_icon(self) -> None:
+        """Use native ICO on Windows and bundled PNG sizes on Linux."""
+        icon_path = _resource_path("BR-MANGUE_BR_icon.ico")
+        if sys.platform == "win32" and icon_path.is_file():
+            try:
+                self.iconbitmap(default=str(icon_path))
+                return
+            except (OSError, tk.TclError):
+                pass
+        icon_png = _resource_path("BR-MANGUE_BR_icon.png")
+        if not icon_png.is_file():
+            return
+        try:
+            with Image.open(icon_png) as source:
+                original = source.convert("RGBA")
+            self._window_icon_photos = []
+            for size in (32, 48, 64, 128, 256):
+                icon = original.copy()
+                icon.thumbnail((size, size), Image.Resampling.LANCZOS)
+                self._window_icon_photos.append(ImageTk.PhotoImage(icon, master=self))
+            self.iconphoto(True, *self._window_icon_photos)
+        except (OSError, tk.TclError):
+            # An unavailable window-manager icon must not prevent startup.
+            pass
 
     def _build_variables(self) -> None:
         # Generic interface labels are used while legacy aliases remain
@@ -1067,6 +1082,9 @@ class BRMangueStudio(tk.Tk):
         data.add_command(label="Refresh land-cover classes", command=self.inspect_mapbiomas)
         menu.add_cascade(label="Data", menu=data)
         help_menu = tk.Menu(menu, tearoff=False)
+        if sys.platform.startswith("linux") and getattr(sys, "frozen", False):
+            help_menu.add_command(label="Create Linux shortcuts", command=self._create_linux_shortcuts)
+            help_menu.add_separator()
         help_menu.add_command(label="About", command=lambda: self._show_message(
             "showinfo",
             "BR-MANGUE Studio",
@@ -1076,6 +1094,17 @@ class BRMangueStudio(tk.Tk):
         menu.add_cascade(label="Help", menu=help_menu)
         self._menus = (menu, project, data, help_menu)
         self.config(menu=menu)
+
+    def _create_linux_shortcuts(self) -> None:
+        try:
+            create_linux_shortcuts()
+        except (OSError, ValueError) as exc:
+            self._show_message("showerror", "Application shortcuts", str(exc))
+            return
+        self._show_message(
+            "showinfo", "Application shortcuts",
+            "The application shortcut is ready. Open BR-MANGUE Studio from your applications menu.",
+        )
 
     def _build_layout(self) -> None:
         style = ttk.Style(self)
@@ -1108,6 +1137,15 @@ class BRMangueStudio(tk.Tk):
 
         header = ttk.Frame(self, padding=(14, 10))
         header.pack(fill="x")
+        try:
+            with Image.open(_resource_path("BR-MANGUE_BR_icon.png")) as source:
+                logo = source.convert("RGBA")
+            logo_size = max(24, round(self.winfo_fpixels("0.2i")))
+            logo.thumbnail((logo_size, logo_size), Image.Resampling.LANCZOS)
+            self._header_logo_photo = ImageTk.PhotoImage(logo, master=self)
+            ttk.Label(header, image=self._header_logo_photo).pack(side="left", padx=(0, 8))
+        except (OSError, tk.TclError):
+            pass
         ttk.Label(header, textvariable=self.project_status_var, style="Subtitle.TLabel").pack(side="left")
         ttk.Label(header, textvariable=self.resource_var, style="Subtitle.TLabel").pack(side="right", padx=(8, 0))
         ttk.Label(header, text="Language").pack(side="right", padx=(10, 5))

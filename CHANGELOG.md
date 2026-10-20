@@ -2,6 +2,18 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [1.4.2] — 2026-10-20
+
+- Apply the bundled PNG window icon on Linux even when no Windows ICO is
+  included, and provide several image sizes for desktop scaling.
+- Display the application logo in the window header on both platforms.
+- Register a stable Linux window class so the desktop can associate the
+  window with the application launcher and logo.
+- Add Help → Create Linux shortcuts and `--install-shortcuts` to create
+  per-user application-menu, folder and available desktop launchers.
+- Provide a Linux download archive with the executable, icon, shortcut
+  helper, license and English/Brazilian Portuguese instructions.
+
 ## [1.4.1] — 2026-10-20
 
 - Size Model rules table rows from the rendered font metrics so class labels
