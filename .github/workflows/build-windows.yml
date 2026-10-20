@@ -8,12 +8,16 @@ on:
       - "packaging/BRMANGUE_Studio.spec"
       - "src/**"
       - "pyproject.toml"
+      - "scripts/smoke_packaged_application.py"
+      - "tests/fixtures/**"
   pull_request:
     paths:
       - ".github/workflows/build-windows.yml"
       - "packaging/BRMANGUE_Studio.spec"
       - "src/**"
       - "pyproject.toml"
+      - "scripts/smoke_packaged_application.py"
+      - "tests/fixtures/**"
   workflow_dispatch:
 
 permissions:
