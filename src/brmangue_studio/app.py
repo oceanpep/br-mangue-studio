@@ -32,7 +32,7 @@ from matplotlib.colors import BoundaryNorm, ListedColormap
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 import tkinter as tk
-from tkinter import colorchooser, filedialog, messagebox, ttk
+from tkinter import colorchooser, filedialog, font as tkfont, messagebox, ttk
 
 from rasterio.crs import CRS
 from rasterio.enums import Resampling
@@ -153,7 +153,7 @@ def _model_legend_handles(
         for name, color in (value for value in STANDARD_CLASS_STYLES.values())
     ]
 
-APP_VERSION = "1.4.0"
+APP_VERSION = "1.4.1"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -2044,6 +2044,7 @@ class BRMangueStudio(tk.Tk):
             columns=("source_code", "pixels", "model_class", "behavior"),
             show="headings",
             height=18,
+            style="RuleSummary.Treeview",
         )
         for column, heading, width in (
             ("source_code", "Raster code", 100),
@@ -2058,7 +2059,14 @@ class BRMangueStudio(tk.Tk):
             rule_table_frame, orient="vertical", command=self.rule_table.yview
         )
         rule_table_scroll.grid(row=0, column=1, sticky="ns")
-        self.rule_table.configure(yscrollcommand=rule_table_scroll.set)
+        rule_table_horizontal_scroll = ttk.Scrollbar(
+            rule_table_frame, orient="horizontal", command=self.rule_table.xview
+        )
+        rule_table_horizontal_scroll.grid(row=1, column=0, sticky="ew")
+        self.rule_table.configure(
+            yscrollcommand=rule_table_scroll.set,
+            xscrollcommand=rule_table_horizontal_scroll.set,
+        )
 
         self._refresh_rule_summary()
         self._draw_placeholder()
@@ -2082,6 +2090,43 @@ class BRMangueStudio(tk.Tk):
     def _legend_handles(self) -> list[Patch]:
         catalog = self.inputs.metadata.get("model_state_catalog", {}) if self.inputs else {}
         return _model_legend_handles(catalog, self.language_code)
+
+    def _size_rule_table(self) -> None:
+        """Keep rows and columns readable at the active display's font scale."""
+        table = self.rule_table
+        body_font = tkfont.nametofont("TkDefaultFont", root=self)
+        heading_font = tkfont.nametofont("TkHeadingFont", root=self)
+        # Treeview row heights are pixels, whereas font sizes are points.
+        # Measuring the rendered font also handles Linux font substitution.
+        line_height = body_font.metrics("linespace")
+        vertical_padding = max(8, (line_height + 2) // 3)
+        horizontal_padding = max(16, line_height)
+        style = ttk.Style(self)
+        style.configure(
+            "RuleSummary.Treeview",
+            font=body_font,
+            rowheight=line_height + vertical_padding,
+            background=UI_COLORS["surface"],
+            fieldbackground=UI_COLORS["surface"],
+        )
+        style.configure(
+            "RuleSummary.Treeview.Heading",
+            font=heading_font,
+            padding=(horizontal_padding // 2, vertical_padding // 2),
+        )
+        for index, column in enumerate(table["columns"]):
+            width = heading_font.measure(str(table.heading(column, "text")))
+            for row in table.get_children():
+                value = str(table.item(row, "values")[index])
+                width = max(width, body_font.measure(value))
+            width += horizontal_padding
+            table.column(
+                column,
+                width=width,
+                minwidth=width,
+                stretch=column == "model_class",
+                anchor="e" if column == "pixels" else "w",
+            )
 
     def _refresh_rule_summary(self) -> None:
         """Show the current project's class assignments and behavior profiles."""
@@ -2166,6 +2211,7 @@ class BRMangueStudio(tk.Tk):
         else:
             status = "Each raster code follows its assigned standard model class."
         self.rule_summary_status_var.set(translate(status, self.language_code))
+        self._size_rule_table()
 
     def _build_right(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
