@@ -1,0 +1,496 @@
+{
+  "test_type": "software verification, not calibrated ecological validation",
+  "scope": "complete CMMA input domain, 30 m, EPSG:10857, continuous engine",
+  "valid_cells": 77061011,
+  "initial_year": 2025,
+  "final_year": 2030,
+  "annual_raster_pairs_identical": [
+    2026,
+    2027,
+    2028,
+    2029,
+    2030
+  ],
+  "trajectory_metrics_match": true,
+  "initial_raster_identical": true,
+  "cells_updated_per_run": 385305055,
+  "version": "1.4.0",
+  "status": "passed",
+  "source_code_commit": "373d0503725fe6c8b838e23d4770edbc37c18f5f",
+  "source_code_commits": [
+    "373d0503725fe6c8b838e23d4770edbc37c18f5f",
+    "b7c29df11e7b4473b0dc256563ad97d69cbb6960"
+  ],
+  "runtime_source_identical_between_runs": true,
+  "system": {
+    "os": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "python": "3.12.14",
+    "processor": "12th Gen Intel(R) Core(TM) i3-1215U",
+    "physical_cores": 6,
+    "logical_cpus": 8,
+    "memory_total_bytes": 20116140032,
+    "swap_total_bytes": 8589930496,
+    "reported_max_clock_ghz": 4.4,
+    "reported_memory_spec": "DDR4 3200 MHz",
+    "hardware_spec_source": "CPU name/cores/RAM amount from operating system; maximum clock and RAM speed supplied by user",
+    "filesystem_free_bytes": 175366156288,
+    "dependencies": {
+      "numpy": "2.5.4",
+      "pandas": "3.0.6",
+      "rasterio": "1.5.2",
+      "pyproj": "3.8.0",
+      "psutil": "7.2.2",
+      "matplotlib": "3.11.2"
+    },
+    "distribution": "Ubuntu 26.04.1 LTS"
+  },
+  "inputs": {
+    "mapbiomas_c11_30m_cmma_2025_epsg10857.tif": {
+      "bytes": 7641559,
+      "sha256": "625b4611f49acfa0708e27a65d9f8e1582cd8094b142e94f8aa4ae77fca81863"
+    },
+    "anadem_mde_cmma_30m_epsg10857.tif": {
+      "bytes": 241234630,
+      "sha256": "f48e2025894ef21f15aa07ffa3ef801d6f73c78eda1ed30fcfcb358fefa0f1b8"
+    },
+    "mascara_cmma_epsg10857_30m.tif": {
+      "bytes": 922897,
+      "sha256": "706ff82de6491e22c357d46d164822bad08cc49c82602fb5ca331784e1a69bc4"
+    }
+  },
+  "outputs": {
+    "ssp245_trajectory": {
+      "final_state_2030.tif": {
+        "bytes": 5049769,
+        "sha256": "4bdcedef4a6cce20e901c89c11cba07d8fcbba43a3c056c6b2a269cead51f478"
+      },
+      "initial_state_2025.tif": {
+        "bytes": 4133119,
+        "sha256": "2da9f6863a98b2b77cafad7f98abd1cba895f5e8fc2911dff7dc814ddd42cb42"
+      },
+      "states/state_2026.tif": {
+        "bytes": 4681093,
+        "sha256": "d54c33df7a1de4a33a5ccefa09e435c69f1230930415f9de11879c2f6fad4e81"
+      },
+      "states/state_2027.tif": {
+        "bytes": 4835231,
+        "sha256": "5955a871d30921e5d7ac26d324487fb36ba9509f6d1267e116e278bc7f5d568a"
+      },
+      "states/state_2028.tif": {
+        "bytes": 4924243,
+        "sha256": "fc0baddb3ac86c77065a3f899bbfe7550bdfd0129f498f31eff0e89a99881bc1"
+      },
+      "states/state_2029.tif": {
+        "bytes": 5004111,
+        "sha256": "6a281dcab14a0c0ebb9cd7aa07dc2aab350aa1d42e62d9a4362f29a4370d8d1e"
+      },
+      "states/state_2030.tif": {
+        "bytes": 5049769,
+        "sha256": "4bdcedef4a6cce20e901c89c11cba07d8fcbba43a3c056c6b2a269cead51f478"
+      }
+    },
+    "constant_matched_4p7": {
+      "final_state_2030.tif": {
+        "bytes": 5049769,
+        "sha256": "4bdcedef4a6cce20e901c89c11cba07d8fcbba43a3c056c6b2a269cead51f478"
+      },
+      "initial_state_2025.tif": {
+        "bytes": 4133119,
+        "sha256": "2da9f6863a98b2b77cafad7f98abd1cba895f5e8fc2911dff7dc814ddd42cb42"
+      },
+      "states/state_2026.tif": {
+        "bytes": 4681093,
+        "sha256": "d54c33df7a1de4a33a5ccefa09e435c69f1230930415f9de11879c2f6fad4e81"
+      },
+      "states/state_2027.tif": {
+        "bytes": 4835231,
+        "sha256": "5955a871d30921e5d7ac26d324487fb36ba9509f6d1267e116e278bc7f5d568a"
+      },
+      "states/state_2028.tif": {
+        "bytes": 4924243,
+        "sha256": "fc0baddb3ac86c77065a3f899bbfe7550bdfd0129f498f31eff0e89a99881bc1"
+      },
+      "states/state_2029.tif": {
+        "bytes": 5004111,
+        "sha256": "6a281dcab14a0c0ebb9cd7aa07dc2aab350aa1d42e62d9a4362f29a4370d8d1e"
+      },
+      "states/state_2030.tif": {
+        "bytes": 5049769,
+        "sha256": "4bdcedef4a6cce20e901c89c11cba07d8fcbba43a3c056c6b2a269cead51f478"
+      }
+    }
+  },
+  "regional_tile_checks": [
+    {
+      "scenario": "ssp126",
+      "valid_cells": 11471,
+      "annual_steps": 5,
+      "total_change_2030_mm": 24.0,
+      "forcing_sha256": "d5c2234e335276aa66567f54577997057d328c69b7388e4e9b08c262d1b45d07",
+      "scope": "preserved 256x256 real-data tile, not full CMMA domain"
+    },
+    {
+      "scenario": "ssp245",
+      "valid_cells": 11471,
+      "annual_steps": 5,
+      "total_change_2030_mm": 23.5,
+      "forcing_sha256": "774a99f155a0df420a799c674573a79c4ad78b9959e3875613b283fb4050035f",
+      "scope": "preserved 256x256 real-data tile, not full CMMA domain"
+    },
+    {
+      "scenario": "ssp585",
+      "valid_cells": 11471,
+      "annual_steps": 5,
+      "total_change_2030_mm": 25.0,
+      "forcing_sha256": "7c0dfc2fe9ace29bacd5c111251975c2415a1a32c4d268b20099fca7e55ee5a5",
+      "scope": "preserved 256x256 real-data tile, not full CMMA domain"
+    }
+  ],
+  "local_automated_tests": 88,
+  "packaged_tests": "Linux and Windows CI; both engines and both forcing modes; Linux binary repeated on host",
+  "repetitions_per_configuration": 1,
+  "preceding_attempts": [
+    "Execution session returned 143 before the fifth year; excluded from successful timings.",
+    "A completed pair exposed a floating-point flooding-boundary discrepancy; preserved separately and excluded from the final pair."
+  ],
+  "numerical_resolution_m": 1e-12,
+  "cases": {
+    "ssp245_trajectory": {
+      "valid_cells": 77061011,
+      "load_seconds": 37.611081383001874,
+      "configuration": {
+        "purpose": "five-year software operation and forcing-mode equivalence; not ecological validation",
+        "scope": "complete CMMA raster domain, continuous engine",
+        "valid_cells": 77061011,
+        "load_seconds": 37.611081383001874,
+        "initial_year": 2025,
+        "final_year": 2030,
+        "tide_height_m": 6.0,
+        "tide_height_status": "operational test value, not a regional datum calibration",
+        "accretion_mm_year": 2.4,
+        "maturation_years": 3,
+        "class_mapping": {
+          "source_to_model": {
+            "mangrove": [
+              5
+            ],
+            "water": [
+              33
+            ],
+            "natural_accommodation_candidate": [
+              6,
+              11,
+              12,
+              23,
+              32,
+              49,
+              50
+            ],
+            "managed_land_use_candidate": [
+              14,
+              15,
+              18,
+              19,
+              20,
+              21,
+              35,
+              36,
+              39,
+              40,
+              41,
+              46,
+              47,
+              48,
+              62
+            ],
+            "explicit_restriction": [
+              24,
+              25,
+              30
+            ]
+          },
+          "unknown_source_codes_policy": "anthropized",
+          "source_code_counts_valid": {
+            "3": 29486261,
+            "4": 937949,
+            "5": 7509850,
+            "6": 5767661,
+            "9": 371,
+            "11": 3886227,
+            "12": 826344,
+            "15": 16038187,
+            "21": 1472158,
+            "23": 153202,
+            "24": 1045289,
+            "25": 253211,
+            "30": 106389,
+            "31": 1763,
+            "32": 299623,
+            "33": 7761464,
+            "35": 144441,
+            "39": 9755,
+            "41": 84256,
+            "50": 1276610
+          }
+        },
+        "forcing": {
+          "mode": "trajectory",
+          "reference_year": 2025,
+          "constant_rate_m_per_year": null,
+          "numerical_resolution_m": 1e-12,
+          "years": [
+            2020,
+            2025,
+            2030,
+            2040,
+            2050,
+            2060,
+            2070,
+            2080,
+            2090,
+            2100
+          ],
+          "sea_level_mm": [
+            -23.5,
+            0.0,
+            23.5,
+            74.5,
+            141.0,
+            204.5,
+            274.5,
+            349.5,
+            426.5,
+            508.5
+          ],
+          "source_name": "cmma_ssp245_p50_2020_2100.csv",
+          "source_sha256": "774a99f155a0df420a799c674573a79c4ad78b9959e3875613b283fb4050035f",
+          "interpolation": "linear",
+          "units": "mm",
+          "subtracted_initial_level_mm": 0.0
+        },
+        "source_commit": "b7c29df11e7b4473b0dc256563ad97d69cbb6960"
+      },
+      "performance": {
+        "preparation_elapsed_seconds": 3.062316,
+        "simulation_elapsed_seconds": 965.658984,
+        "postprocessing_elapsed_seconds": 0.007244,
+        "total_run_elapsed_seconds": 968.728553,
+        "annual_steps": 5,
+        "cell_updates": 385305055,
+        "cell_updates_per_second": 399007.374,
+        "rss_before_bytes": 5061111808,
+        "rss_after_bytes": 5089980416,
+        "peak_rss_bytes": 6444130304,
+        "peak_rss_gib": 6.001564,
+        "peak_rss_scope": "Maximum of runner checkpoints and one-second resource samples; excludes input loading.",
+        "system_memory_before": {
+          "total_bytes": 20116140032,
+          "available_bytes": 7759802368,
+          "used_bytes": 12356337664,
+          "percent": 61.4
+        },
+        "system_memory_after": {
+          "total_bytes": 20116140032,
+          "available_bytes": 7721426944,
+          "used_bytes": 12394713088,
+          "percent": 61.6
+        },
+        "disk_free_before_bytes": 175098204160,
+        "disk_free_after_bytes": 175065890816,
+        "output_size_bytes": 33756031,
+        "process_io_before": {
+          "read_bytes": 4067328,
+          "write_bytes": 4161536
+        },
+        "process_io_after": {
+          "read_bytes": 4071424,
+          "write_bytes": 33718272
+        },
+        "process_io_delta": {
+          "read_bytes": 4096,
+          "write_bytes": 29556736
+        },
+        "process_cpu_before": {
+          "user_seconds": 33.36,
+          "system_seconds": 8.16
+        },
+        "process_cpu_after": {
+          "user_seconds": 996.32,
+          "system_seconds": 10.69
+        },
+        "process_cpu_delta": {
+          "user_seconds": 962.96,
+          "system_seconds": 2.53
+        },
+        "resource_trace": "resource_samples.csv",
+        "resource_sample_count": 916,
+        "resource_sampling_interval_seconds": 1.0,
+        "measurement_scope": "simulation_elapsed_seconds starts after raster loading and, for the blocks engine, persistent workspace creation. It covers the annual model loop and includes per-step GeoTIFF writes when annual states are saved. total_run_elapsed_seconds starts at runner entry and includes workspace setup and runner outputs, but excludes GUI figures, animations, and transition reports created after the runner returns. output_size_bytes is sampled before the resource trace and GUI post-processing outputs are written; it includes the persistent block workspace.",
+        "trace_peak_rss_bytes": 6444130304,
+        "peak_derivation": "Reported by the corrected runner; cross-checked against all one-second samples."
+      },
+      "external_measurement": {
+        "case": "ssp245_trajectory",
+        "returncode": 0,
+        "elapsed_seconds": 1008.2656799130054,
+        "peak_process_rss_bytes": 10402504704,
+        "minimum_system_available_bytes": 2144276480,
+        "stopped_for_memory": false
+      }
+    },
+    "constant_matched_4p7": {
+      "valid_cells": 77061011,
+      "load_seconds": 41.0250713869973,
+      "configuration": {
+        "purpose": "five-year software operation and forcing-mode equivalence; not ecological validation",
+        "scope": "complete CMMA raster domain, continuous engine",
+        "valid_cells": 77061011,
+        "load_seconds": 41.0250713869973,
+        "initial_year": 2025,
+        "final_year": 2030,
+        "tide_height_m": 6.0,
+        "tide_height_status": "operational test value, not a regional datum calibration",
+        "accretion_mm_year": 2.4,
+        "maturation_years": 3,
+        "class_mapping": {
+          "source_to_model": {
+            "mangrove": [
+              5
+            ],
+            "water": [
+              33
+            ],
+            "natural_accommodation_candidate": [
+              6,
+              11,
+              12,
+              23,
+              32,
+              49,
+              50
+            ],
+            "managed_land_use_candidate": [
+              14,
+              15,
+              18,
+              19,
+              20,
+              21,
+              35,
+              36,
+              39,
+              40,
+              41,
+              46,
+              47,
+              48,
+              62
+            ],
+            "explicit_restriction": [
+              24,
+              25,
+              30
+            ]
+          },
+          "unknown_source_codes_policy": "anthropized",
+          "source_code_counts_valid": {
+            "3": 29486261,
+            "4": 937949,
+            "5": 7509850,
+            "6": 5767661,
+            "9": 371,
+            "11": 3886227,
+            "12": 826344,
+            "15": 16038187,
+            "21": 1472158,
+            "23": 153202,
+            "24": 1045289,
+            "25": 253211,
+            "30": 106389,
+            "31": 1763,
+            "32": 299623,
+            "33": 7761464,
+            "35": 144441,
+            "39": 9755,
+            "41": 84256,
+            "50": 1276610
+          }
+        },
+        "forcing": {
+          "mode": "constant",
+          "reference_year": 2025,
+          "constant_rate_m_per_year": 0.0047,
+          "numerical_resolution_m": 1e-12
+        },
+        "source_commit": "373d0503725fe6c8b838e23d4770edbc37c18f5f"
+      },
+      "performance": {
+        "preparation_elapsed_seconds": 4.422411,
+        "simulation_elapsed_seconds": 965.005196,
+        "postprocessing_elapsed_seconds": 0.004214,
+        "total_run_elapsed_seconds": 969.431824,
+        "annual_steps": 5,
+        "cell_updates": 385305055,
+        "cell_updates_per_second": 399277.7,
+        "rss_before_bytes": 5061595136,
+        "rss_after_bytes": 5062721536,
+        "peak_rss_bytes": 6217105408,
+        "peak_rss_gib": 5.790131,
+        "peak_rss_scope": "Maximum of runner checkpoints and one-second resource samples; excludes input loading.",
+        "system_memory_before": {
+          "total_bytes": 20116140032,
+          "available_bytes": 7807516672,
+          "used_bytes": 12308623360,
+          "percent": 61.2
+        },
+        "system_memory_after": {
+          "total_bytes": 20116140032,
+          "available_bytes": 7135277056,
+          "used_bytes": 12980862976,
+          "percent": 64.5
+        },
+        "disk_free_before_bytes": 175061835776,
+        "disk_free_after_bytes": 175033184256,
+        "output_size_bytes": 33754915,
+        "process_io_before": {
+          "read_bytes": 128483328,
+          "write_bytes": 4161536
+        },
+        "process_io_after": {
+          "read_bytes": 128491520,
+          "write_bytes": 33718272
+        },
+        "process_io_delta": {
+          "read_bytes": 8192,
+          "write_bytes": 29556736
+        },
+        "process_cpu_before": {
+          "user_seconds": 38.58,
+          "system_seconds": 7.66
+        },
+        "process_cpu_after": {
+          "user_seconds": 998.7,
+          "system_seconds": 10.14
+        },
+        "process_cpu_delta": {
+          "user_seconds": 960.12,
+          "system_seconds": 2.48
+        },
+        "resource_trace": "resource_samples.csv",
+        "resource_sample_count": 916,
+        "resource_sampling_interval_seconds": 1.0,
+        "measurement_scope": "simulation_elapsed_seconds starts after raster loading and, for the blocks engine, persistent workspace creation. It covers the annual model loop and includes per-step GeoTIFF writes when annual states are saved. total_run_elapsed_seconds starts at runner entry and includes workspace setup and runner outputs, but excludes GUI figures, animations, and transition reports created after the runner returns. output_size_bytes is sampled before the resource trace and GUI post-processing outputs are written; it includes the persistent block workspace.",
+        "trace_peak_rss_bytes": 6217105408,
+        "peak_derivation": "Reported by the corrected runner; cross-checked against all one-second samples."
+      },
+      "external_measurement": {
+        "case": "constant_matched_4p7",
+        "returncode": 0,
+        "elapsed_seconds": 1012.9012217920026,
+        "peak_process_rss_bytes": 10105810944,
+        "minimum_system_available_bytes": 2828283904,
+        "stopped_for_memory": false
+      }
+    }
+  }
+}

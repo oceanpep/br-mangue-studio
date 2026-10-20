@@ -148,21 +148,29 @@ software verification and performance evidence, not independent ecological
 validation. The repository includes automated tests, a user manual, benchmark
 records, platform builds, and run-level metadata.
 
+A five-year forcing check on the complete prepared CMMA domain (77,061,011
+valid 30 m cells) compared an imported SSP2-4.5 trajectory with its equivalent
+4.7 mm/year constant rate over 2025–2030. Both runs completed 385,305,055 cell
+updates and produced identical states in all five annual raster pairs, with
+matching state and transition metrics. The dated benchmark record preserves
+inputs, parameters, hardware, timings and the distinction from ecological
+validation.
+
 # AI usage disclosure
 
-OpenAI Codex (GPT-6, accessed 1 October 2026) assisted with code and test
-review, benchmark-record analysis, and revisions to project documentation and
-this manuscript. Earlier project work also used generative AI for reference
-discovery and draft structuring; the authors must confirm the tool and model
-versions used for those earlier tasks before submission. The authors are
-responsible for verifying AI-assisted text, references, code, and results and
-for all scientific, technical, authorship, and licensing decisions.
+Consensus supported literature searches. ChatGPT and OpenAI Codex (Sol, Luna
+and Astra) assisted Python implementation, model structuring, code and test
+review, benchmark analysis, and revisions to documentation and this manuscript.
+The authors are responsible for validating the code, references and results,
+and for the scientific interpretation and authorship of this work.
 
 # Acknowledgements
 
 The project was developed from the BR-MANGUE model formulation and the
 coastal-mangrove modelling work of Bezerra and collaborators. The authors
 acknowledge the GEOTAM laboratory and the Universidade Federal do Maranhão
-for the research context in which the Studio is being developed.
+for the research context in which the Studio is being developed. This study
+was financed in part by the Coordenação de Aperfeiçoamento de Pessoal de Nível
+Superior - Brasil (CAPES) - Finance Code 001.
 
 # References
