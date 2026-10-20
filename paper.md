@@ -125,7 +125,8 @@ Maranhão raster extent, both Linux engines completed 75 steps from 2025 to
 2100, processing 175,349,850 cell updates each. The initial state and all 75
 annual output rasters (2026–2100), as well as state and transition metrics,
 were identical cell by cell. Continuous mode took 567.5 s, and 10,000-cell
-blocks took 1,417.1 s; peak process RSS was 545 and 567 MB, respectively. The
+blocks took 1,417.1 s; the earlier runner reported process RSS peaks of 545
+and 567 MB, respectively. The
 same inputs were also reprojected to EPSG:31983 and aligned; a one-step run on
 the prepared copies matched between engines. An archived CMMA one-step
 comparison reported identical final rasters and trajectories; it took 123.6 s
@@ -135,7 +136,7 @@ annual raster export.
 Separate Windows archives record 76 steps from 2024 to 2100 on 78,007,309
 valid cells, with annual rasters for 2025–2100. They report 13,921 s for
 continuous mode and 15,065 s for 1,000,000-cell blocks (about 8 h combined),
-with peak process RSS of 5.02 and 5.81 GB, respectively. The two runs used
+with reported process RSS peaks of 5.02 and 5.81 GB, respectively. The two runs used
 different source-class mappings: codes 3 and 4, and codes 23 and 32, were
 assigned to different model classes; the block metadata also omits the
 migration-maturity parameter. These runs therefore provide descriptive

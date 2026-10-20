@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -47,6 +48,39 @@ def test_decadal_interpolation_rebases_at_initial_year_and_preserves_endpoint():
 def test_rates_can_decelerate_without_forcing_a_monotone_acceleration():
     params = ModelParameters(final_time=3, sea_level_trajectory=SeaLevelTrajectory((2025, 2026, 2027, 2028), (0, 4, 6, 11)))
     assert [params.sea_level_at(i)[1] * 1000 for i in range(1, 4)] == pytest.approx([4, 2, 5])
+
+
+@pytest.mark.parametrize('rate_mm', [0.5, 3.605, 4.7, 9.547])
+@pytest.mark.parametrize('annual_samples', [False, True])
+def test_equivalent_linear_forcing_is_numerically_identical(rate_mm, annual_samples):
+    years = tuple(range(2020, 2101)) if annual_samples else (2020, 2030, 2100)
+    curve = SeaLevelTrajectory(years, tuple(100 + (year-2020)*rate_mm for year in years))
+    constant = ModelParameters(final_time=75, sea_level_rise_rate=rate_mm/1000)
+    variable = ModelParameters(final_time=75, sea_level_trajectory=curve)
+    for step in range(76):
+        assert constant.sea_level_at(step) == variable.sea_level_at(step)
+
+
+@pytest.mark.parametrize('engine', ['continuous', 'blocks'])
+def test_exact_flooding_boundary_matches_constant_and_csv_forcing(tmp_path, engine):
+    with np.load(Path(__file__).parent/'fixtures/floating_point_tidal_boundary.npz') as fixture:
+        for name in ('land_cover', 'elevation', 'mask'):
+            values = fixture[name]
+            with rasterio.open(tmp_path/f'{name}.tif', 'w', driver='GTiff', height=17, width=17,
+                               count=1, dtype=str(values.dtype), nodata=-9999 if name=='elevation' else 0,
+                               crs='EPSG:10857', transform=from_origin(0, 0, 30, 30)) as target:
+                target.write(values, 1)
+    common = dict(final_time=5, tide_height=6, accretion_rate_mm=2.4,
+                  migration_maturity_years=3, allow_migration_without_soil=True)
+    for name, curve in [('constant', None), ('curve', SeaLevelTrajectory((2020, 2025, 2030), (-23.5, 0, 23.5)))]:
+        inputs = load_raster_inputs(tmp_path/'land_cover.tif', tmp_path/'elevation.tif',
+                                    mask_path=tmp_path/'mask.tif', soil_enabled=False)
+        run_raster_simulation(inputs, tmp_path/name,
+                             ModelParameters(**common, sea_level_rise_rate=.0047, sea_level_trajectory=curve),
+                             initial_year=2025, engine=engine, block_size=32)
+    for year in range(2026, 2031):
+        with rasterio.open(tmp_path/f'constant/states/state_{year}.tif') as a, rasterio.open(tmp_path/f'curve/states/state_{year}.tif') as b:
+            np.testing.assert_array_equal(a.read(1), b.read(1))
 
 
 @pytest.mark.parametrize("constant_accretion", [None, 2.4])
