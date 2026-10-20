@@ -1785,10 +1785,15 @@ class BRMangueStudio(tk.Tk):
             "Save CSV example creates a synthetic file for learning the format. Replace all example values before using it in research. Each run exports the actual annual forcing in sea_level_forcing.csv.",
             self.language_code,
         )
-        text = tk.Text(window, wrap="word", padx=14, pady=14)
+        content = ttk.Frame(window)
+        content.pack(fill="both", expand=True)
+        text = tk.Text(content, wrap="word", padx=14, pady=14)
+        scrollbar = ttk.Scrollbar(content, orient="vertical", command=text.yview)
+        text.configure(yscrollcommand=scrollbar.set)
         text.insert("1.0", body)
         text.configure(state="disabled")
-        text.pack(fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        text.pack(side="left", fill="both", expand=True)
         links = ttk.Frame(window, padding=8)
         links.pack(fill="x")
         for label, url in [
