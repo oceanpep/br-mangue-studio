@@ -8,12 +8,16 @@ on:
       - "packaging/BRMANGUE_Studio_Linux.spec"
       - "src/**"
       - "pyproject.toml"
+      - "scripts/smoke_packaged_application.py"
+      - "tests/fixtures/**"
   pull_request:
     paths:
       - ".github/workflows/build-linux.yml"
       - "packaging/BRMANGUE_Studio_Linux.spec"
       - "src/**"
       - "pyproject.toml"
+      - "scripts/smoke_packaged_application.py"
+      - "tests/fixtures/**"
   workflow_dispatch:
 
 permissions:

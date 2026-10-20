@@ -92,6 +92,43 @@ def test_block_runner_releases_input_grid_and_reports_performance(tmp_path):
     assert (tmp_path / "run" / "initial_state_2025.tif").exists()
 
 
+def test_peak_memory_includes_sampler_spikes_between_annual_checkpoints(tmp_path, monkeypatch):
+    import threading
+    import brmangue_lua.raster_runner as module
+    if module.psutil is None:
+        pytest.skip('psutil is required for the resource sampler.')
+    real_process = module.psutil.Process()
+    sampled = threading.Event()
+
+    class SampleSpikeProcess:
+        def memory_info(self):
+            if threading.current_thread().name == 'brmangue-resource-sampler':
+                sampled.set()
+                return SimpleNamespace(rss=9_000_000_000)
+            return SimpleNamespace(rss=100_000_000)
+
+        def __getattr__(self, name):
+            return getattr(real_process, name)
+
+    monkeypatch.setattr(module.psutil, 'Process', lambda: SampleSpikeProcess())
+    original_step = BrMangueGrid.step
+
+    def wait_for_sample(self, *args, **kwargs):
+        assert sampled.wait(timeout=2)
+        return original_step(self, *args, **kwargs)
+
+    monkeypatch.setattr(BrMangueGrid, 'step', wait_for_sample)
+    _write_raster(tmp_path/'cover.tif', np.array([[5]], dtype=np.uint8), dtype='uint8')
+    _write_raster(tmp_path/'dem.tif', np.ones((1, 1), dtype=np.float32), dtype='float32', nodata=-9999)
+    inputs = load_raster_inputs(tmp_path/'cover.tif', tmp_path/'dem.tif', soil_enabled=False)
+    run_raster_simulation(inputs, tmp_path/'run', ModelParameters(final_time=1), engine='continuous')
+    metadata = json.loads((tmp_path/'run/metadata.json').read_text())
+    samples = pd.read_csv(tmp_path/'run/resource_samples.csv')
+    assert samples.rss_bytes.max() == 9_000_000_000
+    assert metadata['peak_rss_bytes'] == 9_000_000_000
+    assert metadata['performance']['peak_rss_bytes'] == 9_000_000_000
+
+
 @pytest.mark.parametrize("engine", ["continuous", "blocks"])
 def test_raster_accretion_uses_mangrove_behavior_without_soil_raster(tmp_path, engine):
     land_cover_path = tmp_path / f"land_cover_{engine}.tif"

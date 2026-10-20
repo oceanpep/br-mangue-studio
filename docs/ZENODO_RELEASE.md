@@ -1,22 +1,13 @@
-# Zenodo release checklist
+# Zenodo release archive
 
-Zenodo should archive a versioned source-and-binary release after the CMMA
-benchmark and the second-computer smoke test are complete.
+BR-MANGUE Studio uses the GitHub–Zenodo integration. The repository must be enabled at https://zenodo.org/account/settings/github/ before publishing a release. An active release webhook was verified for version 1.4.0 preparation.
 
-1. Select and add an OSI-approved software license to the repository.
-2. Confirm the release version (`1.0.0`), authors, affiliation, abstract and
-   citation metadata in `CITATION.cff`.
-3. Commit the source, documentation, tests and the validated Windows
-   executable. Do not include local rasters, `results/` folders or private
-   absolute paths.
-4. Create the Git tag `v1.0.0` and a GitHub Release with the executable,
-   checksums and a short list of changes.
-5. Enable the repository in Zenodo and select the GitHub Release for archival.
-6. Check the archived record before publication: title, creators, version,
-   license, files and README link.
-7. Add the DOI badge and DOI link to the README, website and manuscript only
-   after Zenodo has minted the record.
+1. Update `pyproject.toml`, `APP_VERSION`, `CITATION.cff`, `.zenodo.json`, and the changelog with the same version.
+2. Run the automated tests and packaged smoke checks on Linux and Windows; retain the full-CMMA software-test report separately from ecological validation.
+3. Merge the reviewed changes, tag the tested commit, and publish a GitHub release with both executables and SHA-256 checksums.
+4. Verify that Zenodo created a public record with the correct version, MIT license, and four creators in the order specified by `.zenodo.json`. Do not create a separate independent deposit for every update.
+5. Record the version DOI for exact reproduction and the concept DOI for the software across versions. Link the confirmed concept DOI from the site and citation metadata.
 
-The Zenodo DOI identifies the archived software release. It is separate from
-the DOI that will later identify the journal article.
+The automatic archive preserves the tagged source ZIP; executable assets remain linked from GitHub. Zenodo gives `.zenodo.json` priority over `CITATION.cff`; keep both consistent.
 
+Official instructions: https://help.zenodo.org/docs/github/describe-software/zenodo-json/
