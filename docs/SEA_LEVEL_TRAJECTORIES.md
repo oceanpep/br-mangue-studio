@@ -1,6 +1,6 @@
 # Sea-level forcing
 
-Development version 1.4.0rc1 offers two choices in **Simulation**:
+Version 1.4.0 offers two choices in **Simulation**:
 
 - **Constant rate** (default) preserves earlier projects. The desktop field
   accepts mm/year.
@@ -9,6 +9,39 @@ Development version 1.4.0rc1 offers two choices in **Simulation**:
   relative to the initial raster year.
 
 ## Input and calculations
+
+### Create a CSV in a spreadsheet
+
+1. In **Simulation**, select **Save CSV example**, or download
+   [the example](../examples/sea_level_SYNTHETIC_example.csv). Its values are
+   synthetic and must be replaced before research use.
+2. Open the file in Excel or LibreOffice Calc. The first line beginning with
+   `#` is a comment; it may be removed. Keep the header `year,sea_level_mm`.
+3. Obtain regional cumulative projections from the
+   [NASA/IPCC AR6 tool](https://sealevel.nasa.gov/data_tools/17), the
+   [original IPCC archive](https://doi.org/10.5281/zenodo.6382554), or the
+   [Earth Engine catalog](https://developers.google.com/earth-engine/datasets/catalog/IPCC_AR6_SLP).
+   The source download is not necessarily in the application's CSV format.
+4. Select one scenario and percentile, and one location or documented spatial
+   summary. Copy its calendar years to `year` and cumulative **total** levels
+   to `sea_level_mm`. All levels must use the same reference period.
+   Convert metres × 1000 or centimetres × 10 to millimetres. Do not copy
+   annual rates into this column.
+5. Include samples covering the initial and final simulation years. For a
+   2025–2100 run, the decadal 2020–2100 samples cover the interval: 2025 is
+   interpolated between 2020 and 2030. Annual rows are also accepted.
+6. Save as **CSV UTF-8**, without a title above the header, formulas, units
+   inside numeric cells, or thousands separators. A comma separator requires
+   decimal points; a semicolon separator also accepts decimal commas.
+7. Select **Year-based trajectory (CSV)**, choose the file, and check
+   **Preview curve** before running. Keep source, region, scenario, percentile,
+   reference period and unit-conversion notes beside the CSV. The model
+   embeds imported samples in the saved project.
+
+**Format and data sources** provides these instructions offline inside the
+application. The source links require an internet connection. Projections
+remain future scenarios when rebased to a recent year. A measured trend is
+entered separately through **Constant rate**.
 
 Provide one trajectory per CSV with these exact column names:
 
@@ -78,6 +111,14 @@ while GUI rates use mm/year. Python users pass a `SeaLevelTrajectory` to
 `ModelParameters` and set `sea_level_reference_year` to the initial raster year.
 
 ## Configuração em português
+
+Baixe o exemplo no site ou clique em **Salvar exemplo CSV** na aba **Simulação**.
+Abra no Excel ou LibreOffice Calc e substitua os valores sintéticos pelos
+níveis acumulados de uma fonte documentada. Mantenha os cabeçalhos `year` e
+`sea_level_mm`; use um arquivo por local ou síntese regional, cenário e
+percentil. Converta metros em milímetros multiplicando por 1000, ou centímetros
+por 10. Salve como CSV UTF-8 e confira a curva antes de executar.
+**Formato e fontes de dados** explica o procedimento no próprio programa.
 
 Na aba **Simulação**, escolha **Taxa constante** ou **Trajetória por ano (CSV)**.
 Selecione um arquivo com as colunas `year` e `sea_level_mm`, contendo níveis
