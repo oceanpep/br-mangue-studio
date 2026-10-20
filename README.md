@@ -156,7 +156,7 @@ model rules, outputs, or performance measurements.
 
 ## Citation, license, and support
 
-Cite version 1.4.0 with DOI [10.5281/zenodo.23509309](https://doi.org/10.5281/zenodo.23509309),
+Cite version 1.4.1 with DOI [10.5281/zenodo.23512206](https://doi.org/10.5281/zenodo.23512206),
 as listed in [`CITATION.cff`](CITATION.cff). The
 [concept DOI](https://doi.org/10.5281/zenodo.23509308) identifies the software across versions. The
 repository is distributed under the [MIT License](LICENSE). For reproducible
