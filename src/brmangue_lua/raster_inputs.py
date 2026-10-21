@@ -35,6 +35,8 @@ DEFAULT_LAND_COVER_MAPPING: dict[str, list[int]] = {
     "natural_accommodation_candidate": [6, 11, 12, 23, 32, 49, 50],
     "managed_land_use_candidate": [14, 15, 18, 19, 20, 21, 35, 36, 39, 40, 41, 46, 47, 48, 62],
     "explicit_restriction": [24, 25, 30],
+    "bare_soil": [],
+    "fixed": [],
 }
 # Backward-compatible alias for older API callers.
 DEFAULT_MAPBIOMAS_MAPPING = DEFAULT_LAND_COVER_MAPPING
@@ -284,6 +286,7 @@ def _map_land_cover_classes(
             "bare_soil": "bare_soil",
             "natural_vegetation": "natural_vegetation",
             "anthropized": "anthropized",
+            "fixed": "fixed",
             "managed_land_use_candidate": "anthropized",
             "explicit_restriction": "anthropized",
         }
