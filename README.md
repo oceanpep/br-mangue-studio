@@ -10,6 +10,11 @@ spatial cellular-automaton scenarios of mangrove response to sea-level rise.
 Use aligned land-cover and elevation rasters, set the scenario, and inspect
 annual maps, trajectories, transitions, and reproducibility metadata.
 
+Version 1.4.4 restores the standard display palette: purple identifies
+migrated mangrove and red identifies flooded mangrove. Bare soil is no longer
+offered in the behavior selector, and internal profiles are excluded from
+default legends. Five input classes and their derived states remain distinct.
+
 Version 1.4.3 keeps annual state-map legends below the map, displays only
 states present in each year, and separates **Blocked area** from **Anthropized
 area** in standard class mapping. Blocked cells cannot receive mangrove
@@ -42,8 +47,8 @@ rasters, project files, and simulation results remain on your computer.
 
 | Platform | Availability | Verified environment |
 | --- | --- | --- |
-| Windows 10/11, 64-bit | Stable 1.4.3 | Windows desktop release |
-| Linux x86_64 | Research preview 1.4.3 | Built and tested on Ubuntu 22.04 LTS; packaged checks also passed on Ubuntu 26.04.1 LTS |
+| Windows 10/11, 64-bit | Stable 1.4.4 | Windows desktop release |
+| Linux x86_64 | Research preview 1.4.4 | Built and tested on Ubuntu 22.04 LTS; packaged checks also passed on Ubuntu 26.04.1 LTS |
 
 The interface is available in English and Brazilian Portuguese. English is the
 default for a new installation; choose a language in the application header.
@@ -65,7 +70,7 @@ for the complete compatibility notes and checksums.
 - Lets you map source raster codes to standard or project-defined model
   classes, with custom names and colours, and save the configuration in a
   project. Each custom class can reuse the existing rules for mangrove,
-  natural vegetation, bare soil, anthropized land, blocked land, or water; fixed classes
+  natural vegetation, anthropized land, blocked land, or water; fixed classes
   remain available as well. Derived transitions are linked to their original
   source class in the transition report.
 - Provides continuous and persistent-block processing for different raster
@@ -167,7 +172,7 @@ model rules, outputs, or performance measurements.
 
 ## Citation, license, and support
 
-Cite version 1.4.3 with DOI [10.5281/zenodo.23526724](https://doi.org/10.5281/zenodo.23526724),
+Cite the software using the [concept DOI](https://doi.org/10.5281/zenodo.23509308),
 as listed in [`CITATION.cff`](CITATION.cff). The
 [concept DOI](https://doi.org/10.5281/zenodo.23509308) identifies the software across versions. The
 repository is distributed under the [MIT License](LICENSE). For reproducible

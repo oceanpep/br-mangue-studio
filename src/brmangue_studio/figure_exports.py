@@ -17,6 +17,7 @@ import rasterio
 from rasterio.enums import Resampling
 from rasterio.windows import Window
 
+from brmangue_lua.model_states import visual_state_entries
 from .localization import translate
 
 
@@ -30,7 +31,7 @@ def state_colormap(catalog: dict[str, Any]) -> tuple[ListedColormap, BoundaryNor
 
 
 def state_display_name(item: dict[str, Any], language: str) -> str:
-    name = str(item.get("name", "Class"))
+    name = str(item.get("display_name", item.get("name", "Class")))
     translated = translate(name, language)
     if translated == name and language == "pt-BR" and item.get("kind") == "flooded" and name.startswith("Flooded "):
         return translate("Flooded area: {name}", language).format(name=translate(name[8:], language))
@@ -100,8 +101,7 @@ def save_state_map(image: np.ndarray, catalog: dict[str, Any], year: int,
     if present_codes is None:
         present_codes = {int(code) for code in np.unique(image) if int(code) != 0}
     entries = [(int(code), state_display_name(item, language), str(item.get("color", "#b8c2cc")))
-               for code, item in sorted(catalog.get("states", {}).items(), key=lambda pair: int(pair[0]))
-               if int(code) in present_codes]
+               for code, item in visual_state_entries(catalog, present_codes)]
     duplicates = Counter(name for _, name, _ in entries)
     entries = tuple((code, name if duplicates[name] == 1 else f"{name} [{code}]", color)
                     for code, name, color in entries)
