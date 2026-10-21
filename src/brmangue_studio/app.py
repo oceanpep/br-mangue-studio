@@ -71,6 +71,7 @@ from brmangue_studio.localization import (
     translate_runtime,
 )
 from brmangue_studio.desktop_integration import LINUX_WINDOW_CLASS, create_linux_shortcuts
+from brmangue_studio.figure_exports import read_state_preview, save_state_map, state_display_name
 
 try:
     from brmangue_lua.dissmodel_adapter import DISSMODEL_AVAILABLE
@@ -84,6 +85,8 @@ ROLE_LABELS = [
     "Natural vegetation",
     "Water",
     "Anthropized / blocked",
+    "Bare soil",
+    "Fixed class",
 ]
 UNASSIGNED_ROLE = "Unassigned"
 ROLE_TO_MODEL = {
@@ -91,6 +94,8 @@ ROLE_TO_MODEL = {
     "Natural vegetation": "natural_accommodation_candidate",
     "Water": "water",
     "Anthropized / blocked": "managed_land_use_candidate",
+    "Bare soil": "bare_soil",
+    "Fixed class": "fixed",
 }
 TRANSITION_REPORT_CHUNK_CELLS = 1_000_000
 CUSTOM_BEHAVIOR_LABELS = {
@@ -146,7 +151,7 @@ def _model_legend_handles(
     states = (state_catalog or {}).get("states", {})
     if states:
         return [
-            Patch(facecolor=str(item.get("color", "#b8c2cc")), label=translate(str(item.get("name", "Class")), language_code))
+            Patch(facecolor=str(item.get("color", "#b8c2cc")), label=state_display_name(item, language_code))
             for _code, item in sorted(states.items(), key=lambda pair: int(pair[0]))
         ]
     return [
@@ -154,7 +159,7 @@ def _model_legend_handles(
         for name, color in (value for value in STANDARD_CLASS_STYLES.values())
     ]
 
-APP_VERSION = "1.4.2"
+APP_VERSION = "1.4.3"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -525,6 +530,10 @@ def _default_role(code: int) -> str:
         return "Water"
     if code in DEFAULT_LAND_COVER_MAPPING["natural_accommodation_candidate"]:
         return "Natural vegetation"
+    if code in DEFAULT_LAND_COVER_MAPPING["bare_soil"]:
+        return "Bare soil"
+    if code in DEFAULT_LAND_COVER_MAPPING["fixed"]:
+        return "Fixed class"
     return "Anthropized / blocked"
 
 
@@ -657,17 +666,25 @@ def _display_values_for_inputs(
     fill_value: float | int,
 ) -> np.ndarray:
     """Create a cropped, downsampled display array without touching Tk."""
-    full = np.full(inputs.raster_shape, fill_value, dtype=dtype)
-    full[inputs.valid_rows, inputs.valid_cols] = np.asarray(values, dtype=dtype)
-    rows, cols = np.where(inputs.valid_mask)
-    pad = 10
-    r0 = max(int(rows.min()) - pad, 0)
-    r1 = min(int(rows.max()) + pad + 1, full.shape[0])
-    c0 = max(int(cols.min()) - pad, 0)
-    c1 = min(int(cols.max()) + pad + 1, full.shape[1])
-    crop = full[r0:r1, c0:c1]
-    stride = max(1, int(max(crop.shape) / 700))
-    return crop[::stride, ::stride]
+    lookup = getattr(inputs, "_display_lookup", None)
+    if lookup is None:
+        rows, cols = inputs.valid_rows, inputs.valid_cols
+        r0, r1 = max(int(rows.min()) - 10, 0), min(int(rows.max()) + 11, inputs.raster_shape[0])
+        c0, c1 = max(int(cols.min()) - 10, 0), min(int(cols.max()) + 11, inputs.raster_shape[1])
+        stride = max(1, int(max(r1 - r0, c1 - c0) / 700))
+        shape = (len(range(r0, r1, stride)), len(range(c0, c1, stride)))
+        indices, positions = [], []
+        for start in range(0, rows.size, 1_000_000):
+            rr, cc = rows[start:start + 1_000_000] - r0, cols[start:start + 1_000_000] - c0
+            selected = (rr % stride == 0) & (cc % stride == 0)
+            indices.append(np.flatnonzero(selected) + start)
+            positions.append((rr[selected] // stride).astype(np.int64) * shape[1] + cc[selected] // stride)
+        lookup = (shape, np.concatenate(indices), np.concatenate(positions))
+        inputs._display_lookup = lookup
+    shape, indices, positions = lookup
+    image = np.full(shape, fill_value, dtype=dtype)
+    image.ravel()[positions] = np.asarray(values)[indices]
+    return image
 
 
 def _display_elevation_for_inputs(inputs: RasterInputSet) -> np.ndarray:
@@ -720,11 +737,13 @@ def _area_frame(inputs: RasterInputSet, frame: pd.DataFrame) -> pd.DataFrame:
 def _save_annual_figure_file(
     inputs: RasterInputSet,
     run_dir: Path,
-    state: np.ndarray,
+    state: np.ndarray | None,
     trajectory: pd.DataFrame,
     year: int,
     language_code: str = "en",
     state_catalog: dict[str, Any] | None = None,
+    state_preview: np.ndarray | None = None,
+    state_geometry: dict[str, Any] | None = None,
 ) -> Path:
     """Write four independent annual figures and return the state-map path."""
     figure_root = run_dir / "figures"
@@ -735,26 +754,16 @@ def _save_annual_figure_file(
         for component in FIGURE_COMPONENTS
     }
 
-    display_state = np.asarray(state, dtype=np.int32)
-    image = _display_values_for_inputs(inputs, display_state, dtype=np.int32, fill_value=0)
-    cmap, norm = _model_colormap(state_catalog)
-    state_fig = Figure(figsize=(7.2, 5.6), dpi=120)
-    state_ax = state_fig.add_subplot(111)
-    state_ax.imshow(image, cmap=cmap, norm=norm, interpolation="nearest")
-    state_ax.text(
-        0.98, 0.03, str(year), transform=state_ax.transAxes,
-        ha="right", va="bottom", fontsize=12, color="#1f2933",
-        bbox={"facecolor": "white", "alpha": 0.78, "pad": 2, "edgecolor": "none"},
-    )
-    state_ax.set_title("")
-    state_ax.set_xlabel(translate("Raster columns", language_code))
-    state_ax.set_ylabel(translate("Raster rows", language_code))
-    state_fig.legend(
-        handles=_model_legend_handles(state_catalog, language_code),
-        loc="lower center", bbox_to_anchor=(0.5, 0.01), ncol=3, fontsize=8, title=translate("Model states", language_code),
-    )
-    state_fig.subplots_adjust(left=0.09, right=0.98, top=0.91, bottom=0.24)
-    FigureCanvasAgg(state_fig).print_figure(paths["state"], dpi=150, bbox_inches="tight")
+    if state_preview is None:
+        image = _display_values_for_inputs(inputs, np.asarray(state), dtype=np.uint16, fill_value=0)
+    else:
+        image = state_preview
+    current = trajectory[trajectory["calendar_year"] == year] if not trajectory.empty else trajectory
+    present_codes = ({int(code) for code in (state_catalog or {}).get("states", {})
+                      if float(current.iloc[-1].get(f"class_{code}", 0)) > 0}
+                     if not current.empty else None)
+    save_state_map(image, state_catalog or {}, year, paths["state"], language=language_code,
+                   present_codes=present_codes, geometry=state_geometry)
 
     elev_image = _display_elevation_for_inputs(inputs)
     finite = elev_image[np.isfinite(elev_image)]
@@ -831,12 +840,11 @@ def _generate_annual_figures(
         state_path = states_dir / f"state_{int(year)}.tif"
         if not state_path.exists():
             continue
-        with rasterio.open(state_path) as src:
-            state = src.read(1)[inputs.valid_rows, inputs.valid_cols]
+        image, geometry = read_state_preview(state_path, inputs.metadata.get("grid", {}))
         paths.append(
             _save_annual_figure_file(
-                inputs, run_dir, state, trajectory, int(year), language_code,
-                state_catalog=state_catalog,
+                inputs, run_dir, None, trajectory, int(year), language_code,
+                state_catalog=state_catalog, state_preview=image, state_geometry=geometry,
             )
         )
     index = []
@@ -860,10 +868,16 @@ def _write_gif(frame_paths: list[Path], destination: Path) -> Path | None:
     frames = [path for path in frame_paths if path.exists()]
     if not frames:
         return None
+    width = height = 0
+    for path in frames:
+        with Image.open(path) as frame:
+            width, height = max(width, frame.width), max(height, frame.height)
     images: list[Image.Image] = []
     for path in frames:
         with Image.open(path) as image:
-            images.append(image.convert("P", palette=Image.Palette.ADAPTIVE))
+            canvas = Image.new("RGB", (width, height), "white")
+            canvas.paste(image.convert("RGB"), (0, 0))
+            images.append(canvas.convert("P", palette=Image.Palette.ADAPTIVE))
     destination.parent.mkdir(parents=True, exist_ok=True)
     first, *rest = images
     first.save(destination, save_all=True, append_images=rest, duration=800, loop=0, optimize=False)
@@ -1603,7 +1617,7 @@ class BRMangueStudio(tk.Tk):
             child.destroy()
         catalog = self.inputs.metadata.get("model_state_catalog", {}) if self.inputs else {}
         items = [
-            (int(code), translate(str(item.get("name", f"Class {code}")), self.language_code), str(item.get("color", "#b8c2cc")))
+            (int(code), state_display_name(item, self.language_code), str(item.get("color", "#b8c2cc")))
             for code, item in sorted(catalog.get("states", {}).items(), key=lambda pair: int(pair[0]))
         ]
         if not items:
