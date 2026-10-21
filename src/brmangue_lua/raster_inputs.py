@@ -37,6 +37,7 @@ DEFAULT_LAND_COVER_MAPPING: dict[str, list[int]] = {
     "explicit_restriction": [24, 25, 30],
     "bare_soil": [],
     "fixed": [],
+    "blocked": [],
 }
 # Backward-compatible alias for older API callers.
 DEFAULT_MAPBIOMAS_MAPPING = DEFAULT_LAND_COVER_MAPPING
@@ -287,6 +288,7 @@ def _map_land_cover_classes(
             "natural_vegetation": "natural_vegetation",
             "anthropized": "anthropized",
             "fixed": "fixed",
+            "blocked": "blocked",
             "managed_land_use_candidate": "anthropized",
             "explicit_restriction": "anthropized",
         }
