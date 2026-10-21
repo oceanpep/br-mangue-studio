@@ -6,7 +6,7 @@ from brmangue_lua.model_states import build_model_state_catalog
 from brmangue_lua.persistent_blocks import PersistentBlockRunner
 from brmangue_lua.raster_inputs import _map_land_cover_classes
 from brmangue_studio.app import ROLE_LABELS, ROLE_TO_MODEL
-from brmangue_studio.localization import translate
+from brmangue_studio.localization import translate, translate_runtime
 
 
 def make_grid(definitions, elevations):
@@ -70,6 +70,7 @@ def test_standard_selector_separates_blocked_and_anthropized():
     assert 'Anthropized area' in ROLE_LABELS
     assert 'Bare soil' not in ROLE_LABELS
     assert translate('Blocked area', 'pt-BR') == 'Área bloqueada'
+    assert translate_runtime('Blocked area: 3\nFlooded blocked area: 2', 'pt-BR') == 'Área bloqueada: 3\nÁrea bloqueada inundada: 2'
     assert ROLE_TO_MODEL['Blocked area'] == 'blocked'
     values, _, catalog = _map_land_cover_classes(
         np.array([23, 24]), {'blocked': [23], 'anthropized': [24]}, {}, [])
