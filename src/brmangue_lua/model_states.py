@@ -6,10 +6,10 @@ from typing import Any
 
 
 CLASS_BEHAVIORS = frozenset(
-    {"fixed", "mangrove", "natural_vegetation", "bare_soil", "anthropized", "water"}
+    {"fixed", "mangrove", "natural_vegetation", "bare_soil", "anthropized", "blocked", "water"}
 )
 FLOODABLE_BEHAVIORS = frozenset(
-    {"mangrove", "natural_vegetation", "bare_soil", "anthropized"}
+    {"mangrove", "natural_vegetation", "bare_soil", "anthropized", "blocked"}
 )
 MIGRATION_CANDIDATE_BEHAVIORS = frozenset({"natural_vegetation", "bare_soil"})
 
@@ -17,7 +17,8 @@ STANDARD_CLASS_STYLES: dict[str, tuple[str, str]] = {
     "mangrove": ("Mangrove", "#006d2c"),
     "natural_vegetation": ("Natural vegetation", "#b2df8a"),
     "water": ("Water", "#2b8cbe"),
-    "anthropized": ("Anthropized / blocked", "#fdae61"),
+    "anthropized": ("Anthropized area", "#fdae61"),
+    "blocked": ("Blocked area", "#777777"),
     "bare_soil": ("Bare soil", "#777777"),
     "fixed": ("Fixed class", "#8c6bb1"),
 }
@@ -183,9 +184,11 @@ def count_model_states(values: Any, catalog: dict[str, Any]) -> dict[str, int]:
         "vegetation": 0,
         "water": 0,
         "anthropized": 0,
+        "blocked": 0,
         "bare": 0,
         "flooded_bare": 0,
         "flooded_anthropized": 0,
+        "flooded_blocked": 0,
         "migrated_mangrove": 0,
         "flooded_mangrove": 0,
         "flooded_natural": 0,
@@ -207,6 +210,8 @@ def count_model_states(values: Any, catalog: dict[str, Any]) -> dict[str, int]:
                 profile_counts["flooded_bare"] += count
             elif behavior == "anthropized":
                 profile_counts["flooded_anthropized"] += count
+            elif behavior == "blocked":
+                profile_counts["flooded_blocked"] += count
             result[f"flooded_class_{int(item['base_code'])}"] = count
         elif kind == "class":
             if behavior == "mangrove":
@@ -217,6 +222,8 @@ def count_model_states(values: Any, catalog: dict[str, Any]) -> dict[str, int]:
                 profile_counts["water"] += count
             elif behavior == "anthropized":
                 profile_counts["anthropized"] += count
+            elif behavior == "blocked":
+                profile_counts["blocked"] += count
             elif behavior == "bare_soil":
                 profile_counts["bare"] += count
 

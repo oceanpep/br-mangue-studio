@@ -60,6 +60,10 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
         "Natural vegetation": "natural_accommodation_candidate",
         "Water": "water",
         "Anthropized / blocked": "managed_land_use_candidate",
+        "Anthropized area": "managed_land_use_candidate",
+        "Blocked area": "blocked",
+        "Bare soil": "bare_soil",
+        "Fixed class": "fixed",
     }
     for code, role in roles.items():
         if role == "Exclude":

@@ -2,6 +2,23 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [1.4.3] — 2026-10-21
+
+- Move exported state-map legends to a separate area sized from their rendered
+  labels, with wrapping and no overlap with the map or coordinate labels.
+- List states present in the full annual raster, using recorded cell counts
+  so rare states are retained even when a reduced preview does not sample them.
+- Use projected coordinates in kilometres for metric map exports and higher
+  resolution previews; pad animation frames to prevent clipping.
+- Read saved raster previews directly and reuse a compact sampling lookup in
+  live panels instead of allocating a full raster grid for each preview.
+- Add a distinct Blocked area profile to standard GUI and batch mapping.
+  It prevents mangrove migration and retains a separate flooded state.
+  Rename the standard anthropized label to Anthropized area; older project
+  labels remain accepted. Bare-soil and fixed custom profiles are preserved.
+- Add a state-figure rebuilding utility that uses saved rasters without
+  executing any model steps.
+
 ## [1.4.2] — 2026-10-20
 
 - Apply the bundled PNG window icon on Linux even when no Windows ICO is
