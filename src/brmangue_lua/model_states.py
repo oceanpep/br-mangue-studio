@@ -13,7 +13,7 @@ FLOODABLE_BEHAVIORS = frozenset(
 )
 MIGRATION_CANDIDATE_BEHAVIORS = frozenset({"natural_vegetation", "bare_soil"})
 
-STANDARD_CLASS_STYLES: dict[str, tuple[str, str]] = {
+CLASS_BEHAVIOR_STYLES: dict[str, tuple[str, str]] = {
     "mangrove": ("Mangrove", "#006d2c"),
     "natural_vegetation": ("Natural vegetation", "#b2df8a"),
     "water": ("Water", "#2b8cbe"),
@@ -22,7 +22,20 @@ STANDARD_CLASS_STYLES: dict[str, tuple[str, str]] = {
     "bare_soil": ("Bare soil", "#777777"),
     "fixed": ("Fixed class", "#8c6bb1"),
 }
+STANDARD_CLASS_BEHAVIORS = (
+    "mangrove", "natural_vegetation", "water", "anthropized", "blocked",
+)
+STANDARD_CLASS_STYLES = {
+    behavior: CLASS_BEHAVIOR_STYLES[behavior]
+    for behavior in STANDARD_CLASS_BEHAVIORS
+}
 MIGRATED_MANGROVE_COLOR = "#7b3294"
+FLOODED_MANGROVE_COLOR = "#e34a33"
+STANDARD_DISPLAY_STYLES = {
+    **STANDARD_CLASS_STYLES,
+    "migrated_mangrove": ("Migrated mangrove", MIGRATED_MANGROVE_COLOR),
+    "flooded_mangrove": ("Flooded mangrove", FLOODED_MANGROVE_COLOR),
+}
 
 
 def _shade_color(color: str, factor: float = 0.72) -> str:
@@ -35,6 +48,8 @@ def _shade_color(color: str, factor: float = 0.72) -> str:
 
 def build_model_state_catalog(
     base_classes: list[dict[str, Any]],
+    *,
+    standard_visuals: bool = False,
 ) -> dict[str, Any]:
     """Create stable base and derived state codes for one model project.
 
@@ -115,13 +130,46 @@ def build_model_state_catalog(
     if states and max(int(key) for key in states) > 65535:
         raise ValueError("The model state catalog exceeds the UInt16 raster limit.")
 
+    if standard_visuals:
+        for item in states.values():
+            group = str(item["behavior"])
+            if item["kind"] == "migrated":
+                group = "migrated_mangrove"
+            elif item["kind"] == "flooded" and group == "mangrove":
+                group = "flooded_mangrove"
+            name, color = STANDARD_DISPLAY_STYLES[group]
+            item.update(display_group=group, display_name=name, color=color)
+
     return {
         "schema_version": 2,
+        "display_mode": "standard" if standard_visuals else "custom",
         "states": states,
         "base_codes": sorted(used_codes),
         "flooded_codes": flooded_codes,
         "migrated_mangrove_code": migrated_code,
     }
+
+
+def visual_state_entries(
+    catalog: dict[str, Any], present_codes: set[int] | None = None,
+) -> list[tuple[int, dict[str, Any]]]:
+    """Group only explicitly defined standard visuals; retain detailed states."""
+    entries = []
+    seen: set[str] = set()
+    for raw_code, item in sorted(catalog.get("states", {}).items(), key=lambda pair: int(pair[0])):
+        code = int(raw_code)
+        if present_codes is not None and code not in present_codes:
+            continue
+        group = item.get("display_group")
+        if group is not None:
+            if str(group) in seen:
+                continue
+            seen.add(str(group))
+        entries.append((code, item))
+    if catalog.get("display_mode") == "standard":
+        order = {name: index for index, name in enumerate(STANDARD_DISPLAY_STYLES)}
+        entries.sort(key=lambda pair: order.get(str(pair[1].get("display_group")), len(order)))
+    return entries
 
 
 def state_entry(catalog: dict[str, Any], code: int) -> dict[str, Any] | None:
