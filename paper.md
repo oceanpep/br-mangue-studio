@@ -19,7 +19,7 @@ authors:
 affiliations:
   - name: Universidade Federal do Maranhão, Brazil
     index: 1
-date: 20 October 2026
+date: 21 October 2026
 bibliography: paper.bib
 ---
 
@@ -88,6 +88,13 @@ neighbourhood rules; (3) annual execution and persistent block storage; and
 the scientific transition rules testable without requiring the desktop
 interface and allows the same input metadata to be used in continuous and
 block runs.
+
+Source codes can be grouped into standard mangrove, natural vegetation,
+water, anthropized and blocked classes, or assigned to custom classes with
+explicit behavior profiles. Blocked cells cannot receive mangrove migration
+and can enter a flooded state; custom fixed classes retain their state.
+Derived states preserve the source-class identity, with a separate state for
+migrated mangrove.
 
 The continuous engine keeps active arrays in memory and avoids persistent
 block I/O. The block engine alternates persistent state arrays and traverses a
