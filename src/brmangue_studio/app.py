@@ -52,7 +52,7 @@ except ImportError:  # pragma: no cover
 
 from brmangue_lua.engine import ModelParameters
 from brmangue_lua.sea_level import TRAJECTORY_CSV_EXAMPLE, SeaLevelTrajectory, trajectory_from_project
-from brmangue_lua.model_states import STANDARD_CLASS_STYLES, state_entry
+from brmangue_lua.model_states import STANDARD_CLASS_STYLES, STANDARD_DISPLAY_STYLES, state_entry, visual_state_entries
 from brmangue_lua.raster_inputs import (
     DEFAULT_LAND_COVER_MAPPING,
     MAX_CUSTOM_MODEL_CLASS_CODE,
@@ -103,7 +103,6 @@ CUSTOM_BEHAVIOR_LABELS = {
     "fixed": "Fixed class",
     "mangrove": "Mangrove source",
     "natural_vegetation": "Natural vegetation",
-    "bare_soil": "Bare soil",
     "anthropized": "Anthropized area",
     "blocked": "Blocked area",
     "water": "Water body",
@@ -154,14 +153,14 @@ def _model_legend_handles(
     if states:
         return [
             Patch(facecolor=str(item.get("color", "#b8c2cc")), label=state_display_name(item, language_code))
-            for _code, item in sorted(states.items(), key=lambda pair: int(pair[0]))
+            for _code, item in visual_state_entries(state_catalog or {})
         ]
     return [
         Patch(facecolor=color, label=translate(name, language_code))
-        for name, color in (value for value in STANDARD_CLASS_STYLES.values())
+        for name, color in STANDARD_DISPLAY_STYLES.values()
     ]
 
-APP_VERSION = "1.4.3"
+APP_VERSION = "1.4.4"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -1554,12 +1553,16 @@ class BRMangueStudio(tk.Tk):
         )
 
     def _canonical_custom_behavior(self, displayed: str) -> str:
+        if displayed in {"Bare soil", translate("Bare soil", "pt-BR")}:
+            return "natural_vegetation"
         for behavior, label in CUSTOM_BEHAVIOR_LABELS.items():
             if displayed in {label, translate(label, "pt-BR")}:
                 return behavior
         return "fixed"
 
     def _display_custom_behavior(self, behavior: str) -> str:
+        if behavior == "bare_soil":
+            behavior = "natural_vegetation"
         label = CUSTOM_BEHAVIOR_LABELS.get(behavior, CUSTOM_BEHAVIOR_LABELS["fixed"])
         return translate(label, self.language_code)
 
@@ -1622,12 +1625,12 @@ class BRMangueStudio(tk.Tk):
         catalog = self.inputs.metadata.get("model_state_catalog", {}) if self.inputs else {}
         items = [
             (int(code), state_display_name(item, self.language_code), str(item.get("color", "#b8c2cc")))
-            for code, item in sorted(catalog.get("states", {}).items(), key=lambda pair: int(pair[0]))
+            for code, item in visual_state_entries(catalog)
         ]
         if not items:
             items = [
                 (index, translate(name, self.language_code), color)
-                for index, (name, color) in enumerate(STANDARD_CLASS_STYLES.values(), start=1)
+                for index, (name, color) in enumerate(STANDARD_DISPLAY_STYLES.values(), start=1)
             ]
         for code, label, color in items:
             item_frame = ttk.Frame(frame)

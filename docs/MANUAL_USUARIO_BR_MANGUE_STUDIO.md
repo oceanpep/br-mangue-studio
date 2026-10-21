@@ -150,7 +150,7 @@ atribui cada código a um papel do modelo:
 | **Blocked area** | Área explicitamente bloqueada à migração; pode passar ao estado inundado | Não |
 | **Exclude** | NoData, borda inválida ou classe fora do domínio do estudo | Não participa |
 
-A versão 1.4.3 separa as categorias antropizada e bloqueada no seletor padrão. Projetos antigos com o rótulo `Anthropized / blocked` continuam sendo lidos como área antropizada. O perfil personalizado `Bare soil` continua permitindo migração; não foi renomeado internamente.
+A versão 1.4.3 separa as categorias antropizada e bloqueada no seletor padrão. Projetos antigos com o rótulo `Anthropized / blocked` continuam sendo lidos como área antropizada. A partir da versão 1.4.4, solo descoberto não é oferecido como classe ou perfil nos seletores. Configurações antigas continuam legíveis; ao descrever um perfil antigo de migração equivalente, a interface usa vegetação natural.
 
 O enquadramento depende da legenda do produto. Não atribua um papel apenas
 porque o código parece familiar. Confirme a legenda, consulte os metadados e
@@ -177,7 +177,6 @@ códigos sem atribuição e salva o modo escolhido no projeto.
 | **Fixed class** | Mantém o código personalizado, sem transições dinâmicas. |
 | **Mangrove source** | Pode propagar a migração; em uma transição por inundação, passa ao estado de mangue inundado. |
 | **Natural vegetation** | Pode receber migração e passa ao estado de vegetação natural inundada quando inundada. |
-| **Bare soil** | Pode receber migração e passa ao estado de solo descoberto inundado quando inundado. |
 | **Anthropized area** | Permanece bloqueada para migração e pode passar ao estado antropizado inundado. |
 | **Blocked area** | Não recebe migração; mantém uma categoria própria e pode passar ao estado de área bloqueada inundada. |
 | **Water body** | Atua como fonte das regras de fluxo e inundação e não recebe conversão por essas regras. |
@@ -761,6 +760,10 @@ execução longa precisa de um estado recuperável.
 Confira o **Live run monitor** e o uso do disco. A geração de figuras e GIF pode
 ocorrer depois do cálculo. Não encerre o programa sem verificar se o processo
 terminou. Em grades muito grandes, faça antes um teste de um ano.
+
+### Cores padrão do modelo
+
+No modo padrão, manguezal usa verde escuro, vegetação natural usa verde claro, água usa azul, área antropizada usa laranja e área bloqueada usa cinza. Mangue migrado usa roxo e mangue inundado usa vermelho. Os demais estados inundados mantêm a cor da classe de origem; os códigos detalhados continuam distintos nos rasters e tabelas. A legenda de abertura representa essas sete categorias visuais, incluindo os estados derivados. Solo descoberto não é oferecido nos seletores. Classe fixa é um perfil opcional de classes personalizadas, sem associação automática ao roxo do mangue migrado.
 
 ### O mangue inundado aparece em vermelho
 
