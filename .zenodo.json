@@ -1,6 +1,6 @@
 {
   "title": "BR-MANGUE Studio",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "upload_type": "software",
   "access_right": "open",
   "license": "mit",
@@ -22,7 +22,7 @@
       "affiliation": "Universidade Federal do Maranhão"
     }
   ],
-  "description": "<p>BR-MANGUE Studio is a Python desktop application for spatial cellular modelling of mangrove response to sea-level change. It supports aligned categorical land-cover and elevation rasters, standard or user-defined classes with behavior profiles, continuous and persistent-block processing, fixed sediment accretion, maturation delays, and constant or calendar-based sea-level forcing. Annual maps, trajectory tables, source samples, and run metadata support reproducible experiments.</p><p>Version 1.4.3 reserves a separate measured legend area below annual state maps, includes only states present in the full annual raster, translates derived state labels, uses projected map coordinates, and reduces temporary preview memory. The standard selector separates Blocked area from Anthropized area. Blocked cells cannot receive mangrove migration and can enter a flooded state; bare-soil and fixed profiles remain available for custom classes and older projects. Version 1.4.2 applies the Linux window icon, displays the logo in the application header, and adds per-user Linux launchers and a desktop download package. Version 1.4.1 fixes class-table row heights for larger fonts and display scaling, fits columns to their text, and adds horizontal scrolling. Version 1.4.0 introduced cumulative sea-level trajectories imported from CSV, linear interpolation between calendar years, rebasing to the initial raster year, curve previews, bilingual format guidance, and export of the actual annual forcing. English and Brazilian Portuguese are available in both desktop builds.</p><p>The GitHub archive preserves the source code. Windows and Linux executables and their checksums are available on the corresponding GitHub release.</p><p>A small third-party CC BY 4.0 data fixture is included for numerical-boundary regression testing. Dataset attribution and extraction details are in tests/fixtures/README.md. The software code is MIT licensed.</p>",
+  "description": "<p>BR-MANGUE Studio is a Python desktop application for spatial cellular modelling of mangrove response to sea-level change. It supports aligned categorical land-cover and elevation rasters, standard or user-defined classes with behavior profiles, continuous and persistent-block processing, fixed sediment accretion, maturation delays, and constant or calendar-based sea-level forcing. Annual maps, trajectory tables, source samples, and run metadata support reproducible experiments.</p><p>Version 1.4.4 restores the standard visual palette, with purple migrated mangrove and red flooded mangrove, and removes internal bare-soil and fixed profiles from default legends. Bare soil is removed from the behavior selector. Five input classes are distinguished from seven visual groups; scientific states and transitions remain available in rasters and tables. Simulation rules and saved project settings are unchanged. Version 1.4.3 reserves a separate measured legend area below annual state maps, includes only states present in the full annual raster, translates derived state labels, uses projected map coordinates, and reduces temporary preview memory. The standard selector separates Blocked area from Anthropized area. Blocked cells cannot receive mangrove migration and can enter a flooded state; bare-soil and fixed profiles remain available for custom classes and older projects. Version 1.4.2 applies the Linux window icon, displays the logo in the application header, and adds per-user Linux launchers and a desktop download package. Version 1.4.1 fixes class-table row heights for larger fonts and display scaling, fits columns to their text, and adds horizontal scrolling. Version 1.4.0 introduced cumulative sea-level trajectories imported from CSV, linear interpolation between calendar years, rebasing to the initial raster year, curve previews, bilingual format guidance, and export of the actual annual forcing. English and Brazilian Portuguese are available in both desktop builds.</p><p>The GitHub archive preserves the source code. Windows and Linux executables and their checksums are available on the corresponding GitHub release.</p><p>A small third-party CC BY 4.0 data fixture is included for numerical-boundary regression testing. Dataset attribution and extraction details are in tests/fixtures/README.md. The software code is MIT licensed.</p>",
   "keywords": [
     "mangroves",
     "cellular automata",
@@ -33,7 +33,7 @@
   ],
   "related_identifiers": [
     {
-      "identifier": "https://github.com/oceanpep/br-mangue-studio/tree/v1.4.3",
+      "identifier": "https://github.com/oceanpep/br-mangue-studio/tree/v1.4.4",
       "relation": "isSupplementTo",
       "resource_type": "software"
     },

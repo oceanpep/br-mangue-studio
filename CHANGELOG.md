@@ -2,6 +2,18 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [1.4.4] — 2026-10-21
+
+- Restore the standard display palette, including purple Migrated mangrove
+  and red Flooded mangrove. Standard inundated non-mangrove states use their
+  parent colors; detailed state codes remain in rasters and tables.
+- Separate five input classes from seven standard display groups, so
+  internal Bare soil and Fixed class profiles are not added to default legends.
+- Remove Bare soil from the custom behavior selector. Older saved profiles
+  remain readable; their equivalent migration behavior is displayed as
+  Natural vegetation when describing legacy custom configurations.
+- Keep input mappings, simulation rules and existing project files unchanged.
+
 ## [1.4.3] — 2026-10-21
 
 - Move exported state-map legends to a separate area sized from their rendered

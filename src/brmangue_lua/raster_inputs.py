@@ -21,7 +21,7 @@ import rasterio
 from .engine import (
     BrMangueGrid,
 )
-from .model_states import CLASS_BEHAVIORS, STANDARD_CLASS_STYLES, build_model_state_catalog
+from .model_states import CLASS_BEHAVIORS, CLASS_BEHAVIOR_STYLES, STANDARD_CLASS_STYLES, build_model_state_catalog
 
 
 SOIL_DISABLED_SENTINEL = -999
@@ -321,7 +321,7 @@ def _map_land_cover_classes(
         for source_code, behavior in behavior_by_source.items():
             state_values[values == source_code] = state_code_by_behavior[behavior]
         for behavior, code in sorted(state_code_by_behavior.items(), key=lambda item: item[1]):
-            name, color = STANDARD_CLASS_STYLES[behavior]
+            name, color = CLASS_BEHAVIOR_STYLES[behavior]
             class_definitions.append({
                 "code": code,
                 "name": name,
@@ -346,7 +346,11 @@ def _map_land_cover_classes(
         })
         unknown_source_policy = "anthropized"
 
-    model_state_catalog = build_model_state_catalog(class_definitions)
+    model_state_catalog = build_model_state_catalog(
+        class_definitions,
+        standard_visuals=(not custom_mapping_mode and not custom_classes
+                          and all(item["behavior"] in STANDARD_CLASS_STYLES for item in class_definitions)),
+    )
     classes_seen, counts = np.unique(values, return_counts=True)
     return state_values, {
         "source_to_model": source_to_model,
