@@ -10,6 +10,10 @@ spatial cellular-automaton scenarios of mangrove response to sea-level rise.
 Use aligned land-cover and elevation rasters, set the scenario, and inspect
 annual maps, trajectories, transitions, and reproducibility metadata.
 
+Version 1.4.3 keeps annual state-map legends below the map, displays only
+states present in each year, and exposes bare-soil and fixed profiles in the
+standard class mapping. It also reduces temporary memory used for map previews.
+
 Version 1.4.2 applies the Linux window icon and adds application shortcuts.
 Use **Help → Create Linux shortcuts** to add the logo to the applications
 menu and create a launcher beside the executable. The Linux download archive
@@ -36,8 +40,8 @@ rasters, project files, and simulation results remain on your computer.
 
 | Platform | Availability | Verified environment |
 | --- | --- | --- |
-| Windows 10/11, 64-bit | Stable 1.4.2 | Windows desktop release |
-| Linux x86_64 | Research preview 1.4.2 | Built and tested on Ubuntu 22.04 LTS; packaged checks also passed on Ubuntu 26.04.1 LTS |
+| Windows 10/11, 64-bit | Stable 1.4.3 | Windows desktop release |
+| Linux x86_64 | Research preview 1.4.3 | Built and tested on Ubuntu 22.04 LTS; packaged checks also passed on Ubuntu 26.04.1 LTS |
 
 The interface is available in English and Brazilian Portuguese. English is the
 default for a new installation; choose a language in the application header.
@@ -161,7 +165,7 @@ model rules, outputs, or performance measurements.
 
 ## Citation, license, and support
 
-Cite version 1.4.2 with DOI [10.5281/zenodo.23513029](https://doi.org/10.5281/zenodo.23513029),
+Cite the software using the [concept DOI](https://doi.org/10.5281/zenodo.23509308),
 as listed in [`CITATION.cff`](CITATION.cff). The
 [concept DOI](https://doi.org/10.5281/zenodo.23509308) identifies the software across versions. The
 repository is distributed under the [MIT License](LICENSE). For reproducible
