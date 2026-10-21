@@ -146,8 +146,11 @@ atribui cada código a um papel do modelo:
 | **Mangrove** | Mangue presente no estado inicial | É a origem da migração |
 | **Natural vegetation** | Vegetação natural que pode acomodar mangue | Sim, se as demais regras permitirem |
 | **Water** | Água, canais, rios, estuários ou mar | Não como destino de migração |
-| **Anthropized / blocked** | Área construída, infraestrutura, praia, solo descoberto sem permissão ou qualquer barreira | Não |
+| **Anthropized area** | Área construída, infraestrutura e usos antrópicos | Não |
+| **Blocked area** | Área explicitamente bloqueada à migração; pode passar ao estado inundado | Não |
 | **Exclude** | NoData, borda inválida ou classe fora do domínio do estudo | Não participa |
+
+A versão 1.4.3 separa as categorias antropizada e bloqueada no seletor padrão. Projetos antigos com o rótulo `Anthropized / blocked` continuam sendo lidos como área antropizada. O perfil personalizado `Bare soil` continua permitindo migração; não foi renomeado internamente.
 
 O enquadramento depende da legenda do produto. Não atribua um papel apenas
 porque o código parece familiar. Confirme a legenda, consulte os metadados e
@@ -176,6 +179,7 @@ códigos sem atribuição e salva o modo escolhido no projeto.
 | **Natural vegetation** | Pode receber migração e passa ao estado de vegetação natural inundada quando inundada. |
 | **Bare soil** | Pode receber migração e passa ao estado de solo descoberto inundado quando inundado. |
 | **Anthropized area** | Permanece bloqueada para migração e pode passar ao estado antropizado inundado. |
+| **Blocked area** | Não recebe migração; mantém uma categoria própria e pode passar ao estado de área bloqueada inundada. |
 | **Water body** | Atua como fonte das regras de fluxo e inundação e não recebe conversão por essas regras. |
 
 O nome, a cor e o perfil ficam gravados no projeto e nos metadados. Quando uma
@@ -194,7 +198,8 @@ O Studio também registra estados derivados durante a simulação:
 | Mangrove | Mangue presente no início ou preservado |
 | Natural vegetation | Vegetação natural ainda não convertida |
 | Water | Água |
-| Anthropized / blocked | Área antropizada ou bloqueada |
+| Anthropized area | Área antropizada |
+| Blocked area | Área bloqueada |
 | Bare soil | Solo descoberto, quando mantido como estado separado |
 | Flooded bare soil | Solo descoberto inundado |
 | Flooded anthropized / blocked | Área bloqueada inundada |
@@ -210,7 +215,7 @@ códigos detalhados continuam disponíveis nos GeoTIFFs e nas tabelas.
 
 Água deve ser mapeada para **Water**. Praia, areia e solo descoberto não são
 automaticamente água: se a hipótese do estudo é que essas áreas não podem
-receber mangue, associe-as a **Anthropized / blocked**. Se o produto e a
+receber mangue, associe-as a **Anthropized area**. Se o produto e a
 calibração justificarem que uma classe de solo descoberto pode acomodar
 mangue, ela pode ser usada como candidata, mas essa escolha precisa ser
 registrada no método do estudo.
@@ -389,7 +394,7 @@ clique em **Validate and load inputs**.
 Cada linha mostra um código do raster, o número de pixels e uma lista de
 papéis. Selecione o papel de acordo com a legenda do seu produto. Revise a
 lista antes de carregar: um código que deveria ser água associado a
-**Anthropized / blocked** altera completamente o cenário.
+**Anthropized area** altera completamente o cenário.
 
 Para criar uma categoria própria, use **Optional custom classes**. Digite o
 nome, selecione o **Behavior profile**, escolha uma cor e clique em **Add**. A

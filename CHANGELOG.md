@@ -12,8 +12,10 @@ All notable changes to BR-MANGUE Studio are recorded here.
   resolution previews; pad animation frames to prevent clipping.
 - Read saved raster previews directly and reuse a compact sampling lookup in
   live panels instead of allocating a full raster grid for each preview.
-- Expose Bare soil and Fixed class in the standard mapping interface and
-  batch project reader, preserving their existing behavior profiles.
+- Add a distinct Blocked area profile to standard GUI and batch mapping.
+  It prevents mangrove migration and retains a separate flooded state.
+  Rename the standard anthropized label to Anthropized area; older project
+  labels remain accepted. Bare-soil and fixed custom profiles are preserved.
 - Add a state-figure rebuilding utility that uses saved rasters without
   executing any model steps.
 

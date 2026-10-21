@@ -84,9 +84,8 @@ ROLE_LABELS = [
     "Mangrove",
     "Natural vegetation",
     "Water",
-    "Anthropized / blocked",
-    "Bare soil",
-    "Fixed class",
+    "Anthropized area",
+    "Blocked area",
 ]
 UNASSIGNED_ROLE = "Unassigned"
 ROLE_TO_MODEL = {
@@ -94,6 +93,8 @@ ROLE_TO_MODEL = {
     "Natural vegetation": "natural_accommodation_candidate",
     "Water": "water",
     "Anthropized / blocked": "managed_land_use_candidate",
+    "Anthropized area": "managed_land_use_candidate",
+    "Blocked area": "blocked",
     "Bare soil": "bare_soil",
     "Fixed class": "fixed",
 }
@@ -104,6 +105,7 @@ CUSTOM_BEHAVIOR_LABELS = {
     "natural_vegetation": "Natural vegetation",
     "bare_soil": "Bare soil",
     "anthropized": "Anthropized area",
+    "blocked": "Blocked area",
     "water": "Water body",
 }
 CHART_BEHAVIOR_COLORS = {
@@ -530,11 +532,9 @@ def _default_role(code: int) -> str:
         return "Water"
     if code in DEFAULT_LAND_COVER_MAPPING["natural_accommodation_candidate"]:
         return "Natural vegetation"
-    if code in DEFAULT_LAND_COVER_MAPPING["bare_soil"]:
-        return "Bare soil"
-    if code in DEFAULT_LAND_COVER_MAPPING["fixed"]:
-        return "Fixed class"
-    return "Anthropized / blocked"
+    if code in DEFAULT_LAND_COVER_MAPPING["blocked"]:
+        return "Blocked area"
+    return "Anthropized area"
 
 
 def _validate_class_assignments(
@@ -1573,6 +1573,8 @@ class BRMangueStudio(tk.Tk):
         )
 
     def _canonical_role(self, displayed_role: str) -> str:
+        if displayed_role in {"Anthropized / blocked", translate("Anthropized / blocked", "pt-BR")}:
+            return "Anthropized area"
         for role in [UNASSIGNED_ROLE, *ROLE_LABELS]:
             if displayed_role in {role, translate(role, "pt-BR")}:
                 return role
@@ -1584,6 +1586,8 @@ class BRMangueStudio(tk.Tk):
         return displayed_role
 
     def _display_role(self, role: str) -> str:
+        if role == "Anthropized / blocked":
+            role = "Anthropized area"
         if role.startswith("custom:"):
             try:
                 code = int(role.split(":", 1)[1])
@@ -3236,7 +3240,9 @@ class BRMangueStudio(tk.Tk):
             f"Active mangrove extent: {extent_text}\n"
             f"Flooded mangrove: {int(summary.get('flooded_mangrove', 0)):,}\n"
             f"Flooded natural vegetation: {int(summary.get('flooded_natural', 0)):,}\n"
-            f"Flooded anthropized / blocked: {int(summary.get('flooded_anthropized', 0)):,}\n"
+            f"Flooded anthropized area: {int(summary.get('flooded_anthropized', 0)):,}\n"
+            f"Blocked area: {int(summary.get('blocked', 0)):,}\n"
+            f"Flooded blocked area: {int(summary.get('flooded_blocked', 0)):,}\n"
             f"Gross annual gain: {gain:,} cells"
             + (f" ({float(gain_area):,.4f} km²)\n" if gain_area is not None else "\n")
             + f"Gross annual loss: {loss:,} cells"

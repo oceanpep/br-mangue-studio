@@ -21,7 +21,7 @@ Nesta versão, a interface já oferece:
   máscara e camada opcional de aptidão de mangue;
 - inspeção das classes numéricas e contagens do raster categórico;
 - associação interativa de cada código às classes Mangrove, Natural
-  vegetation, Water, Anthropized / blocked ou Exclude;
+  vegetation, Water, Anthropized area, Blocked area ou Exclude;
 - modo de mapeamento personalizado que começa sem atribuições, oculta as
   classes padrão e exige que cada código seja associado a uma classe criada
   pelo usuário ou explicitamente excluído;
