@@ -199,9 +199,8 @@ O Studio também registra estados derivados durante a simulação:
 | Water | Água |
 | Anthropized area | Área antropizada |
 | Blocked area | Área bloqueada |
-| Bare soil | Solo descoberto, quando mantido como estado separado |
-| Flooded bare soil | Solo descoberto inundado |
-| Flooded anthropized / blocked | Área bloqueada inundada |
+| Flooded Anthropized area | Área antropizada inundada |
+| Flooded Blocked area | Área bloqueada inundada |
 | Migrated mangrove | Célula convertida para mangue por migração; após o atraso de maturação, também pode propagar |
 | Flooded mangrove | Mangue atingido pela inundação |
 | Flooded natural vegetation | Vegetação natural inundada |
