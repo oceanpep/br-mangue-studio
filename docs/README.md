@@ -23,6 +23,10 @@ controlled continuous-versus-block comparison. The Linux Ilha pilot used the
 same inputs and settings for both engines and found no differences across its
 75 annual states; it is a computational check, not ecological validation.
 
+## Research datasets
+
+- [CMMA mangrove areas by municipality, 2025](../datasets/cmma_municipalities_2025/README.md): supplementary table S1 in XLSX and CSV, with state totals, study boundary, method and source provenance.
+
 ## Article and release
 
 - [`paper.md`](../paper.md): JOSS-format software paper draft
