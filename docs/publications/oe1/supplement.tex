@@ -1,0 +1,307 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[round,authoryear]{natbib}
+\usepackage{geometry}
+\geometry{margin=25mm}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,longtable,tabularx,array}
+\usepackage{enumitem}
+\usepackage{xurl}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue,
+  pdftitle={Suplemento técnico do OE1: especificação matemática e computacional do BR-MANGUE Studio},
+  pdfauthor={Felipe Martins Sousa; Denilson da Silva Bezerra; Sergio Souza Costa; Ricardo Luvizotto Santos}
+}
+\setlength{\parskip}{0.45em}
+\setlength{\parindent}{1.25cm}
+\setlength{\emergencystretch}{3em}
+\setlist{nosep,leftmargin=1.3cm}
+\renewcommand{\arraystretch}{1.16}
+\setlength{\tabcolsep}{3pt}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\title{\textbf{Suplemento técnico S1}\\[4pt]
+Especificação matemática e computacional do BR-MANGUE Studio}
+\author{Felipe Martins Sousa \and Denilson da Silva Bezerra \and Sergio Souza Costa \and Ricardo Luvizotto Santos\\
+\small Universidade Federal do Maranhão}
+\date{Versão de trabalho 0.1 \textbar\ 22 de outubro de 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Vinculação ao artigo.} Este documento acompanha o manuscrito do OE1 sobre o BR-MANGUE Studio. O suplemento descreve a implementação do motor celular da versão 1.4.4, identificada pelo DOI \href{https://doi.org/10.5281/zenodo.23527116}{10.5281/zenodo.23527116}. As equações específicas abaixo foram confrontadas com o código dessa versão. Não devem ser interpretadas como uma especificação de todas as versões históricas do BR-MANGUE.
+
+\section{Escopo, origem das regras e versão descrita}
+
+O BR-MANGUE Studio representa a paisagem em uma grade raster e atualiza, em passos anuais, estados de cobertura, elevação relativa e, quando ativado, perfis de solo. O autômato celular e a vizinhança local são conceitos estabelecidos na literatura \citep{wolfram1983,osullivan2001}. O antecedente brasileiro do modelo apresentou regras para simular elevação do nível do mar, inundação e migração de manguezais na Ilha do Maranhão \citep{bezerra2014}. A versão 1.4.4 mantém a linha conceitual, mas sua especificação é a implementação Python distribuída no repositório atual, e não uma reprodução literal do código ou das equações do artigo de 2014.
+
+O artigo principal apresenta a contribuição de software em extensão compatível com o formato JOSS. Este suplemento registra a notação completa, os cálculos, a sequência operacional e a procedência das expressões. A notação geral
+\[
+S_i^{t+1}=F(S_i^t,N_i^t,z_i^t,H_t,\ldots)
+\]
+é uma síntese escrita pelos autores para representar dependências do modelo; não é uma equação publicada por Bezerra et al. (2014), nem substitui as regras específicas definidas nas seções seguintes.
+
+\section{Grade, variáveis e estados}
+
+A grade contém um conjunto $\mathcal{V}$ de células válidas, determinado pelas máscaras e pelos valores NoData dos rasters alinhados. A vizinhança de Moore de uma célula $i$, denotada por $\mathcal{N}_i$, contém até oito células adjacentes, incluindo diagonais. Nas bordas, células ausentes são simplesmente omitidas; a grade não tem conexão circular.
+
+Para cada célula $i$ e passo anual $t$, sejam $c_i^t$ o estado de cobertura, $z_i^t$ a elevação relativa em metros e $u_i^t$ o perfil de solo, quando fornecido. A classe original do raster é associada a um comportamento do modelo. Os códigos numéricos de entrada são definidos no projeto do usuário. O catálogo de estados atribui códigos de saída aos estados derivados; esses códigos devem ser interpretados pelo campo \texttt{model\_state\_catalog} dos metadados da execução, nunca por uma tabela universal de números.
+
+\begin{longtable}{P{3.2cm}P{2.5cm}P{4.3cm}P{4.0cm}}
+\caption{Comportamentos reconhecidos e sua função nas regras da versão 1.4.4.}\\
+\toprule
+\textbf{Comportamento} & \textbf{Inunda?} & \textbf{Candidata à migração?} & \textbf{Regra principal}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Comportamento} & \textbf{Inunda?} & \textbf{Candidata à migração?} & \textbf{Regra principal}\\
+\midrule
+\endhead
+Mangue & Sim & Não & Estado original que fornece propágulos sem atraso; recebe acreção.\\
+Vegetação natural & Sim & Sim & Destino potencial da migração, condicionado por elevação e, conforme a configuração, solo.\\
+Solo descoberto & Sim & Sim & Perfil opcional de comportamento; não integra as cinco classes padrão da interface.\\
+Água & Não se aplica & Não & Estado-fonte para a propagação da inundação.\\
+Área antropizada & Sim & Não & Pode receber o estado inundado, mas não é destino de migração.\\
+Área bloqueada & Sim & Não & Não recebe mangue migrado; pode receber estado inundado.\\
+Classe fixa & Não & Não & Mantém seu estado e não participa da migração.\\
+\bottomrule
+\end{longtable}
+
+A interface padrão oferece mangue, vegetação natural, água, área antropizada e área bloqueada. Classes adicionais podem ser mapeadas para os comportamentos disponíveis. Solo descoberto continua existindo como comportamento opcional no esquema interno, embora não seja uma classe padrão nem apareça no seletor padrão. Cores são propriedades de apresentação; não alteram as transições.
+
+O catálogo cria um estado derivado inundado para cada classe cujo comportamento é inundável e um único estado \textit{Mangue migrado} se houver ao menos uma classe com comportamento mangue. Os códigos derivados são alocados acima do maior código de entrada. O comportamento \textit{área bloqueada} impede a colonização, enquanto a classe fixa não é convertida por inundação. Estados inundados preservam o comportamento e a classe-base de origem no catálogo.
+
+\section{Forçante de nível do mar}
+
+Seja $H_t$ a mudança acumulada do nível do mar desde o ano inicial da simulação e $\delta H_t$ o incremento no passo anual $t$. Na opção de taxa constante, com taxa $r$ em metros por ano:
+\begin{align}
+H_t &= t r, \label{eq:constant-cumulative}\\
+\delta H_t &= 
+\begin{cases}
+0, & t=0,\\
+r, & t\geq 1.
+\end{cases} \label{eq:constant-increment}
+\end{align}
+A unidade temporal é anual. A taxa constante não varia dentro da simulação.
+
+Na opção de trajetória, o arquivo fornece amostras $(y_k,L_k)$, em que $y_k$ é o ano-calendário e $L_k$ é o nível acumulado em milímetros em relação a uma referência comum. Entre dois anos amostrados consecutivos, o nível é obtido por interpolação linear:
+\begin{equation}
+L(y)=L_k+
+\frac{y-y_k}{y_{k+1}-y_k}(L_{k+1}-L_k),
+\quad y_k\leq y\leq y_{k+1}.
+\label{eq:linear-interpolation}
+\end{equation}
+Para ano inicial $y_0$, a mudança acumulada e o incremento anual usados pelo motor são
+\begin{align}
+H_t &= \frac{L(y_0+t)-L(y_0)}{1000}, \label{eq:trajectory-cumulative}\\
+\delta H_t &= \frac{L(y_0+t)-L(y_0+t-1)}{1000}. \label{eq:trajectory-increment}
+\end{align}
+Assim, $H_t$ e $\delta H_t$ estão em metros. A subtração de $L(y_0)$ redefine a condição inicial da simulação como zero sem alterar as diferenças anuais da trajetória. O carregador exige anos inteiros, únicos e em ordem crescente, níveis finitos e cobertura temporal até o último ano solicitado; não extrapola além do arquivo. A interpolação e a normalização são escolhas de implementação do Studio, não uma projeção climática própria.
+
+\section{Zona de influência e regra de inundação}
+
+Seja $T$ a altura de maré configurada, em metros e referida ao mesmo datum vertical das elevações. A zona de influência usada para avaliar migração é:
+\begin{equation}
+Z_t=T+H_t.
+\label{eq:tidal-zone}
+\end{equation}
+A compatibilidade do datum vertical entre MDE, altura de maré e referência do nível do mar é uma condição dos dados de entrada. A reprojeção horizontal de um raster não converte, por si só, seu datum vertical.
+
+A inundação é propagada a partir de células cujo estado no início do passo é água ou inundado e cuja elevação anterior é não negativa. Para cada célula-fonte $i$, definem-se as vizinhas válidas de menor elevação:
+\begin{equation}
+\mathcal{L}_i^t=\{j\in\mathcal{N}_i:
+z_j^t<z_i^t\}.
+\label{eq:lower-neighbors}
+\end{equation}
+O incremento anual é dividido igualmente entre a célula-fonte e essas vizinhas:
+\begin{equation}
+q_i^t=\frac{\delta H_t}{1+|\mathcal{L}_i^t|}.
+\label{eq:local-increment}
+\end{equation}
+O motor soma $q_i^t$ à elevação corrente da célula-fonte e de cada célula em $\mathcal{L}_i^t$. Uma célula vizinha que ainda não era água ou inundada é convertida ao estado inundado correspondente à sua classe-base, se esse estado existir no catálogo.
+
+A regra é local e determinística. Ela não resolve uma superfície hidráulica, não representa salinidade e não constitui balanço hidrodinâmico de massa ou fluxo sedimentar. Uma célula pode receber contribuições de mais de uma fonte no mesmo passo. As relações de menor elevação são avaliadas com as elevações do início do passo, enquanto as contribuições são somadas nas elevações correntes. Um estado inundado persiste: a implementação não define uma transição de drenagem para o estado original.
+
+\subsection{Diferença em relação às equações publicadas do modelo antecedente}
+
+Bezerra et al. (2014) apresentaram, para a versão conceitual antecedente, as expressões
+\begin{align}
+\mathrm{SLR} &= w_c + (t\,i), \label{eq:legacy-slr}\\
+\mathrm{Flux} &= \frac{\mathrm{SLR}}{N_{\mathrm{viz}}}, \label{eq:legacy-flux}
+\end{align}
+em que $w_c$ representa a coluna d'água na célula-fonte, $t$ o passo de elevação, $i$ o incremento configurado e $N_{\mathrm{viz}}$ o número de células vizinhas considerado. Essas expressões são citadas como antecedentes publicados, não como a matemática executada na versão 1.4.4.
+
+Na versão atual, a forçante é expressa como incremento anual global constante ou como trajetória anual; a distribuição local usa somente vizinhas de menor elevação e divide o incremento entre essas vizinhas e a própria fonte, conforme a Equação~\ref{eq:local-increment}. Portanto, a Equação~\ref{eq:local-increment} deve ser atribuída à implementação atual do BR-MANGUE Studio, mantendo a continuidade conceitual com o fluxo local descrito por Bezerra et al. (2014), mas sem apresentá-la como transcrição literal daquela publicação.
+
+\section{Acreção vertical}
+
+O usuário pode informar uma taxa constante $A$ em milímetros por ano. Nessa configuração, $A_t=A$. Se o parâmetro estiver vazio, o motor usa a regressão apresentada por Alongi (2008, Fig.~7), que relaciona taxas observadas de acreção em manguezais e taxas regionais de elevação média do nível do mar:
+\begin{equation}
+A_t=1.693+0.939\,x_t,
+\label{eq:alongi}
+\end{equation}
+em que $x_t=1000\,\delta H_t$ é o incremento anual convertido para milímetros por ano e $A_t$ também está em milímetros por ano. Alongi apresenta o ajuste com $R^2=0.704$ e $p<0.001$ a partir de 15 pares de observações compilados de diferentes manguezais. A expressão é uma regressão empírica global; não é uma lei de conservação sedimentar nem uma calibração para cada local.
+
+A conversão aplicada à elevação, em metros, é
+\begin{equation}
+\Delta z_{i,\mathrm{acc}}^t=\frac{A_t}{1000}.
+\label{eq:accretion-conversion}
+\end{equation}
+Na configuração corrente, a acreção é aplicada a estados com comportamento mangue, incluindo mangue original, mangue inundado e mangue migrado. Uma opção de compatibilidade histórica restringe a aplicação ao perfil de solo de mangue; essa opção não é o padrão da versão 1.4.4. Se um estudo informar uma taxa fixa, ela deve ser identificada como parâmetro daquele estudo e não como taxa universal do software. A aplicação à CMMA, por exemplo, pode usar taxa fixa definida no protocolo do artigo de aplicação; esse valor não altera a Equação~\ref{eq:alongi} nem representa o padrão intrínseco do modelo.
+
+\section{Migração e maturação}
+
+Seja $\mathcal{C}_{\mathrm{cand}}$ o conjunto de códigos de classes-base mapeados como vegetação natural ou solo descoberto. Uma célula candidata $j$ é elegível quando sua elevação corrente não excede $Z_t$ e a condição de solo está satisfeita:
+\begin{equation}
+E_j^t=
+\mathbf{1}[c_j^{\mathrm{visita},t}\in\mathcal{C}_{\mathrm{cand}}]
+\mathbf{1}[z_j^{\mathrm{visita},t}\leq Z_t]
+\mathbf{1}[Q_j^{\mathrm{visita},t}],
+\label{eq:migration-eligibility}
+\end{equation}
+em que os sobrescritos \textit{visita} denotam os valores correntes no instante em que a célula vizinha é avaliada no percurso anual. $Q_j^{\mathrm{visita},t}=1$ quando a migração sem solo está habilitada ou, caso contrário, quando o perfil de solo é solo de mangue ou solo de mangue migrado. Estados derivados inundados não pertencem a $\mathcal{C}_{\mathrm{cand}}$. A classe fixa, água, área antropizada e área bloqueada não são candidatas. A condição de bloqueio é explícita: o perfil \textit{área bloqueada} não recebe mangue migrado.
+
+Mangue original é fonte quando ainda está no estado-base no instante em que a célula é visitada. Mangue migrado torna-se fonte após atingir a maturação configurada. Seja $\tilde a_i^t$ a idade usada no teste de fonte e $a_i^t$ a idade persistida após o passo:
+\begin{equation}
+\tilde a_i^t=
+\begin{cases}
+ a_i^{t-1}+1, & \text{se } i \text{ já era mangue migrado no início do passo},\\
+ -1, & \text{nos demais casos}.
+\end{cases}
+\label{eq:maturity-counter}
+\end{equation}
+Quando uma célula é convertida durante o passo, sua idade persistida é definida como zero; a idade usada no teste de fonte durante aquele mesmo passo permanece $-1$. A condição de fonte, avaliada com o estado corrente no instante da visita, é
+\begin{equation}
+P_i^t=\mathbf{1}[c_i^{\mathrm{visita},t}=\mathrm{mangue\ original}]
+\;\lor\;
+\left(\mathbf{1}[c_i^{\mathrm{visita},t}=\mathrm{mangue\ migrado}]
+\mathbf{1}[\tilde a_i^t\geq M]\right),
+\label{eq:migration-source}
+\end{equation}
+onde $M$ é \texttt{migration\_maturity\_years}. Se $P_i^t=1$, uma vizinha elegível muda para o estado único \textit{Mangue migrado} e recebe $a_j=0$. Uma célula que já mudou para o estado inundado de mangue não integra o conjunto de fontes de migração. O atraso padrão é de três passos anuais. Com $M=0$, a célula recém-convertida ainda não encadeia uma nova conversão no mesmo passo, pois a idade usada no teste permanece abaixo do limiar durante o ano em que a conversão ocorreu.
+
+O contador de idade é interno e não é uma banda do raster anual de cobertura. A regra não diferencia espécies, recrutamento, mortalidade ou transporte de propágulos. O estudo de Dangremond e Feller (2016) encontrou variação latitudinal na idade de reprodução de \textit{Rhizophora mangle}, incluindo indivíduos reprodutivos aos dois anos na população setentrional estudada. Essa evidência sustenta tratar maturação como parâmetro variável, mas não calibra o padrão de três anos para todas as regiões.
+
+\subsection{Propagação do perfil de solo}
+
+Quando os dados de solo estão ativos, o código atualiza perfis elegíveis separadamente da mudança da cobertura. Os códigos internos de perfil são: canal ($0$), solo de mangue ($3$) e solo de mangue migrado ($9$); esses códigos não são códigos universais do raster de uso e cobertura. Uma célula com perfil de solo de mangue ou canal pode atribuir o perfil de solo de mangue migrado às vizinhas candidatas com elevação até $Z_t$, exceto às que já têm solo de mangue. Uma célula migrada madura com perfil de solo de mangue migrado também pode propagar esse perfil. Se a opção de migração sem solo estiver ativada, o filtro de solo para colonização é ignorado; as regras de vizinhança, comportamento e elevação continuam ativas.
+
+\section{Ordem de atualização anual}
+
+A sequência que define o resultado é a seguinte:
+\begin{enumerate}
+\item O motor preserva instantâneos do estado, da elevação e da idade de migração do início do passo.
+\item Calcula $H_t$, $\delta H_t$, $Z_t$ e a taxa de acreção.
+\item Percorre as células válidas na ordem linear armazenada. A inundação identifica fontes e vizinhas usando estados e elevações do início do passo; as elevações correntes recebem as contribuições locais e as classes inundáveis são convertidas.
+\item Atualiza os perfis de solo e testa a migração usando os estados, perfis e elevações correntes no momento da avaliação.
+\item Aplica a acreção às células que satisfazem o comportamento definido para essa regra.
+\item Registra a contagem de estados, a elevação mínima e máxima e as métricas de transição. O estado resultante passa a ser o instantâneo do passo seguinte.
+\end{enumerate}
+
+A implementação combina instantâneos do início do ano para a regra de inundação com alterações sequenciais nas regras de solo, migração e acreção. Portanto, sua especificação operacional inclui a ordem de percurso das células; não é uma atualização simultânea abstrata de todas as variáveis. Os modos contínuo e em blocos percorrem as mesmas células na mesma ordem e aplicam as mesmas regras. O modo em blocos usa arquivos persistentes mapeados em memória para armazenar estados, sem alterar a regra celular.
+
+\section{Métricas e arquivos de saída}
+
+A métrica \texttt{mangrove\_extent} da implementação conta mangue original não inundado e mangue migrado. Definindo o conjunto de células contadas por $\mathcal{M}_t$, sua cardinalidade é:
+\begin{align}
+\mathcal{M}_t&=\{i\in\mathcal{V}: c_i^t
+\text{ é mangue original ou mangue migrado}\},\\
+M_t&=|\mathcal{M}_t|.
+\label{eq:extent}
+\end{align}
+O estado \textit{Mangue inundado} aparece como contagem própria e não integra $M_t$. Por isso, o manuscrito e as tabelas devem manter separados mangue não inundado, mangue inundado e mangue migrado.
+
+As métricas anuais de ganho e perda são:
+\begin{align}
+G_t &= \sum_{i\in\mathcal{V}}
+\mathbf{1}[i\notin\mathcal{M}_{t-1}]\mathbf{1}[i\in\mathcal{M}_t],\\
+L_t &= \sum_{i\in\mathcal{V}}
+\mathbf{1}[i\in\mathcal{M}_{t-1}]\mathbf{1}[i\notin\mathcal{M}_t],\\
+\Delta M_t &= G_t-L_t.
+\end{align}
+Quando a área do pixel é conhecida, a área em quilômetros quadrados é a contagem correspondente multiplicada pela área real do pixel. O número de atualizações celulares da execução é $U=N\,T$, com $N=|\mathcal{V}|$ células válidas e $T$ passos anuais; a vazão registrada é $U$ dividido pelo tempo medido no escopo indicado nos metadados. Cada execução também salva o catálogo de estados, os parâmetros e a forçante de nível do mar nos metadados, além dos rasters e tabelas selecionados pelo usuário.
+
+\section{Procedência das expressões}
+
+\begin{longtable}{P{3.4cm}P{3.6cm}P{3.8cm}P{3.6cm}}
+\caption{Classificação da origem das principais expressões e regras.}\\
+\toprule
+\textbf{Regra} & \textbf{Origem} & \textbf{Uso na 1.4.4} & \textbf{Atribuição}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Regra} & \textbf{Origem} & \textbf{Uso na 1.4.4} & \textbf{Atribuição}\\
+\midrule
+\endhead
+Autômato celular e atualização local & Conceito clássico da modelagem discreta & Grade, estados e vizinhança de Moore & Wolfram (1983); O'Sullivan (2001).\\
+\eqref{eq:legacy-slr}--\eqref{eq:legacy-flux} & Publicada para o modelo antecedente & Apresentadas para comparação histórica; não são executadas literalmente pelo motor atual & Bezerra et al. (2014).\\
+\eqref{eq:alongi} & Regressão empírica publicada & Opção padrão de acreção quando não se fornece taxa fixa; usa o incremento anual & Alongi (2008), Fig. 7; $R^2=0.704$, $p<0.001$.\\
+\eqref{eq:constant-cumulative}--\eqref{eq:trajectory-increment} & Formalização do tratamento de entrada no software & Taxa constante ou interpolação linear de um arquivo anual, rebaseada ao ano inicial & Regra de implementação; código da versão 1.4.4.\\
+\eqref{eq:local-increment} & Regra implementada no BR-MANGUE Studio & Divide o incremento anual entre fonte e vizinhas válidas de menor elevação & Regra do software; não atribuir como equação literal de Bezerra et al. (2014).\\
+\eqref{eq:migration-eligibility}--\eqref{eq:maturity-counter} & Regras implementadas no BR-MANGUE Studio & Mapeamento comportamental, filtro de elevação/solo e atraso configurável & Regra do software; evidência biológica contextual em Dangremond e Feller (2016), sem derivação do limiar de três anos.\\
+\eqref{eq:extent} e métricas anuais & Definições de saída do código & Extensão não inundada mais migrada; inundada contabilizada separadamente & Definição operacional do software; deve ser explicitada na aplicação.\\
+\bottomrule
+\end{longtable}
+
+\section{Escopo e leitura das projeções}
+
+O motor espacializa regras de transição a partir de rasters, uma vizinhança e parâmetros explícitos. A taxa constante ou a trajetória anual define a forçante de nível do mar; altura de maré, elevação, perfis de classe e dados de solo definem condições de transição. Os resultados dependem dessas entradas e da versão executada. A grade raster não contém, por si só, uma solução de hidrodinâmica, transporte sedimentar, salinidade, dinâmica de propágulos ou resposta por espécie.
+
+Para reproduzir uma execução, arquivam-se a versão/DOI do software, os rasters e suas referências horizontal e vertical, o catálogo de classes, os valores de maré e acreção, o atraso de maturação, a opção de solo, a forçante de nível do mar e os metadados gerados. A transformação do datum vertical não é feita pelo motor; as elevações e o limiar de maré precisam estar em referências verticais compatíveis antes da simulação.
+
+\section{Arquivos-fonte e citação da versão}
+
+A fonte das regras está nos módulos \url{src/brmangue_lua/engine.py}, \url{src/brmangue_lua/persistent_blocks.py}, \url{src/brmangue_lua/model_states.py} e \url{src/brmangue_lua/sea_level.py}. A especificação deste suplemento está fixada na versão 1.4.4. Releases posteriores podem alterar regras ou métricas e devem ser acompanhados por atualização versionada deste documento.
+
+A versão 1.4.4 pode ser citada pelo DOI \url{https://doi.org/10.5281/zenodo.23527116}.
+
+O DOI conceitual, que identifica o software através das versões, é \url{https://doi.org/10.5281/zenodo.23509308}.
+
+O código-fonte público está em \href{https://github.com/oceanpep/br-mangue-studio}{github.com/oceanpep/br-mangue-studio}.
+
+\begin{thebibliography}{99}
+\bibitem[Alongi(2008)]{alongi2008}
+Alongi, D. M. (2008).
+Mangrove forests: Resilience, protection from tsunamis, and responses to global climate change.
+\textit{Estuarine, Coastal and Shelf Science}, 76(1), 1--13.
+\url{https://doi.org/10.1016/j.ecss.2007.08.024}
+
+\bibitem[Bezerra et~al.(2014)]{bezerra2014}
+Bezerra, D. da S., Amaral, S., Kampel, M., \& Andrade, P. R. (2014).
+Simulating sea-level rise impacts on mangrove ecosystem adjacent to anthropic areas: The case of Maranhão Island, Brazilian Northeast.
+\textit{Pan-American Journal of Aquatic Sciences}, 9(3), 188--198.
+\url{https://panamjas.org/pdf_artigos/PANAMJAS_9(3)_188-198.pdf}
+
+\bibitem[Dangremond and Feller(2016)]{dangremond2016}
+Dangremond, E. M., \& Feller, I. C. (2016).
+Precocious reproduction increases at the leading edge of a mangrove range expansion.
+\textit{Ecology and Evolution}, 6(14), 5087--5092.
+\url{https://doi.org/10.1002/ece3.2270}
+
+\bibitem[O'Sullivan(2001)]{osullivan2001}
+O'Sullivan, D. (2001).
+Exploring spatial process dynamics using irregular cellular automaton models.
+\textit{Geographical Analysis}, 33(1), 1--18.
+\url{https://doi.org/10.1111/j.1538-4632.2001.tb00433.x}
+
+\bibitem[Wolfram(1983)]{wolfram1983}
+Wolfram, S. (1983).
+Statistical mechanics of cellular automata.
+\textit{Reviews of Modern Physics}, 55(3), 601--644.
+\url{https://doi.org/10.1103/RevModPhys.55.601}
+
+\bibitem[BR-MANGUE Studio(2026)]{brmangue144}
+Sousa, F. M., Bezerra, D. da S., Costa, S. S., \& Santos, R. L. (2026).
+\textit{BR-MANGUE Studio} (versão 1.4.4) [software].
+\url{https://doi.org/10.5281/zenodo.23527116}
+\end{thebibliography}
+
+\end{document}
