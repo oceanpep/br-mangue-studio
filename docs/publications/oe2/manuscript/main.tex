@@ -88,6 +88,8 @@ O inventário utiliza a Malha Municipal Digital 2025 do IBGE \citep{ibge2025}. A
 
 Os 20 códigos MapBiomas são agrupados em manguezal (5), vegetação natural (3, 4, 6, 11, 12 e 50), água (33), área antropizada (9, 15, 21, 24, 25, 30, 31, 35, 39 e 41) e área bloqueada (23 e 32: praia, duna e areal; apicum). Áreas antropizadas e bloqueadas não recebem migração. Estados inundados das classes terrestres e o mangue migrado completam os dez estados possíveis. A correspondência entre códigos de entrada e classes do modelo está no Material Suplementar S1, Seção S2, Tabela S2.
 
+Esta versão não reproduz literalmente as regras da aplicação de 2014. Naquele modelo, cada célula tinha atributos de classe de solo, altitude e altura da maré; a área sob influência da maré começava em 6 m e se ampliava a cada um dos dez incrementos de elevação, de 0,1 m. O mangue podia avançar para células vizinhas de vegetação terrestre dentro dessa área, desde que não houvesse barreira: uso antrópico, praia, altitude acima do limite mareal ou solo diferente do solo indiscriminado de mangue. A inundação se propagava de células de água para vizinhas de menor cota, convertendo as classes alcançadas. Na configuração atual, a migração é restrita à vegetação natural elegível por $T+L_t$, com $T=3,01$ m e sem mapa de aptidão do solo; as classes antropizadas e bloqueadas impedem a colonização. A elevação varia em passos anuais segundo trajetórias do IPCC. Diferentemente dos dez incrementos fixos de 2014, cada incremento anual é repartido entre a célula de água ou inundada e seus vizinhos de menor cota. O motor também incorpora idade funcional de três anos para células migradas e acreção uniforme definida como parâmetro. As regras atuais de inundação, migração e acreção são descritas a seguir e no Material Suplementar S1, Seção S2 \citep{bezerra2014,studio2026}.
+
 A aptidão do solo é desativada pela ausência de base validada para essa finalidade. A migração em vegetação natural depende de vizinhança e limite altimétrico. O código 33 reúne rios, lagos e oceano, sem separação por salinidade ou conexão mareal.
 
 A implementação arquivada \citep{studio2026} utiliza cópias dos estados, elevações e idades do início do ano para propagar a inundação. Cada célula de água ou inundada com elevação não negativa reparte o incremento anual do nível do mar entre si e seus vizinhos de menor elevação. Esses vizinhos recebem o acréscimo e, quando possuem classe básica com transição disponível, passam ao estado inundado correspondente. A regra e as variáveis estão detalhadas no Material Suplementar S1, Seção S2, Equação S1.
@@ -181,7 +183,7 @@ Variação líquida & $-$755,7 & $-$877,0 & $-$1.061,5\\
 Variação relativa (\%) & $-$11,18 & $-$12,98 & $-$15,70\\
 \bottomrule
 \end{tabularx}
-\fonte{Fonte: saídas conferidas das três simulações.}
+\ifdefined\VersaoCega\fonte{Fonte: resultados do modelo.}\else\fonte{Fonte: resultados do modelo BR-MANGUE Studio.}\fi
 \end{table}
 
 A migração compensa 43,38\%, 41,21\% e 38,55\% da área inundada em SSP1-2.6, SSP2-4.5 e SSP5-8.5, respectivamente. A maior expansão no SSP5-8.5 coincide, portanto, com menor compensação proporcional e maior perda líquida.
@@ -234,6 +236,15 @@ A configuração mantém os usos de 2025, sem simular urbanização, abandono ou
 \subsection{Relação com estudos anteriores da CMMA}
 Tomaz et al.\ \citeyearpar{tomaz2019} delimitam a aplicação à porção maranhense da CMMA, identificada como Reentrâncias Maranhenses (seção de área de estudo e Figura 1). Nesse recorte, estimam expansão líquida de 7,2\% entre 2010 e 2100 com taxa constante de 3,18 mm ano$^{-1}$. O presente estudo abrange setores do Pará e Maranhão e utiliza outras condições iniciais, bases altimétricas, regras e forçantes. A diferença de sinal entre os balanços não constitui uma comparação controlada: envolve domínios espaciais distintos, além de diferenças metodológicas. Não se pode atribuí-la isoladamente ao cenário climático ou à versão do modelo.
 
+\ifdefined\VersaoCega
+As aplicações anteriores do modelo registram áreas e grades menores.
+\else
+As aplicações anteriores do BR-MANGUE registram áreas e grades menores.
+\fi
+\ifdefined\VersaoCega A aplicação de 2014 na Ilha do Maranhão utilizou 94.704 células de 100 m.\else Bezerra et al. (2014) utilizaram 94.704 células de 100 m na Ilha do Maranhão.\fi\space Tomaz et al. (2019) estudaram a porção maranhense da CMMA. Estudos de processamento paralelo avaliaram espaços celulares de até 3.648.064 células \citep{jesus2018} e 1.318.592 células \citep{carreiro2022}; esses totais descrevem os tamanhos de grade testados e não equivalem à área contínua da CMMA.
+\ifdefined\VersaoCega Nesta aplicação, o modelo processou 77.061.011 células válidas de 30 m no recorte operacional contínuo entre Pará e Maranhão.\else Nesta aplicação, o BR-MANGUE Studio processou 77.061.011 células válidas de 30 m no recorte operacional contínuo entre Pará e Maranhão.\fi\space
+Entre as aplicações do modelo identificadas na literatura consultada, este é o maior domínio geográfico documentado e a grade de maior resolução: o total de células é cerca de 21 vezes o maior espaço celular reportado \ifdefined\VersaoCega em um estudo paralelo de 2018.\else por Jesus et al. (2018).\fi\space A comparação de contagens não constitui teste controlado de desempenho, pois diferem domínio, dados, hardware e implementação; ela documenta um avanço de escala espacial viabilizado pela versão atual da implementação \citep{bezerra2014,tomaz2019,jesus2018,carreiro2022}.
+
 Mapeamentos anteriores documentam a reorganização dos manguezais amazônicos \citep{cohen2003,cohen2018,nascimento2013,souzafilho2005}, mas suas datas, sensores e classificações impedem comparação direta dos totais com 2025. A aplicação compara três trajetórias com dados atualizados e contabiliza separadamente permanência, inundação e migração.
 
 \subsection{Condicionantes da interpretação}
@@ -274,6 +285,14 @@ REFERÊNCIA ANONIMIZADA. Estudo de autômatos celulares em manguezais da Ilha do
 \else
 \bibitem[Bezerra et~al.(2014)]{bezerra2014}
 BEZERRA, D. da S. et al. Simulating sea-level rise impacts on mangrove ecosystem adjacent to anthropic areas: the case of Maranhão Island, Brazilian Northeast. \textbf{Pan-American Journal of Aquatic Sciences}, v. 9, n. 3, p. 188--198, 2014. Disponível em: \url{https://panamjas.org/pdf_artigos/PANAMJAS_9%283%29_188-198.pdf}.
+\fi
+
+\ifdefined\VersaoCega
+\bibitem[Estudo computacional(2022)]{carreiro2022}
+REFERÊNCIA ANONIMIZADA. Estudo de processamento paralelo do BR-MANGUE, 2022. Dados bibliográficos omitidos para avaliação cega.
+\else
+\bibitem[Carreiro Filho et~al.(2022)]{carreiro2022}
+CARREIRO FILHO, F. B.; BORGES, H. P.; CORTES, O. A. C. Paralelização eficiente na simulação da elevação do nível do mar em áreas de Reentrâncias Maranhenses. In: ESCOLA REGIONAL DE COMPUTAÇÃO DO CEARÁ, MARANHÃO E PIAUÍ, 10., 2022. \textbf{Anais [...]} Porto Alegre: Sociedade Brasileira de Computação, 2022. p. 99--108. DOI: \url{https://doi.org/10.5753/ercemapi.2022.225980}.
 \fi
 
 \bibitem[Centro de Hidrografia da Marinha(2001)]{chm2001}
@@ -317,6 +336,14 @@ IBGE. \textbf{Malha Municipal Digital 2025: Pará e Maranhão}. Rio de Janeiro: 
 
 \bibitem[IBGE(2025b)]{ibgebc}
 IBGE. \textbf{Base Cartográfica Contínua do Brasil, escala 1:250.000}. Versão 2025. Rio de Janeiro: IBGE, 2025b. Disponível em: \url{https://geoftp.ibge.gov.br/cartas_e_mapas/bases_cartograficas_continuas/bc250/versao2025/}.
+
+\ifdefined\VersaoCega
+\bibitem[Estudo computacional(2018)]{jesus2018}
+REFERÊNCIA ANONIMIZADA. Aplicação paralela de autômatos celulares à elevação do nível do mar, 2018. Dados bibliográficos omitidos para avaliação cega.
+\else
+\bibitem[Jesus et~al.(2018)]{jesus2018}
+JESUS, E. M. de; SANTOS, A. L. S. dos; CORTES, O. A. C.; BORGES, H. P. Aplicação de autômatos celulares paralelos para simulação do impacto causado pela elevação do nível do mar. In: SIMPÓSIO DE SISTEMAS COMPUTACIONAIS DE ALTO DESEMPENHO (WSCAD), 19.; WORKSHOP DE INICIAÇÃO CIENTÍFICA (WIC), 2018, São Paulo. \textbf{Anais [...]} 2018. p. 538--543.
+\fi
 
 \bibitem[Karney(s.d.)]{karney}
 KARNEY, C. F. F. \textbf{GeographicLib: GeoidEval}. Documentação do cálculo de alturas geoidais. [S. l.], [s. d.]. Disponível em: \url{https://geographiclib.sourceforge.io/html/GeoidEval.1.html}.
