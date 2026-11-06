@@ -35,7 +35,7 @@ def test_legend_uses_full_raster_presence_not_preview_sampling(tmp_path: Path) -
     assert 3 not in result["legend_codes"]
 
 
-def test_standard_bare_soil_and_fixed_profiles_are_distinct() -> None:
+def test_legacy_bare_soil_profile_is_now_blocked() -> None:
     values, _, catalog = _map_land_cover_classes(
         np.array([5, 23, 33, 50, 24, 99]),
         {"mangrove": [5], "bare_soil": [23], "water": [33],
@@ -43,7 +43,7 @@ def test_standard_bare_soil_and_fixed_profiles_are_distinct() -> None:
          "fixed": [99]}, {}, [],
     )
     profiles = [catalog["states"][str(int(value))]["behavior"] for value in values]
-    assert profiles == ["mangrove", "bare_soil", "water", "natural_vegetation", "anthropized", "fixed"]
+    assert profiles == ["mangrove", "blocked", "water", "migration_candidate", "anthropized", "fixed"]
 
 
 def test_compact_preview_matches_full_raster_sampling() -> None:

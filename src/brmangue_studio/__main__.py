@@ -48,6 +48,7 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
     elevation_path = _resolve_input(project_dir, inputs_config.get("elevation"))
     mask_path = _resolve_input(project_dir, inputs_config.get("mask"))
     soil_path = _resolve_input(project_dir, inputs_config.get("soil"))
+    source_legend_path = _resolve_input(project_dir, inputs_config.get("source_class_legend"))
     if land_cover_path is None or elevation_path is None:
         raise ValueError("The project must define land-cover and elevation rasters.")
 
@@ -57,12 +58,14 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
     roles = {int(code): role for code, role in config.get("class_roles", {}).items()}
     role_to_mapping = {
         "Mangrove": "mangrove",
+        "Suitable for migration": "natural_accommodation_candidate",
         "Natural vegetation": "natural_accommodation_candidate",
+        "Apta para migração": "natural_accommodation_candidate",
         "Water": "water",
         "Anthropized / blocked": "managed_land_use_candidate",
         "Anthropized area": "managed_land_use_candidate",
         "Blocked area": "blocked",
-        "Bare soil": "bare_soil",
+        "Bare soil": "blocked",
         "Fixed class": "fixed",
     }
     for code, role in roles.items():
@@ -104,6 +107,7 @@ def _run_batch(project_path: Path, output_dir: Path | None = None) -> int:
         custom_classes=custom_classes,
         class_mapping_mode=config.get("class_mapping_mode", "standard"),
         exclude_source_codes=excluded,
+        source_legend_path=source_legend_path,
     )
     _validate_class_coverage(
         roles,

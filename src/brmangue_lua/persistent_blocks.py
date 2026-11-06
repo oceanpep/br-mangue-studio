@@ -174,13 +174,20 @@ class PersistentBlockRunner:
         result["max_elevation"] = float(np.nanmax(elevation))
         return result
 
-    def _apply_flooding(self, current_states: np.memmap, previous_states: np.memmap, index: int) -> None:
+    def _apply_flooding(
+        self,
+        current_states: np.memmap,
+        previous_states: np.memmap,
+        migration_age: np.memmap,
+        index: int,
+    ) -> None:
         previous_code = int(previous_states[index])
-        if state_kind(self.model_state_catalog, previous_code) != "class":
+        if state_kind(self.model_state_catalog, previous_code) not in {"class", "migrated"}:
             return
         target_code = flooded_state_code(self.model_state_catalog, previous_code)
         if target_code is not None:
             current_states[index] = target_code
+            migration_age[index] = -1
 
     def step(self, time_index: int, parameters: ModelParameters) -> dict[str, int | float]:
         """Apply one transition while preserving the shared previous-state snapshot."""
@@ -211,7 +218,11 @@ class PersistentBlockRunner:
         for block_start in range(0, self.n_cells, self.block_size):
             block_stop = min(block_start + self.block_size, self.n_cells)
             for index in range(block_start, block_stop):
-                if migrated_code is not None and int(previous_states[index]) == migrated_code:
+                if (
+                    migrated_code is not None
+                    and int(previous_states[index]) == migrated_code
+                    and int(states[index]) == migrated_code
+                ):
                     age = min(int(previous_migration_age[index]) + 1, np.iinfo(np.int16).max)
                     migration_age[index] = age
                 elif migrated_code is not None and int(states[index]) == migrated_code:
@@ -231,7 +242,7 @@ class PersistentBlockRunner:
                     for neighbor in lower_neighbors:
                         elevation[neighbor] += flow
                         if not is_sea_or_flooded(int(previous_states[neighbor]), self.model_state_catalog):
-                            self._apply_flooding(states, previous_states, neighbor)
+                            self._apply_flooding(states, previous_states, migration_age, neighbor)
 
                 soil_source = int(soil[index]) in (
                     SOIL_PROFILE_CODES["mangrove_soil"],

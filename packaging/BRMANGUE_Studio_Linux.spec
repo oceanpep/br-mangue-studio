@@ -28,6 +28,7 @@ datas = [
     (str(source_root / "brmangue_lua" / "engine.py"), "brmangue_lua"),
     (str(source_root / "brmangue_lua" / "raster_inputs.py"), "brmangue_lua"),
     (str(source_root / "brmangue_lua" / "raster_runner.py"), "brmangue_lua"),
+    (str(source_root / "brmangue_lua" / "data" / "mapbiomas_collection_11_legend.csv"), "brmangue_lua/data"),
     (str(assets_root / "BR-MANGUE_STUDIO_preview_original.png"), "brmangue_studio/assets"),
     (str(assets_root / "BR-MANGUE_STUDIO_transparent_4k.png"), "brmangue_studio/assets"),
     (str(assets_root / "BR-MANGUE_BR_icon.png"), "brmangue_studio/assets"),

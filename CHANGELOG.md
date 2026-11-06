@@ -2,6 +2,18 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [1.4.5] — 2026-11-06
+
+- Allow migrated mangrove to transition to its own flooded state in continuous
+  and persistent-block runs. Flooded migrated cells leave the active mangrove
+  extent and cannot propagate migration.
+- Merge migration-receiving cover types under **Suitable for migration** while
+  retaining original MapBiomas codes and names in transition tables. Add a
+  per-source-class migration summary and an optional source-legend CSV.
+- Interpret legacy `Bare soil` assignments as **Blocked area**, which cannot
+  receive mangrove migration. Bundle the MapBiomas Collection 11 legend for
+  class-name reporting.
+
 ## [1.4.4] — 2026-10-21
 
 - Restore the standard display palette, including purple Migrated mangrove
@@ -10,8 +22,8 @@ All notable changes to BR-MANGUE Studio are recorded here.
 - Separate five input classes from seven standard display groups, so
   internal Bare soil and Fixed class profiles are not added to default legends.
 - Remove Bare soil from the custom behavior selector. Older saved profiles
-  remain readable; their equivalent migration behavior is displayed as
-  Natural vegetation when describing legacy custom configurations.
+  remain readable and their legacy label is translated to the current model
+  category.
 - Keep input mappings, simulation rules and existing project files unchanged.
 
 ## [1.4.3] — 2026-10-21
