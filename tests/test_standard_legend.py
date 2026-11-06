@@ -13,7 +13,7 @@ from brmangue_studio.localization import translate
 
 
 STANDARD_NAMES = (
-    'Mangrove', 'Natural vegetation', 'Water', 'Anthropized area', 'Blocked area',
+    'Mangrove', 'Suitable for migration', 'Water', 'Anthropized area', 'Blocked area',
 )
 DISPLAY_NAMES = (*STANDARD_NAMES, 'Migrated mangrove', 'Flooded mangrove')
 
@@ -71,12 +71,12 @@ def test_standard_loaded_maps_and_legend_restore_original_colors(tmp_path):
          'anthropized': [24], 'blocked': [23]}, {}, [],
     )
     assert catalog['display_mode'] == 'standard'
-    assert len(catalog['states']) == 10
+    assert len(catalog['states']) == 11
     handles = app._model_legend_handles(catalog)
     assert [handle.get_label() for handle in handles] == list(DISPLAY_NAMES)
     colors = {handle.get_label(): to_hex(handle.get_facecolor()) for handle in handles}
     assert colors == {
-        'Mangrove': '#006d2c', 'Natural vegetation': '#b2df8a', 'Water': '#2b8cbe',
+        'Mangrove': '#006d2c', 'Suitable for migration': '#b2df8a', 'Water': '#2b8cbe',
         'Anthropized area': '#fdae61', 'Blocked area': '#777777',
         'Migrated mangrove': '#7b3294', 'Flooded mangrove': '#e34a33',
     }
@@ -84,7 +84,7 @@ def test_standard_loaded_maps_and_legend_restore_original_colors(tmp_path):
     for code, item in catalog['states'].items():
         assert to_hex(cmap(norm(int(code)))) == STANDARD_DISPLAY_STYLES[item['display_group']][1]
     present = {int(code) for code in catalog['states']}
-    result = save_state_map(np.array(sorted(present)).reshape(2, 5), catalog, 2026,
+    result = save_state_map(np.array(sorted(present)).reshape(1, 11), catalog, 2026,
                             tmp_path/'standard.png', present_codes=present)
     assert result['legend_states'] == 7
     assert result['legend_overlaps_map'] is False

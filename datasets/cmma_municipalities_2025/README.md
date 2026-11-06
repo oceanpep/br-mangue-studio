@@ -1,6 +1,6 @@
 # Manguezais da CMMA por município — 2025
 
-Tabela suplementar S1: áreas de manguezais por município no recorte operacional da Costa de Manguezais de Macromaré da Amazônia (CMMA), com referência em 2025. Aprovada pelo autor em 22/10/2026.
+Dados de áreas de manguezais por município no recorte operacional da Costa de Manguezais de Macromaré da Amazônia (CMMA), com referência em 2025.
 
 ## Conteúdo
 
@@ -60,7 +60,7 @@ Os arquivos de entrada e seus hashes estão identificados em `metodo_e_totais.js
 
 ## Citação dos dados
 
-Sousa, Felipe Martins; Bezerra, Denilson da Silva; Costa, Sergio Souza; Santos, Ricardo Luvizotto. Manguezais da CMMA por município — 2025. Tabela suplementar S1, 2026. Repositório BR-MANGUE Studio.
+Sousa, Felipe Martins; Bezerra, Denilson da Silva; Costa, Sergio Souza; Santos, Ricardo Luvizotto. Manguezais da CMMA por município — 2025. Conjunto de dados, 2026. Repositório BR-MANGUE Studio.
 
 https://github.com/oceanpep/br-mangue-studio/tree/main/datasets/cmma_municipalities_2025
 

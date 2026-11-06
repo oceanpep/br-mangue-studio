@@ -66,7 +66,7 @@
 
   <polygon points="700,922 910,1042 700,1162 490,1042" class="decision"/>
   <text x="700" y="1026" text-anchor="middle" class="section">A célula candidata é elegível?</text>
-  <text x="700" y="1061" text-anchor="middle" class="small">Vegetação natural ou outra classe permitida</text>
+  <text x="700" y="1061" text-anchor="middle" class="small">Classe atribuída como apta para migração</text>
   <path d="M490 1042 H230 V1460 H1020" class="branch"/>
   <text x="455" y="1022" text-anchor="end" class="no">Não · próxima célula</text>
   <path d="M700 1162 V1222" class="arrow"/>

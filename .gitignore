@@ -30,6 +30,15 @@ docs/downloads/*-updated*.exe
 docs/downloads/*-km2.exe.sha256
 docs/downloads/*-updated*.exe.sha256
 
+# Unpublished manuscript drafts and article-specific supplements stay local.
+/paper.md
+/paper.bib
+/docs/ARTICLE_1_SOFTWARE_PAPER_OUTLINE.md
+/docs/JOSS_READINESS.md
+/docs/publications/oe1/
+/docs/publications/oe2/manuscript/
+/docs/publications/oe2/supplementary-material.pdf
+
 # Local environment and editor files
 .venv/
 venv/

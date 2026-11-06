@@ -21,6 +21,7 @@ datas = [
     ("../src/brmangue_lua/engine.py", "brmangue_lua"),
     ("../src/brmangue_lua/raster_inputs.py", "brmangue_lua"),
     ("../src/brmangue_lua/raster_runner.py", "brmangue_lua"),
+    ("../src/brmangue_lua/data/mapbiomas_collection_11_legend.csv", "brmangue_lua/data"),
     ("../src/brmangue_studio/assets/BR-MANGUE_STUDIO_preview_original.png", "brmangue_studio/assets"),
     ("../src/brmangue_studio/assets/BR-MANGUE_STUDIO_transparent_4k.png", "brmangue_studio/assets"),
     ("../src/brmangue_studio/assets/BR-MANGUE_BR_icon.png", "brmangue_studio/assets"),

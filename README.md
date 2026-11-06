@@ -10,10 +10,15 @@ spatial cellular-automaton scenarios of mangrove response to sea-level rise.
 Use aligned land-cover and elevation rasters, set the scenario, and inspect
 annual maps, trajectories, transitions, and reproducibility metadata.
 
+Version 1.4.5 allows migrated mangrove to become flooded and records that state
+separately from active migrated mangrove. Source cover types share the model
+role **Suitable for migration**; transition tables retain each original
+MapBiomas code and name, with a separate per-source-class migration summary.
+The MapBiomas Collection 11 legend is bundled for source-class reporting.
+Legacy bare-soil assignments are treated as **Blocked area**.
+
 Version 1.4.4 restores the standard display palette: purple identifies
-migrated mangrove and red identifies flooded mangrove. Bare soil is no longer
-offered in the behavior selector, and internal profiles are excluded from
-default legends. Five input classes and their derived states remain distinct.
+migrated mangrove and red identifies flooded mangrove.
 
 Version 1.4.3 keeps annual state-map legends below the map, displays only
 states present in each year, and separates **Blocked area** from **Anthropized
@@ -47,8 +52,8 @@ rasters, project files, and simulation results remain on your computer.
 
 | Platform | Availability | Verified environment |
 | --- | --- | --- |
-| Windows 10/11, 64-bit | Stable 1.4.4 | Windows desktop release |
-| Linux x86_64 | Research preview 1.4.4 | Built and tested on Ubuntu 22.04 LTS; packaged checks also passed on Ubuntu 26.04.1 LTS |
+| Windows 10/11, 64-bit | Stable 1.4.5 | Windows desktop release |
+| Linux x86_64 | Research preview 1.4.5 | Built and tested on Ubuntu 22.04 LTS; packaged checks also passed on Ubuntu 26.04.1 LTS |
 
 The interface is available in English and Brazilian Portuguese. English is the
 default for a new installation; choose a language in the application header.

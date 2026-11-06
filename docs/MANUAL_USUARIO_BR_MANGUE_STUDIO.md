@@ -144,13 +144,15 @@ atribui cada código a um papel do modelo:
 | Papel no Studio | O que significa | Pode receber migração? |
 |---|---|---:|
 | **Mangrove** | Mangue presente no estado inicial | É a origem da migração |
-| **Natural vegetation** | Vegetação natural que pode acomodar mangue | Sim, se as demais regras permitirem |
+| **Suitable for migration** | Categoria agregada das classes do raster consideradas aptas a receber mangue | Sim, se as demais regras permitirem |
 | **Water** | Água, canais, rios, estuários ou mar | Não como destino de migração |
 | **Anthropized area** | Área construída, infraestrutura e usos antrópicos | Não |
 | **Blocked area** | Área explicitamente bloqueada à migração; pode passar ao estado inundado | Não |
 | **Exclude** | NoData, borda inválida ou classe fora do domínio do estudo | Não participa |
 
-A versão 1.4.3 separa as categorias antropizada e bloqueada no seletor padrão. Projetos antigos com o rótulo `Anthropized / blocked` continuam sendo lidos como área antropizada. A partir da versão 1.4.4, solo descoberto não é oferecido como classe ou perfil nos seletores. Configurações antigas continuam legíveis; ao descrever um perfil antigo de migração equivalente, a interface usa vegetação natural.
+A categoria `Suitable for migration` reúne classes originais distintas para aplicar a mesma regra do modelo; os códigos e nomes originais são mantidos nos resultados. No mapeamento MapBiomas incluído, o código 32 (Apicum) pode receber migração. A categoria `Blocked area` não recebe migração. O rótulo legado `Bare soil` é interpretado como `Blocked area` em projetos antigos.
+
+A versão 1.4.3 separa as categorias antropizada e bloqueada no seletor padrão. Projetos antigos com o rótulo `Anthropized / blocked` continuam sendo lidos como área antropizada. Configurações antigas de `Natural vegetation` são lidas como `Suitable for migration`.
 
 O enquadramento depende da legenda do produto. Não atribua um papel apenas
 porque o código parece familiar. Confirme a legenda, consulte os metadados e
@@ -176,16 +178,23 @@ códigos sem atribuição e salva o modo escolhido no projeto.
 |---|---|
 | **Fixed class** | Mantém o código personalizado, sem transições dinâmicas. |
 | **Mangrove source** | Pode propagar a migração; em uma transição por inundação, passa ao estado de mangue inundado. |
-| **Natural vegetation** | Pode receber migração e passa ao estado de vegetação natural inundada quando inundada. |
+| **Suitable for migration** | Pode receber migração e, se inundada antes de receber o mangue, passa ao estado inundado da classe apta. |
 | **Anthropized area** | Permanece bloqueada para migração e pode passar ao estado antropizado inundado. |
 | **Blocked area** | Não recebe migração; mantém uma categoria própria e pode passar ao estado de área bloqueada inundada. |
 | **Water body** | Atua como fonte das regras de fluxo e inundação e não recebe conversão por essas regras. |
 
 O nome, a cor e o perfil ficam gravados no projeto e nos metadados. Quando uma
 classe personalizada muda para um estado derivado, como **Migrated mangrove**
-ou **Flooded natural vegetation**, o raster final mostra esse estado do modelo.
-O arquivo `transition_by_land_cover_code.csv` registra a classe de origem, o
-perfil e o estado final para permitir rastrear essa mudança. Um projeto aceita
+ou **Flooded migrated mangrove**, o raster final mostra esse estado do modelo.
+Uma célula de mangue migrado pode passar a **Flooded migrated mangrove** quando
+alcançada pela inundação; deixa então de integrar a extensão ativa e não propaga
+mais migração. O arquivo `transition_by_land_cover_code.csv` registra o código
+e o nome da classe original, o perfil e o estado final. O arquivo
+`migration_by_source_class.csv` resume quantas células de mangue migrado vieram
+de cada classe de origem, distinguindo as que permanecem ativas das inundadas.
+A legenda MapBiomas Coleção 11 está incluída; outra legenda CSV pode ser
+selecionada para outra coleção ou fonte. Códigos sem nome na legenda continuam
+identificados numericamente. Um projeto aceita
 até 32.757 classes personalizadas.
 
 ### 3.2 Estados internos
@@ -195,7 +204,7 @@ O Studio também registra estados derivados durante a simulação:
 | Estado | Interpretação |
 |---|---|
 | Mangrove | Mangue presente no início ou preservado |
-| Natural vegetation | Vegetação natural ainda não convertida |
+| Suitable for migration | Categoria agregada das classes originais ainda aptas à migração |
 | Water | Água |
 | Anthropized area | Área antropizada |
 | Blocked area | Área bloqueada |
@@ -203,20 +212,22 @@ O Studio também registra estados derivados durante a simulação:
 | Flooded Blocked area | Área bloqueada inundada |
 | Migrated mangrove | Célula convertida para mangue por migração; após o atraso de maturação, também pode propagar |
 | Flooded mangrove | Mangue atingido pela inundação |
-| Flooded natural vegetation | Vegetação natural inundada |
+| Flooded suitable class | Classe apta inundada antes de receber mangue |
+| Flooded migrated mangrove | Mangue migrado que foi alcançado pela inundação |
 
 Na visualização, alguns estados inundados mantêm a cor da classe de origem
 para não confundir o mapa. O vermelho é reservado ao mangue inundado. Os
 códigos detalhados continuam disponíveis nos GeoTIFFs e nas tabelas.
 
-### 3.3 Água, praia e solo descoberto
+### 3.3 Água e classes de origem não aptas
 
-Água deve ser mapeada para **Water**. Praia, areia e solo descoberto não são
-automaticamente água: se a hipótese do estudo é que essas áreas não podem
-receber mangue, associe-as a **Anthropized area**. Se o produto e a
-calibração justificarem que uma classe de solo descoberto pode acomodar
-mangue, ela pode ser usada como candidata, mas essa escolha precisa ser
-registrada no método do estudo.
+Água deve ser mapeada para **Water**. Praia, areia e outras classes de origem
+não são automaticamente água. Se uma classe não deve receber mangue, associe-a
+a **Blocked area**; o antigo perfil `Bare soil` agora é carregado como bloqueado.
+Associe uma classe a **Suitable for migration** somente quando a hipótese do
+estudo considerar aquele tipo de cobertura apto a acomodar mangue. Registre
+essa decisão no método e mantenha a legenda da fonte para identificar a classe
+original nas tabelas.
 
 ---
 

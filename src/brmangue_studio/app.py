@@ -82,7 +82,7 @@ except ImportError:  # pragma: no cover - used by the compact frozen build
 ROLE_LABELS = [
     "Exclude",
     "Mangrove",
-    "Natural vegetation",
+    "Suitable for migration",
     "Water",
     "Anthropized area",
     "Blocked area",
@@ -90,19 +90,19 @@ ROLE_LABELS = [
 UNASSIGNED_ROLE = "Unassigned"
 ROLE_TO_MODEL = {
     "Mangrove": "mangrove",
-    "Natural vegetation": "natural_accommodation_candidate",
+    "Suitable for migration": "natural_accommodation_candidate",
     "Water": "water",
     "Anthropized / blocked": "managed_land_use_candidate",
     "Anthropized area": "managed_land_use_candidate",
     "Blocked area": "blocked",
-    "Bare soil": "bare_soil",
+    "Bare soil": "blocked",
     "Fixed class": "fixed",
 }
 TRANSITION_REPORT_CHUNK_CELLS = 1_000_000
 CUSTOM_BEHAVIOR_LABELS = {
     "fixed": "Fixed class",
     "mangrove": "Mangrove source",
-    "natural_vegetation": "Natural vegetation",
+    "migration_candidate": "Suitable for migration",
     "anthropized": "Anthropized area",
     "blocked": "Blocked area",
     "water": "Water body",
@@ -111,7 +111,7 @@ CHART_BEHAVIOR_COLORS = {
     "mangrove": STANDARD_CLASS_STYLES["mangrove"][1],
     "migrated_mangrove": "#7b3294",
     "flooded_mangrove": "#e34a33",
-    "natural_vegetation": STANDARD_CLASS_STYLES["natural_vegetation"][1],
+    "migration_candidate": STANDARD_CLASS_STYLES["migration_candidate"][1],
     "water": STANDARD_CLASS_STYLES["water"][1],
     "anthropized": STANDARD_CLASS_STYLES["anthropized"][1],
 }
@@ -160,7 +160,7 @@ def _model_legend_handles(
         for name, color in STANDARD_DISPLAY_STYLES.values()
     ]
 
-APP_VERSION = "1.4.4"
+APP_VERSION = "1.4.5"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -530,7 +530,7 @@ def _default_role(code: int) -> str:
     if code in DEFAULT_LAND_COVER_MAPPING["water"]:
         return "Water"
     if code in DEFAULT_LAND_COVER_MAPPING["natural_accommodation_candidate"]:
-        return "Natural vegetation"
+        return "Suitable for migration"
     if code in DEFAULT_LAND_COVER_MAPPING["blocked"]:
         return "Blocked area"
     return "Anthropized area"
@@ -608,6 +608,8 @@ def _write_transition_report(
         for item in inputs.metadata.get("custom_model_classes", [])
     }
     state_catalog = inputs.metadata.get("model_state_catalog", {})
+    source_class_names = inputs.metadata.get("land_cover", {}).get("source_class_names", {})
+    cell_area_km2 = inputs.cell_area_km2
     rows: list[dict[str, Any]] = []
     for (source_code, destination_code), count in sorted(pair_counts.items()):
         role = code_roles.get(source_code, "Unmapped")
@@ -628,32 +630,87 @@ def _write_transition_report(
             if destination_entry
             else f"Class {destination_code}"
         )
+        source_names = source_class_names.get(str(source_code), {})
+        source_class_name_pt = str(source_names.get("pt-BR", "")).strip() or f"Código de classe {source_code}"
+        source_class_name_en = str(source_names.get("en", "")).strip() or f"Class code {source_code}"
         rows.append(
             {
                 "source_land_cover_code": source_code,
+                "source_land_cover_class_pt_br": source_class_name_pt,
+                "source_land_cover_class_en": source_class_name_en,
                 "source_role": role,
                 "source_custom_class": custom_name,
                 "behavior_profile": behavior,
                 "destination_model_state": destination,
                 "destination_model_code": destination_code,
                 "cells": count,
+                "area_km2": float(count) * float(cell_area_km2) if cell_area_km2 is not None else np.nan,
             }
         )
     result = pd.DataFrame(
         rows,
         columns=[
             "source_land_cover_code",
+            "source_land_cover_class_pt_br",
+            "source_land_cover_class_en",
             "source_role",
             "source_custom_class",
             "behavior_profile",
             "destination_model_state",
             "destination_model_code",
             "cells",
+            "area_km2",
         ],
     )
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     result.to_csv(output_path, index=False)
+
+    migrated_destinations = {
+        int(code)
+        for code, item in state_catalog.get("states", {}).items()
+        if item.get("kind") == "migrated"
+        or (item.get("kind") == "flooded" and item.get("base_kind") == "migrated")
+    }
+    source_totals: dict[int, dict[str, int]] = {}
+    for (source_code, destination_code), count in pair_counts.items():
+        if destination_code not in migrated_destinations:
+            continue
+        bucket = source_totals.setdefault(source_code, {"active": 0, "flooded": 0})
+        destination_entry = state_entry(state_catalog, destination_code) or {}
+        if destination_entry.get("kind") == "migrated":
+            bucket["active"] += count
+        else:
+            bucket["flooded"] += count
+    migrated_total = sum(item["active"] + item["flooded"] for item in source_totals.values())
+    migration_rows = []
+    for source_code, counts in sorted(source_totals.items()):
+        source_names = source_class_names.get(str(source_code), {})
+        total = counts["active"] + counts["flooded"]
+        migration_rows.append({
+            "source_land_cover_code": source_code,
+            "source_land_cover_class_pt_br": str(source_names.get("pt-BR", "")).strip() or f"Código de classe {source_code}",
+            "source_land_cover_class_en": str(source_names.get("en", "")).strip() or f"Class code {source_code}",
+            "active_migrated_mangrove_cells": counts["active"],
+            "flooded_migrated_mangrove_cells": counts["flooded"],
+            "total_cells_with_migrated_mangrove_origin": total,
+            "area_km2": float(total) * float(cell_area_km2) if cell_area_km2 is not None else np.nan,
+            "share_of_migrated_origin_cells_pct": 100.0 * total / migrated_total if migrated_total else 0.0,
+        })
+    migration_report = pd.DataFrame(
+        migration_rows,
+        columns=[
+            "source_land_cover_code",
+            "source_land_cover_class_pt_br",
+            "source_land_cover_class_en",
+            "active_migrated_mangrove_cells",
+            "flooded_migrated_mangrove_cells",
+            "total_cells_with_migrated_mangrove_origin",
+            "area_km2",
+            "share_of_migrated_origin_cells_pct",
+        ],
+    )
+    migration_report.to_csv(output_path.with_name("migration_by_source_class.csv"), index=False)
     return output_path
 
 
@@ -1064,6 +1121,8 @@ class BRMangueStudio(tk.Tk):
         self.vertical_datum_var = tk.StringVar(value="")
         self.custom_class_name_var = tk.StringVar(value="")
         self.class_mapping_mode_var = tk.StringVar(value="standard")
+        self.source_legend_var = tk.StringVar(value="")
+        self.source_legend_label_var = tk.StringVar(value="")
         self.custom_class_color_var = tk.StringVar(value=DEFAULT_CUSTOM_COLORS[0])
         self.custom_class_behavior_var = tk.StringVar(value="Fixed class")
         self.expected_crs_var = tk.StringVar(value="")
@@ -1238,6 +1297,8 @@ class BRMangueStudio(tk.Tk):
         self.title(translate("BR-MANGUE Studio", self.language_code))
         if hasattr(self, "language_var"):
             self.language_var.set(CODE_TO_LANGUAGE[self.language_code])
+        if hasattr(self, "source_legend_label_var"):
+            self._update_source_legend_label()
         for widget, source in tuple(self._widget_text_defaults.items()):
             try:
                 widget.configure(text=translate_runtime(source, self.language_code))
@@ -1300,7 +1361,7 @@ class BRMangueStudio(tk.Tk):
                 "mangrove": translate("Mangrove", self.language_code),
                 "migrated_mangrove": translate("Migrated mangrove", self.language_code),
                 "flooded_mangrove": translate("Flooded", self.language_code),
-                "vegetation": translate("Vegetation", self.language_code),
+                "migration_suitable": translate("Suitable for migration", self.language_code),
                 "water": translate("Water", self.language_code),
                 "anthropized": translate("Developed", self.language_code),
             }
@@ -1470,6 +1531,19 @@ class BRMangueStudio(tk.Tk):
         parent.columnconfigure(0, weight=1)
         ttk.Label(parent, text="Source class → model class", font=("Segoe UI", 10, "bold")).pack(anchor="w")
         ttk.Label(parent, text="Choose how each numeric class from the categorical raster is interpreted. Excluded codes become NoData.", wraplength=360, foreground="#5d6b78").pack(anchor="w", pady=(3, 8))
+        legend_frame = ttk.LabelFrame(parent, text="Original source class names", padding=6)
+        legend_frame.pack(fill="x", pady=(0, 8))
+        ttk.Label(
+            legend_frame,
+            text="Output tables retain the original raster code and its class name.",
+            wraplength=360,
+            foreground="#5d6b78",
+        ).pack(anchor="w")
+        legend_row = ttk.Frame(legend_frame)
+        legend_row.pack(fill="x", pady=(4, 0))
+        ttk.Label(legend_row, textvariable=self.source_legend_label_var, wraplength=235).pack(side="left", fill="x", expand=True)
+        ttk.Button(legend_row, text="Choose CSV…", command=self._choose_source_class_legend).pack(side="right")
+        self._update_source_legend_label()
         mode_frame = ttk.LabelFrame(parent, text="Mapping mode", padding=6)
         mode_frame.pack(fill="x", pady=(0, 8))
         ttk.Radiobutton(
@@ -1546,6 +1620,29 @@ class BRMangueStudio(tk.Tk):
     def _custom_role_label(self, item: dict[str, Any]) -> str:
         return f"{translate('Custom class', self.language_code)}: {item['name']}"
 
+    def _update_source_legend_label(self) -> None:
+        path = self.source_legend_var.get().strip()
+        label = (
+            f"{translate('Custom source legend', self.language_code)}: {Path(path).name}"
+            if path
+            else translate("MapBiomas Collection 11 legend (built-in)", self.language_code)
+        )
+        self.source_legend_label_var.set(label)
+
+    def _choose_source_class_legend(self) -> None:
+        path = filedialog.askopenfilename(
+            title=translate("Choose source class legend", self.language_code),
+            filetypes=[(translate("CSV files", self.language_code), "*.csv"), (translate("All files", self.language_code), "*.*")],
+        )
+        if not path:
+            return
+        self.source_legend_var.set(path)
+        self._update_source_legend_label()
+        if self.project_file is not None:
+            self.save_project()
+        if self.land_cover_var.get().strip() and self.elevation_var.get().strip():
+            self.load_inputs()
+
     def _custom_behavior_options(self) -> tuple[str, ...]:
         return tuple(
             translate(label, self.language_code)
@@ -1553,16 +1650,20 @@ class BRMangueStudio(tk.Tk):
         )
 
     def _canonical_custom_behavior(self, displayed: str) -> str:
-        if displayed in {"Bare soil", translate("Bare soil", "pt-BR")}:
-            return "natural_vegetation"
+        if displayed in {"Natural vegetation", "Vegetação natural", translate("Natural vegetation", "pt-BR")}:
+            return "migration_candidate"
+        if displayed in {"Bare soil", "Solo descoberto"}:
+            return "blocked"
         for behavior, label in CUSTOM_BEHAVIOR_LABELS.items():
             if displayed in {label, translate(label, "pt-BR")}:
                 return behavior
         return "fixed"
 
     def _display_custom_behavior(self, behavior: str) -> str:
-        if behavior == "bare_soil":
-            behavior = "natural_vegetation"
+        if behavior == "natural_vegetation":
+            behavior = "migration_candidate"
+        elif behavior == "bare_soil":
+            behavior = "blocked"
         label = CUSTOM_BEHAVIOR_LABELS.get(behavior, CUSTOM_BEHAVIOR_LABELS["fixed"])
         return translate(label, self.language_code)
 
@@ -1578,6 +1679,12 @@ class BRMangueStudio(tk.Tk):
     def _canonical_role(self, displayed_role: str) -> str:
         if displayed_role in {"Anthropized / blocked", translate("Anthropized / blocked", "pt-BR")}:
             return "Anthropized area"
+        if displayed_role in {
+            "Natural vegetation", "Vegetação natural", "Apta para migração",
+        }:
+            return "Suitable for migration"
+        if displayed_role in {"Bare soil", "Solo descoberto"}:
+            return "Blocked area"
         for role in [UNASSIGNED_ROLE, *ROLE_LABELS]:
             if displayed_role in {role, translate(role, "pt-BR")}:
                 return role
@@ -1591,6 +1698,10 @@ class BRMangueStudio(tk.Tk):
     def _display_role(self, role: str) -> str:
         if role == "Anthropized / blocked":
             role = "Anthropized area"
+        elif role in {"Natural vegetation", "Vegetação natural"}:
+            role = "Suitable for migration"
+        elif role in {"Bare soil", "Solo descoberto"}:
+            role = "Blocked area"
         if role.startswith("custom:"):
             try:
                 code = int(role.split(":", 1)[1])
@@ -2287,7 +2398,7 @@ class BRMangueStudio(tk.Tk):
             "mangrove": CHART_BEHAVIOR_COLORS["mangrove"],
             "migrated_mangrove": CHART_BEHAVIOR_COLORS["migrated_mangrove"],
             "flooded_mangrove": CHART_BEHAVIOR_COLORS["flooded_mangrove"],
-            "vegetation": CHART_BEHAVIOR_COLORS["natural_vegetation"],
+            "migration_suitable": CHART_BEHAVIOR_COLORS["migration_candidate"],
             "water": CHART_BEHAVIOR_COLORS["water"],
             "anthropized": CHART_BEHAVIOR_COLORS["anthropized"],
         }
@@ -2295,7 +2406,7 @@ class BRMangueStudio(tk.Tk):
             "mangrove": translate("Mangrove", self.language_code),
             "migrated_mangrove": translate("Migrated mangrove", self.language_code),
             "flooded_mangrove": translate("Flooded", self.language_code),
-            "vegetation": translate("Vegetation", self.language_code),
+            "migration_suitable": translate("Suitable for migration", self.language_code),
             "water": translate("Water", self.language_code),
             "anthropized": translate("Developed", self.language_code),
         }
@@ -2568,6 +2679,7 @@ class BRMangueStudio(tk.Tk):
                 custom_classes=self.custom_model_classes,
                 class_mapping_mode=self.class_mapping_mode_var.get(),
                 exclude_source_codes=excluded,
+                source_legend_path=self.source_legend_var.get().strip() or None,
             )
             _validate_class_coverage(
                 roles,
@@ -3242,7 +3354,8 @@ class BRMangueStudio(tk.Tk):
             f"Migrated mangrove: {int(summary.get('migrated_mangrove', 0)):,}\n"
             f"Active mangrove extent: {extent_text}\n"
             f"Flooded mangrove: {int(summary.get('flooded_mangrove', 0)):,}\n"
-            f"Flooded natural vegetation: {int(summary.get('flooded_natural', 0)):,}\n"
+            f"Flooded migrated mangrove: {int(summary.get('flooded_migrated_mangrove', 0)):,}\n"
+            f"Flooded suitable area: {int(summary.get('flooded_migration_suitable', 0)):,}\n"
             f"Flooded anthropized area: {int(summary.get('flooded_anthropized', 0)):,}\n"
             f"Blocked area: {int(summary.get('blocked', 0)):,}\n"
             f"Flooded blocked area: {int(summary.get('flooded_blocked', 0)):,}\n"
@@ -3292,6 +3405,8 @@ class BRMangueStudio(tk.Tk):
         self.project_file = Path(folder) / "brmangue_project.json"
         self.inputs = None
         self.custom_model_classes = []
+        self.source_legend_var.set("")
+        self._update_source_legend_label()
         self.class_mapping_mode_var.set("standard")
         self.sea_level_mode_var.set("constant")
         self.sea_level_trajectory_path_var.set("")
@@ -3354,6 +3469,7 @@ class BRMangueStudio(tk.Tk):
                 "elevation": project_path(self.elevation_var.get()),
                 "mask": project_path(self.mask_var.get()),
                 "soil": project_path(self.soil_var.get()),
+                "source_class_legend": project_path(self.source_legend_var.get()),
             },
             "land_cover": {
                 "band": int(self.land_cover_band_var.get()),
@@ -3418,8 +3534,10 @@ class BRMangueStudio(tk.Tk):
                 (self.elevation_var, saved_inputs.get("elevation", "")),
                 (self.mask_var, saved_inputs.get("mask", "")),
                 (self.soil_var, saved_inputs.get("soil", "")),
+                (self.source_legend_var, saved_inputs.get("source_class_legend", "")),
             ]:
                 variable.set(input_path(value))
+            self._update_source_legend_label()
             saved_cover_meta = payload.get("land_cover", payload.get("mapbiomas", {}))
             self.land_cover_band_var.set(str(saved_cover_meta.get("band", 1)))
             saved_year = saved_cover_meta.get("reference_year", saved_cover_meta.get("year"))
