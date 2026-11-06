@@ -12,7 +12,21 @@ The automatic archive preserves the tagged source ZIP; executable assets remain 
 
 Official instructions: https://help.zenodo.org/docs/github/describe-software/zenodo-json/
 
-## Verified public archive — 20 October 2026
+## Verified public archive — 6 November 2026
+
+- Version 1.4.5: https://doi.org/10.5281/zenodo.24018559
+- All versions (concept DOI): https://doi.org/10.5281/zenodo.23509308
+- Public record: https://zenodo.org/records/24018559
+- Tagged source: `v1.4.5`, commit `241906b942e98ccfa4c984890c07347b0b799c0c`.
+- GitHub release: https://github.com/oceanpep/br-mangue-studio/releases/tag/v1.4.5
+
+The automatic deposit was checked for version 1.4.5, the four creators and
+their UFMA affiliations, MIT license, and the tagged source ZIP. Windows and
+Linux executables and their SHA-256 checksums are attached to the matching
+GitHub release. Version DOI 1.4.5 is recorded in `CITATION.cff` after the
+deposit; the release tag was not changed.
+
+## Earlier verified public archive — 20 October 2026
 
 - Version 1.4.0: https://doi.org/10.5281/zenodo.23509309
 - All versions (concept DOI): https://doi.org/10.5281/zenodo.23509308
