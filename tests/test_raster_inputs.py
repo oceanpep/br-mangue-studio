@@ -5,7 +5,7 @@ import pytest
 import rasterio
 from rasterio.transform import from_origin
 
-from brmangue_lua.raster_inputs import load_raster_inputs, normalize_custom_model_classes
+from brmangue_lua.raster_inputs import load_raster_inputs, load_source_class_legend, normalize_custom_model_classes
 
 
 def _write_raster(path, data, *, dtype, nodata=0):
@@ -43,6 +43,18 @@ def test_raster_loader_without_soil_keeps_flooding_inputs(tmp_path):
     assert inputs.grid.class_counts()["water"] == 1
     assert np.all(inputs.grid.soil_class == -999)
     assert inputs.metadata["soil"]["enabled"] is False
+    assert inputs.metadata["land_cover"]["source_class_names"]["6"]["pt-BR"] == "Floresta Alagável"
+
+
+def test_source_class_legend_can_read_mapbiomas_c11_and_custom_csv(tmp_path):
+    bundled, source = load_source_class_legend()
+    assert "Collection 11" in source
+    assert bundled[32]["pt-BR"] == "Apicum"
+    custom_path = tmp_path / "legend.csv"
+    custom_path.write_text("code;name_pt_br;name_en\n88;Classe local;Local class\n", encoding="utf-8")
+    custom, custom_source = load_source_class_legend(custom_path)
+    assert custom[88] == {"pt-BR": "Classe local", "en": "Local class"}
+    assert custom_source == str(custom_path.resolve())
 
 
 def test_raster_loader_accepts_aligned_optional_soil(tmp_path):

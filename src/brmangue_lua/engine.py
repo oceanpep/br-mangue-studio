@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     import geopandas as gpd
 
 from .model_states import (
+    MIGRATION_CANDIDATE_BEHAVIORS,
     active_mangrove_codes,
     build_model_state_catalog,
     count_model_states,
@@ -187,7 +188,7 @@ class BrMangueGrid:
             int(code)
             for code, definition in self.model_state_catalog.get("states", {}).items()
             if definition.get("kind") == "class"
-            and definition.get("behavior") in {"natural_vegetation", "bare_soil"}
+            and definition.get("behavior") in MIGRATION_CANDIDATE_BEHAVIORS
         )
         self._migration_source_states = frozenset(
             int(code)
@@ -286,13 +287,14 @@ class BrMangueGrid:
         return count_model_states(self.land_cover_state, self.model_state_catalog)
 
     def _apply_flooding(self, index: int, previous_states: np.ndarray) -> None:
-        """Replace a base class with its catalog-defined flooded state."""
+        """Flood a base class or migrated mangrove when reached by water."""
         previous = int(previous_states[index])
-        if state_kind(self.model_state_catalog, previous) != "class":
+        if state_kind(self.model_state_catalog, previous) not in {"class", "migrated"}:
             return
         flooded_code = flooded_state_code(self.model_state_catalog, previous)
         if flooded_code is not None:
             self.land_cover_state[index] = flooded_code
+            self.migration_age[index] = -1
 
     def step(
         self,
@@ -334,7 +336,11 @@ class BrMangueGrid:
             # becomes migrated during this step is reset to zero below and
             # therefore cannot propagate immediately in the next step when a
             # positive maturation delay is configured.
-            if self.migrated_state_code is not None and int(past_states[index]) == self.migrated_state_code:
+            if (
+                self.migrated_state_code is not None
+                and int(past_states[index]) == self.migrated_state_code
+                and int(self.land_cover_state[index]) == self.migrated_state_code
+            ):
                 age = min(int(past_migration_age[index]) + 1, np.iinfo(np.int16).max)
                 self.migration_age[index] = age
             elif self.migrated_state_code is not None and int(self.land_cover_state[index]) == self.migrated_state_code:

@@ -27,10 +27,7 @@ same inputs and settings for both engines and found no differences across its
 
 - [CMMA mangrove areas by municipality, 2025](../datasets/cmma_municipalities_2025/README.md): supplementary table S1 in XLSX and CSV, with state totals, study boundary, method and source provenance.
 
-## Article and release
-
-
-
+## Release
 
 - [Release checklist](RELEASE_CHECKLIST.md)
 - [Zenodo archive checklist](ZENODO_RELEASE.md)

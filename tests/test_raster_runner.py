@@ -235,7 +235,7 @@ def test_custom_behavior_flood_transition_uses_catalog(tmp_path, engine):
         save_annual_states=True,
     )
     assert trajectory.loc[0, "class_301"] == 0
-    assert trajectory.loc[0, "flooded_bare"] == 1
+    assert trajectory.loc[0, "flooded_blocked"] == 1
     with rasterio.open(output_dir / "final_state_2026.tif") as source:
         assert source.read(1).tolist() == [[300, 302]]
     derived = _write_transition_report(
@@ -250,6 +250,40 @@ def test_custom_behavior_flood_transition_uses_catalog(tmp_path, engine):
     item = transitions.loc[transitions.source_land_cover_code == 90].iloc[0]
     assert item.source_custom_class == "Intertidal flats"
     assert item.destination_model_state == "Flooded Intertidal flats"
+
+
+@pytest.mark.parametrize("engine", ["continuous", "blocks"])
+def test_migrated_mangrove_can_be_flooded_in_each_raster_engine(tmp_path, engine):
+    land_cover_path = tmp_path / f"migrated_origin_{engine}.tif"
+    elevation_path = tmp_path / f"migrated_dem_{engine}.tif"
+    _write_raster(land_cover_path, np.array([[33, 5]], dtype=np.uint8), dtype="uint8")
+    _write_raster(elevation_path, np.array([[2.0, 1.0]], dtype=np.float32), dtype="float32", nodata=-9999)
+    inputs = load_raster_inputs(land_cover_path, elevation_path, soil_enabled=False)
+    catalog = inputs.metadata["model_state_catalog"]
+    water_code = next(
+        int(code)
+        for code, item in catalog["states"].items()
+        if item.get("kind") == "class" and item.get("behavior") == "water"
+    )
+    migrated_code = int(catalog["migrated_mangrove_code"])
+    flooded_migrated_code = int(catalog["flooded_codes"][str(migrated_code)])
+    inputs.grid.land_cover_state[1] = migrated_code
+    inputs.grid.migration_age[1] = 3
+
+    trajectory = run_raster_simulation(
+        inputs,
+        tmp_path / f"migrated_flood_{engine}",
+        ModelParameters(final_time=1, tide_height=0, sea_level_rise_rate=0),
+        initial_year=2025,
+        engine=engine,
+        block_size=1,
+        save_annual_states=True,
+    )
+    assert trajectory.loc[0, "flooded_migrated_mangrove"] == 1
+    assert trajectory.loc[0, "flooded_mangrove"] == 1
+    assert trajectory.loc[0, "mangrove_extent"] == 0
+    with rasterio.open(tmp_path / f"migrated_flood_{engine}" / "final_state_2026.tif") as source:
+        assert source.read(1).tolist() == [[water_code, flooded_migrated_code]]
 
 
 @pytest.mark.parametrize("engine", ["continuous", "blocks"])
@@ -324,8 +358,8 @@ def test_custom_water_class_drives_flooding_for_another_class():
 def test_mangrove_migration_uses_one_generic_derived_state():
     classes = [
         {"code": 300, "name": "Mangrove patch", "behavior": "mangrove", "color": "#006d2c"},
-        {"code": 301, "name": "Freshwater vegetation", "behavior": "natural_vegetation", "color": "#99bb77"},
-        {"code": 302, "name": "Bare area", "behavior": "bare_soil", "color": "#777777"},
+        {"code": 301, "name": "Suitable area", "behavior": "migration_candidate", "color": "#99bb77"},
+        {"code": 302, "name": "Blocked area", "behavior": "blocked", "color": "#777777"},
     ]
     grid = _grid([300, 301, 302], classes, elevations=[1.0, 1.0, 1.0])
     trajectory = grid.run(ModelParameters(
@@ -335,10 +369,10 @@ def test_mangrove_migration_uses_one_generic_derived_state():
         migration_maturity_years=1,
     ))
     migrated_code = grid.model_state_catalog["migrated_mangrove_code"]
-    assert grid.land_cover_state.tolist() == [300, migrated_code, migrated_code]
+    assert grid.land_cover_state.tolist() == [300, migrated_code, 302]
     assert grid.model_state_catalog["states"][str(migrated_code)]["name"] == "Migrated mangrove"
-    assert trajectory.loc[1, "migrated_mangrove"] == 2
-    assert grid.last_transition_metrics["mangrove_extent"] == 3
+    assert trajectory.loc[1, "migrated_mangrove"] == 1
+    assert grid.last_transition_metrics["mangrove_extent"] == 2
 
 
 def test_continuous_and_persistent_block_engines_match(tmp_path):
@@ -415,6 +449,32 @@ def test_transition_report_names_derived_states_from_catalog(tmp_path, monkeypat
     assert rows.cells.tolist() == [2, 2]
 
 
+def test_transition_report_preserves_mapbiomas_source_names_for_migrated_cells(tmp_path):
+    land_cover_path = tmp_path / "mapbiomas_c11.tif"
+    elevation_path = tmp_path / "dem.tif"
+    _write_raster(land_cover_path, np.array([[32, 12]], dtype=np.uint8), dtype="uint8")
+    _write_raster(elevation_path, np.ones((1, 2), dtype=np.float32), dtype="float32", nodata=-9999)
+    inputs = load_raster_inputs(land_cover_path, elevation_path, soil_enabled=False)
+    catalog = inputs.metadata["model_state_catalog"]
+    migrated_code = int(catalog["migrated_mangrove_code"])
+    flooded_migrated_code = int(catalog["flooded_codes"][str(migrated_code)])
+    report = _write_transition_report(
+        land_cover_path,
+        1,
+        inputs,
+        np.array([migrated_code, flooded_migrated_code], dtype=np.uint16),
+        {32: "Suitable for migration", 12: "Suitable for migration"},
+        tmp_path / "transition_by_land_cover_code.csv",
+    )
+    transitions = pd.read_csv(report)
+    assert transitions.source_land_cover_class_pt_br.tolist() == ["Formação Campestre", "Apicum"]
+    assert transitions.source_land_cover_class_en.tolist() == ["Grassland Formation", "Hypersaline Tidal Flat"]
+    migration = pd.read_csv(tmp_path / "migration_by_source_class.csv")
+    assert migration.source_land_cover_class_pt_br.tolist() == ["Formação Campestre", "Apicum"]
+    assert migration.total_cells_with_migrated_mangrove_origin.tolist() == [1, 1]
+    assert migration.share_of_migrated_origin_cells_pct.tolist() == [50.0, 50.0]
+
+
 def test_custom_class_mapping_accepts_portuguese_display_labels():
     classes = [{"code": 300, "name": "Agricultura", "color": "#c08020"}]
     studio = SimpleNamespace(
@@ -433,7 +493,7 @@ def test_custom_class_mapping_accepts_portuguese_display_labels():
     assert excluded == [24]
     assert roles[90] == "custom:300"
     studio._canonical_custom_behavior = lambda value: BRMangueStudio._canonical_custom_behavior(studio, value)
-    assert studio._canonical_custom_behavior("Vegetação natural") == "natural_vegetation"
+    assert studio._canonical_custom_behavior("Vegetação natural") == "migration_candidate"
     assert BRMangueStudio._display_custom_behavior(studio, "mangrove") == "Fonte de mangue"
 
 

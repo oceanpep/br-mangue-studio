@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "brmangue-python-lua-parity"
-version = "1.4.4"
+version = "1.4.5"
 description = "BR-MANGUE Studio: a reproducible Python desktop application for coastal mangrove cellular modelling"
 requires-python = ">=3.10"
 dependencies = [
@@ -36,3 +36,4 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 brmangue_studio = ["assets/*.png", "assets/*.ico"]
+brmangue_lua = ["data/*.csv"]

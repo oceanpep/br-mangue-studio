@@ -6,16 +6,30 @@ from typing import Any
 
 
 CLASS_BEHAVIORS = frozenset(
-    {"fixed", "mangrove", "natural_vegetation", "bare_soil", "anthropized", "blocked", "water"}
+    {
+        "fixed", "mangrove", "migration_candidate", "natural_vegetation",
+        "bare_soil", "anthropized", "blocked", "water",
+    }
 )
 FLOODABLE_BEHAVIORS = frozenset(
-    {"mangrove", "natural_vegetation", "bare_soil", "anthropized", "blocked"}
+    {
+        "mangrove", "migration_candidate", "natural_vegetation", "bare_soil",
+        "anthropized", "blocked",
+    }
 )
-MIGRATION_CANDIDATE_BEHAVIORS = frozenset({"natural_vegetation", "bare_soil"})
+MIGRATION_CANDIDATE_BEHAVIORS = frozenset(
+    {"migration_candidate", "natural_vegetation"}
+)
+
+
+def _migration_candidate_behavior(behavior: str) -> bool:
+    return behavior in MIGRATION_CANDIDATE_BEHAVIORS
 
 CLASS_BEHAVIOR_STYLES: dict[str, tuple[str, str]] = {
     "mangrove": ("Mangrove", "#006d2c"),
-    "natural_vegetation": ("Natural vegetation", "#b2df8a"),
+    "migration_candidate": ("Suitable for migration", "#b2df8a"),
+    # Kept as legacy behavior aliases so existing project files still load.
+    "natural_vegetation": ("Suitable for migration", "#b2df8a"),
     "water": ("Water", "#2b8cbe"),
     "anthropized": ("Anthropized area", "#fdae61"),
     "blocked": ("Blocked area", "#777777"),
@@ -23,7 +37,7 @@ CLASS_BEHAVIOR_STYLES: dict[str, tuple[str, str]] = {
     "fixed": ("Fixed class", "#8c6bb1"),
 }
 STANDARD_CLASS_BEHAVIORS = (
-    "mangrove", "natural_vegetation", "water", "anthropized", "blocked",
+    "mangrove", "migration_candidate", "water", "anthropized", "blocked",
 )
 STANDARD_CLASS_STYLES = {
     behavior: CLASS_BEHAVIOR_STYLES[behavior]
@@ -116,8 +130,10 @@ def build_model_state_catalog(
             }
 
     migrated_code: int | None = None
+    flooded_migrated_code: int | None = None
     if any(item["behavior"] == "mangrove" for item in normalized):
         migrated_code = next_code
+        next_code += 1
         states[str(migrated_code)] = {
             "code": migrated_code,
             "name": "Migrated mangrove",
@@ -126,13 +142,29 @@ def build_model_state_catalog(
             "kind": "migrated",
             "base_code": None,
         }
+        flooded_migrated_code = next_code
+        states[str(flooded_migrated_code)] = {
+            "code": flooded_migrated_code,
+            "name": "Flooded migrated mangrove",
+            "behavior": "mangrove",
+            "color": _shade_color(FLOODED_MANGROVE_COLOR),
+            "kind": "flooded",
+            "base_code": migrated_code,
+            "base_kind": "migrated",
+        }
+        flooded_codes[str(migrated_code)] = flooded_migrated_code
 
     if states and max(int(key) for key in states) > 65535:
         raise ValueError("The model state catalog exceeds the UInt16 raster limit.")
 
     if standard_visuals:
         for item in states.values():
-            group = str(item["behavior"])
+            behavior = str(item["behavior"])
+            group = (
+                "migration_candidate"
+                if _migration_candidate_behavior(behavior)
+                else behavior
+            )
             if item["kind"] == "migrated":
                 group = "migrated_mangrove"
             elif item["kind"] == "flooded" and group == "mangrove":
@@ -147,6 +179,7 @@ def build_model_state_catalog(
         "base_codes": sorted(used_codes),
         "flooded_codes": flooded_codes,
         "migrated_mangrove_code": migrated_code,
+        "flooded_migrated_mangrove_code": flooded_migrated_code,
     }
 
 
@@ -229,7 +262,7 @@ def count_model_states(values: Any, catalog: dict[str, Any]) -> dict[str, int]:
     result: dict[str, int] = {}
     profile_counts = {
         "mangrove": 0,
-        "vegetation": 0,
+        "migration_suitable": 0,
         "water": 0,
         "anthropized": 0,
         "blocked": 0,
@@ -239,7 +272,9 @@ def count_model_states(values: Any, catalog: dict[str, Any]) -> dict[str, int]:
         "flooded_blocked": 0,
         "migrated_mangrove": 0,
         "flooded_mangrove": 0,
-        "flooded_natural": 0,
+        "flooded_original_mangrove": 0,
+        "flooded_migrated_mangrove": 0,
+        "flooded_migration_suitable": 0,
     }
     for raw_code, item in states.items():
         code = int(raw_code)
@@ -252,8 +287,12 @@ def count_model_states(values: Any, catalog: dict[str, Any]) -> dict[str, int]:
         elif kind == "flooded":
             if behavior == "mangrove":
                 profile_counts["flooded_mangrove"] += count
-            elif behavior == "natural_vegetation":
-                profile_counts["flooded_natural"] += count
+                if int(item.get("base_code", -1)) == catalog.get("migrated_mangrove_code"):
+                    profile_counts["flooded_migrated_mangrove"] += count
+                else:
+                    profile_counts["flooded_original_mangrove"] += count
+            elif _migration_candidate_behavior(behavior):
+                profile_counts["flooded_migration_suitable"] += count
             elif behavior == "bare_soil":
                 profile_counts["flooded_bare"] += count
             elif behavior == "anthropized":
@@ -264,8 +303,8 @@ def count_model_states(values: Any, catalog: dict[str, Any]) -> dict[str, int]:
         elif kind == "class":
             if behavior == "mangrove":
                 profile_counts["mangrove"] += count
-            elif behavior == "natural_vegetation":
-                profile_counts["vegetation"] += count
+            elif _migration_candidate_behavior(behavior):
+                profile_counts["migration_suitable"] += count
             elif behavior == "water":
                 profile_counts["water"] += count
             elif behavior == "anthropized":

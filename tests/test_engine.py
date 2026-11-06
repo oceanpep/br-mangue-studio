@@ -81,6 +81,47 @@ def test_migration_without_soil_uses_configured_candidate_profiles():
     assert migrated_code in grid.land_cover_state
 
 
+def test_migrated_mangrove_can_be_flooded_in_both_engines(tmp_path):
+    catalog = make_catalog()
+    migrated_code = int(catalog["migrated_mangrove_code"])
+    flooded_migrated_code = int(catalog["flooded_codes"][str(migrated_code)])
+
+    def make_migrated_grid():
+        return BrMangueGrid(
+            land_cover_state=np.array([50, migrated_code], dtype=np.uint16),
+            relative_elevation=np.array([2.0, 1.0]),
+            soil_class=np.array([-999, -999], dtype=np.int16),
+            column=np.array([0, 1]),
+            row=np.array([0, 0]),
+            neighbors=((1,), (0,)),
+            model_state_catalog=catalog,
+            migration_age=np.array([-1, 3], dtype=np.int16),
+        )
+
+    parameters = ModelParameters(final_time=1, sea_level_rise_rate=0)
+    continuous = make_migrated_grid()
+    continuous.step(1, parameters)
+    assert int(continuous.land_cover_state[1]) == flooded_migrated_code
+    assert int(continuous.migration_age[1]) == -1
+    assert continuous.class_counts()["flooded_migrated_mangrove"] == 1
+    assert continuous.class_counts()["flooded_mangrove"] == 1
+    assert continuous.class_counts()["mangrove_extent"] == 0
+    assert continuous.last_transition_metrics["annual_loss"] == 1
+
+    blocks = PersistentBlockRunner.create_from_grid(
+        make_migrated_grid(), tmp_path / "flooded-migrated-workspace", block_size=1
+    )
+    try:
+        summary = blocks.step(1, parameters)
+        assert int(blocks.current["land_cover_state"][1]) == flooded_migrated_code
+        assert int(blocks.current["migration_age"][1]) == -1
+        assert summary["flooded_migrated_mangrove"] == 1
+        assert summary["mangrove_extent"] == 0
+        assert blocks.last_transition_metrics["annual_loss"] == 1
+    finally:
+        blocks.close()
+
+
 def test_accretion_without_soil_applies_to_mangrove_behaviors_only():
     grid = make_grid()
     grid.soil_class.fill(-999)

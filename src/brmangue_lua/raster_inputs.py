@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 import json
 import re
+import csv
 
 import numpy as np
 import rasterio
@@ -21,11 +22,17 @@ import rasterio
 from .engine import (
     BrMangueGrid,
 )
-from .model_states import CLASS_BEHAVIORS, CLASS_BEHAVIOR_STYLES, STANDARD_CLASS_STYLES, build_model_state_catalog
+from .model_states import (
+    CLASS_BEHAVIORS,
+    CLASS_BEHAVIOR_STYLES,
+    STANDARD_CLASS_STYLES,
+    build_model_state_catalog,
+)
 
 
 SOIL_DISABLED_SENTINEL = -999
 MAX_CUSTOM_MODEL_CLASS_CODE = 32767
+MAPBIOMAS_C11_LEGEND_PATH = Path(__file__).with_name("data") / "mapbiomas_collection_11_legend.csv"
 
 # Default numeric mapping for the built-in demonstration. Users can replace
 # every code through the interface; the core is provider-agnostic.
@@ -206,6 +213,13 @@ def normalize_custom_model_classes(
         name = raw_name.strip()
         color = raw_color.strip()
         behavior = str(item.get("behavior", "fixed")).strip()
+        if behavior == "natural_vegetation":
+            # Preserve old project files while presenting the merged role.
+            behavior = "migration_candidate"
+        elif behavior == "bare_soil":
+            # The former bare-soil label is retained only as a file alias for
+            # the non-migratable blocked-area class.
+            behavior = "blocked"
         if code < 1 or code > MAX_CUSTOM_MODEL_CLASS_CODE:
             raise ValueError(
                 f"A custom class code must be between 1 and {MAX_CUSTOM_MODEL_CLASS_CODE}."
@@ -233,6 +247,78 @@ def normalize_custom_model_classes(
             "behavior": behavior,
         })
     return sorted(result, key=lambda item: item["code"])
+
+
+def load_source_class_legend(
+    path: str | Path | None = None,
+) -> tuple[dict[int, dict[str, str]], str]:
+    """Read source class labels from a MapBiomas-style legend CSV.
+
+    When no path is provided, the bundled MapBiomas Collection 11 legend is
+    used because the standard input mapping uses MapBiomas class codes.
+    Alternate collections or providers can supply their own CSV.
+    """
+    legend_path = Path(path).expanduser().resolve() if path else MAPBIOMAS_C11_LEGEND_PATH
+    if not legend_path.is_file():
+        raise FileNotFoundError(legend_path)
+    with legend_path.open("r", encoding="utf-8-sig", newline="") as stream:
+        sample = stream.read(4096)
+        stream.seek(0)
+        try:
+            dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
+        except csv.Error:
+            dialect = csv.excel
+        reader = csv.DictReader(stream, dialect=dialect)
+        if not reader.fieldnames:
+            raise ValueError("The source class legend CSV has no header row.")
+        columns = {
+            re.sub(r"[^a-z0-9]+", "_", name.strip().lower()).strip("_"): name
+            for name in reader.fieldnames
+        }
+        code_column = next(
+            (columns[key] for key in ("class_id", "class_code", "code", "id") if key in columns),
+            None,
+        )
+        pt_column = next(
+            (columns[key] for key in ("class_name_pt_br", "name_pt_br", "nome_pt_br", "class_name_pt", "name_pt") if key in columns),
+            None,
+        )
+        en_column = next(
+            (columns[key] for key in ("class_name_en", "name_en", "class_name_english", "name_english") if key in columns),
+            None,
+        )
+        generic_name_column = next(
+            (columns[key] for key in ("class_name", "name", "class", "nome") if key in columns),
+            None,
+        )
+        if code_column is None or not (pt_column or en_column or generic_name_column):
+            raise ValueError(
+                "The source legend needs a class_id/code column and a class-name column."
+            )
+        legend: dict[int, dict[str, str]] = {}
+        for row in reader:
+            raw_code = (row.get(code_column) or "").strip()
+            if not raw_code:
+                continue
+            try:
+                code = int(raw_code)
+            except ValueError as exc:
+                raise ValueError(f"Invalid source class code in legend: {raw_code!r}.") from exc
+            pt_name = (row.get(pt_column) or "").strip() if pt_column else ""
+            en_name = (row.get(en_column) or "").strip() if en_column else ""
+            generic_name = (row.get(generic_name_column) or "").strip() if generic_name_column else ""
+            legend[code] = {
+                "pt-BR": pt_name or generic_name or en_name,
+                "en": en_name or generic_name or pt_name,
+            }
+    if not legend:
+        raise ValueError("The source class legend CSV contains no class records.")
+    source = (
+        "MapBiomas Collection 11 (bundled)"
+        if not path
+        else str(legend_path)
+    )
+    return legend, source
 
 
 def _map_land_cover_classes(
@@ -283,9 +369,10 @@ def _map_land_cover_classes(
         source_profile_map = {
             "mangrove": "mangrove",
             "water": "water",
-            "natural_accommodation_candidate": "natural_vegetation",
-            "bare_soil": "bare_soil",
-            "natural_vegetation": "natural_vegetation",
+            "natural_accommodation_candidate": "migration_candidate",
+            "migration_candidate": "migration_candidate",
+            "natural_vegetation": "migration_candidate",
+            "bare_soil": "blocked",
             "anthropized": "anthropized",
             "fixed": "fixed",
             "blocked": "blocked",
@@ -377,6 +464,7 @@ def load_raster_inputs(
     custom_classes: list[dict[str, Any]] | None = None,
     class_mapping_mode: str = "standard",
     exclude_source_codes: list[int] | None = None,
+    source_legend_path: str | Path | None = None,
 ) -> RasterInputSet:
     """Load aligned land-cover and elevation rasters.
 
@@ -412,6 +500,7 @@ def load_raster_inputs(
         raise ValueError("soil_enabled=True requires soil_path.")
 
     custom_definitions = normalize_custom_model_classes(custom_classes)
+    source_class_names, source_legend_source = load_source_class_legend(source_legend_path)
     custom_class_codes = {int(item["code"]) for item in custom_definitions}
     normalized_custom_mapping = {
         int(code): [int(source_code) for source_code in source_codes]
@@ -544,6 +633,11 @@ def load_raster_inputs(
                 "shape": [int(mb.height), int(mb.width)],
                 "crs": mb.crs.to_string() if mb.crs else None,
                 "resolution": [float(mb.res[0]), float(mb.res[1])],
+                "source_class_names": {
+                    str(code): dict(names)
+                    for code, names in source_class_names.items()
+                },
+                "source_class_legend": source_legend_source,
                 "mapping": mapping_meta,
             },
             "custom_model_classes": custom_definitions,
