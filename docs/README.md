@@ -2,6 +2,17 @@
 
 Start with the topic that matches what you need to do.
 
+## Model documentation
+
+- [Technical model documentation — português](MODEL_DOCUMENTATION_PT.md):
+  finalidade, entradas, classes, equações, transições, execução, saídas e
+  limites da versão 1.4.5.
+- [Technical model documentation — English](MODEL_DOCUMENTATION_EN.md):
+  purpose, inputs, classes, equations, transitions, execution, outputs, and
+  limitations for version 1.4.5.
+- [Sea-level forcing and CSV preparation](SEA_LEVEL_TRAJECTORIES.md):
+  constant rates, trajectory format, interpolation, and reproducibility.
+
 ## Using BR-MANGUE Studio
 
 - [Quick-start guide](https://oceanpep.github.io/br-mangue-studio-site/guide.html)

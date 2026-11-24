@@ -10,6 +10,11 @@ spatial cellular-automaton scenarios of mangrove response to sea-level rise.
 Use aligned land-cover and elevation rasters, set the scenario, and inspect
 annual maps, trajectories, transitions, and reproducibility metadata.
 
+Read the [official model documentation in Portuguese](docs/MODEL_DOCUMENTATION_PT.md)
+or [English](docs/MODEL_DOCUMENTATION_EN.md) for the accepted inputs, current
+transition rules and equations, outputs, and interpretation limits of version
+1.4.5.
+
 Version 1.4.5 allows migrated mangrove to become flooded and records that state
 separately from active migrated mangrove. Source cover types share the model
 role **Suitable for migration**; transition tables retain each original
