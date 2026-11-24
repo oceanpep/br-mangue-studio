@@ -5,7 +5,7 @@ implemented by the BR-MANGUE Studio raster engine.
 
 [Leia esta documentação em português](MODEL_DOCUMENTATION_PT.md).
 
-This document describes software behavior, not a single research protocol. Sea-level forcing, tidal influence height, land-cover mapping, accretion, and maturation parameters must be selected and justified for each application. The rules below were checked against version 1.4.5 source code. The previous technical supplement described version 1.4.4; this document updates it to version 1.4.5, including the flooded migrated-mangrove state.
+This is the official technical documentation for BR-MANGUE Studio. It specifies the model's purpose, input data, parameters, states, transition rules, outputs, and reproducibility procedures. Sea-level forcing, tidal influence height, class mapping, accretion, and maturation are application choices and should be reported. The rules described here correspond to the raster engine in release 1.4.5.
 
 <a id="contents"></a>
 ## Contents
@@ -36,9 +36,9 @@ This document describes software behavior, not a single research protocol. Sea-l
 
 BR-MANGUE Studio is a research application for running and inspecting spatial scenarios of mangrove change under sea-level rise. Its engine represents a landscape as a grid of cells and applies local flooding, migration, and accretion rules in annual steps. It is based on cellular automata: each cell has a state and attributes, and its update depends on local conditions and neighboring cells (Wolfram, 1983; O’Sullivan, 2001).
 
-The Studio continues the conceptual line of the model by Bezerra et al. (2014), developed for Maranhão Island, Brazil. The current software is a new computational implementation. Its behaviors, parameters, and equations should be read from this documentation and from the state catalog saved for each run. Equations stated here as current rules describe code version 1.4.5; they are not literal transcriptions of the equations in Bezerra et al.
+BR-MANGUE Studio implements in software the cellular approach applied by Bezerra et al. (2014) on Maranhão Island. This document specifies the rules executed by the Studio; the state catalog saved with each run records the states used. Bezerra et al. (2014) is the conceptual and historical reference for that application.
 
-The software supports explicit scenario construction, inspection of transitions, and comparison of results under documented inputs and parameters. It does not provide a validated forecast for every coastline.
+Each run produces a scenario conditioned on the supplied data, parameters, and rules. The software supports transition inspection and comparison of runs with documented configurations.
 
 <a id="2-spatial-structure-and-variables"></a>
 ## 2. Spatial structure and variables
@@ -111,7 +111,7 @@ Source raster numbers have no universal meaning in the engine. During class mapp
 | **Blocked area** | Cannot receive migration; it may change to its derived flooded state. |
 | **Fixed class** | Retains its state and is not converted by flooding or migration rules. |
 
-The legacy **Bare soil** profile is interpreted as **Blocked area**. In the reference mapping based on MapBiomas Collection 11, apicum (class code 32) is one of the classes that can be assigned to **Suitable for migration**. This is a configurable classification choice, not an automatic ecological rule; the legend and hypothesis of each application must be checked.
+The **Bare soil** profile is interpreted as **Blocked area**. In the reference mapping based on MapBiomas Collection 11, apicum (class code 32) can be assigned to **Suitable for migration**. This association is configurable and should follow the legend and hypothesis adopted for each application.
 
 The MapBiomas reference mapping bundled with the software starts with these
 source-code groups:
@@ -123,8 +123,8 @@ source-code groups:
 | Water | 33 |
 | Anthropized area | 14, 15, 18, 19, 20, 21, 24, 25, 30, 35, 36, 39, 40, 41, 46, 47, 48, 62 |
 
-These associations are starting values for class mapping, not a claim that
-all source classes are ecologically equivalent. In standard mode, observed
+These associations are starting values for class mapping. The ecological
+interpretation of each source class depends on the legend and study design. In standard mode, observed
 codes outside these lists default to **Anthropized area** until the user
 remaps or excludes them. In custom mode, every observed code must be assigned
 to a class or excluded. The bundled MapBiomas Collection 11 legend helps
@@ -133,7 +133,7 @@ identify original class names; also consult the [official MapBiomas Brazil
 
 The project state catalog creates derived states as needed, such as **Migrated mangrove**, **Flooded mangrove**, and **Flooded migrated mangrove**. Derived numeric codes are allocated for each project. Read `model_state_catalog` in `metadata.json` or the raster metadata instead of assuming that numeric codes are fixed across projects.
 
-In version 1.4.5, migrated mangrove reached by the flooding rule becomes **Flooded migrated mangrove**. It no longer counts as active mangrove and can no longer propagate migration. Source classes and the final state remain identifiable in transition tables and in the migration-by-source-class summary.
+When the flooding rule reaches migrated mangrove, it becomes **Flooded migrated mangrove**. This state is excluded from active mangrove extent and cannot propagate migration. Source classes and final states remain identifiable in transition tables and in the migration-by-source-class summary.
 
 <a id="5-forcing-and-parameters"></a>
 ## 5. Forcing and parameters
@@ -148,27 +148,33 @@ In version 1.4.5, migrated mangrove reached by the flooding rule becomes **Flood
 | Migration without suitability layer | Allows the soil filter to be skipped when no soil layer is enabled; neighborhood and elevation conditions remain. | Enabled initially when the layer is off. |
 | Engine and block size | Execution strategy and cells per block for the persistent engine. | Blocks; initial size 10,000 cells. |
 
-These initial values are application settings, not universally recommended parameters. Record the values actually used in each study.
+These are the initial values displayed by the interface. For each study, report the parameters actually used and their sources.
 
 ### Sea-level forcing calculation
 
 In the desktop interface, the constant rate is entered in mm/year and
-converted to metres per annual step. For constant rate $r$ in m/year,
-cumulative change and step increment are
+converted to metres per annual step. In the equation, $r$ is this rate in
+m/year; $t$ is the number of elapsed annual steps; $H_t$ is the cumulative
+rise since the start, in metres; $\delta H_t$ is the rise added in step $t$,
+also in metres; and $H_0=0$ defines the initial reference. Cumulative change
+and annual increment are
 
 $$H_t=tr, \qquad \delta H_t=r \quad (t\geq1),$$
 
-with $H_0=0$. In CSV mode, let $L(y)$ be the interpolated cumulative level in
-mm for calendar year $y$, and let $y_0$ be the initial year. The engine uses
+In CSV mode, $L(y)$ is the interpolated cumulative level, in millimetres, for
+calendar year $y$; $y_0$ is the simulation's initial year; and $t$ is the
+number of annual steps since that year. The denominator 1000 converts
+millimetres to metres. The engine calculates cumulative rise $H_t$ and the
+increment between consecutive years $\delta H_t$ as
 
 $$H_t=\frac{L(y_0+t)-L(y_0)}{1000}, \qquad
 \delta H_t=\frac{L(y_0+t)-L(y_0+t-1)}{1000}.$$
 
-Both values are therefore in metres. $H_t$ feeds threshold $Z_t$, whereas
+Subtracting $L(y_0)$ sets the trajectory to zero at the start of the
+simulation. Both results are in metres. $H_t$ feeds threshold $Z_t$, whereas
 $\delta H_t$ is used for local flood redistribution and the accretion
-regression. The desktop interface accepts the rate in mm/year. For legacy
-unit compatibility, the command-line parameter `--sea-level-rise-rate` uses
-metres per annual step.
+regression. The desktop interface accepts the rate in mm/year. The command
+line parameter `--sea-level-rise-rate` uses metres per annual step.
 
 <a id="6-transition-rules"></a>
 ## 6. Transition rules
@@ -176,25 +182,46 @@ metres per annual step.
 <a id="61-flooding-and-local-redistribution"></a>
 ### 6.1 Flooding and local redistribution
 
-Let $H_t$ be cumulative sea-level change since the simulation start and $\delta H_t$ its annual increment, both converted to metres. The tidal influence height used for migration is
+Let $T$ be the configured tidal influence height, in metres and in the same
+vertical datum as the elevation raster. $H_t$ is cumulative sea-level rise
+since the simulation start, also in metres. The threshold $Z_t$ used to
+evaluate migration eligibility is the sum of these terms:
 
 $$Z_t = T + H_t.$$
 
-Flooding propagates from cells whose state at the start of the year is water or flooded and whose elevation at the start of the step is nonnegative. For a source cell $i$, the set of valid lower-elevation neighbors is
+Flooding starts from a source cell $i$ whose state at the start of the year
+is water or flooded and whose elevation is nonnegative. $\mathcal{N}_i$ is
+the set of valid cells in the Moore neighborhood of $i$ (up to eight
+neighbors); $j$ denotes one of those cells; and $z_i^t$ and $z_j^t$ are their
+elevations, in metres, in the snapshot at the start of annual step $t$. The
+set $\mathcal{L}_i^t$ includes only neighbors with elevation strictly lower
+than the source:
 
 $$\mathcal{L}_i^t = \{j \in \mathcal{N}_i : z_j^t < z_i^t\}.$$
 
-The annual increment is divided equally between the source and those neighbors:
+The quantity $|\mathcal{L}_i^t|$ is the number of those neighbors. The
+sea-level increment $\delta H_t$, in metres per annual step, is divided
+equally between the source and the neighbors in the set:
 
 $$q_i^t = \frac{\delta H_t}{1 + |\mathcal{L}_i^t|}.$$
 
-The engine adds $q_i^t$ to the current elevation of the source and each lower neighbor. A neighbor that was not already water or flooded changes to the flooded state corresponding to its base class, when that state is defined in the catalog. Lower-elevation comparisons and source states are read from the start-of-year snapshot. Newly flooded cells can contribute as sources only in the next year. Multiple sources can contribute to one cell in the same year.
+Thus, $q_i^t$ is one source's contribution to the elevation of the source
+cell and each lower neighbor, in metres per annual step. The engine adds this
+value to their current elevations. A neighbor that was not already water or
+flooded changes to the flooded state corresponding to its base class when
+that state is defined in the catalog. Elevation comparisons and source
+states come from the start-of-year snapshot. Newly flooded cells can act as
+sources only in the following year; multiple sources can contribute to one
+cell in the same year.
 
 Tidal height $T$ and threshold $Z_t$ define migration eligibility; flood
 propagation follows the local rule above, starting from water or flooded
 states.
 
-This is a local rule implemented in BR-MANGUE Studio, conceptually continuing the antecedent model of Bezerra et al. (2014). It is not a hydrodynamic solution or a literal reproduction of that paper's equation. The engine does not calculate salinity, current velocity, detailed hydraulic connectivity, or a water mass balance.
+Flooding is represented by this local propagation rule. The engine tracks
+categorical states and elevation; it does not calculate salinity, current
+velocity, detailed hydraulic connectivity, or water mass balance. The
+cellular approach maintains conceptual continuity with Bezerra et al. (2014).
 
 <a id="62-migration-eligibility"></a>
 ### 6.2 Migration eligibility
@@ -206,26 +233,44 @@ Original mangrove and mature migrated mangrove may act as sources. A cell can re
 3. its current elevation is $z_j \leq Z_t$;
 4. it passes the soil filter when that layer is enabled.
 
-In compact notation, let $\mathcal{C}_{\mathrm{suitable}}$ be the set of
-classes with the **Suitable for migration** profile and let $Q_j^t$ be the
-soil condition. For a source $i$, neighbor $j$ is eligible when
+In compact notation, $\mathcal{C}_{\mathrm{suitable}}$ is the set of classes
+with the **Suitable for migration** profile; $Q_j^{t,\mathrm{visit}}$ is true
+when candidate cell $j$ passes the soil condition or when the soil filter is
+disabled. The indicator function $\mathbf{1}[C]$ equals 1 when condition
+$C$ is true and 0 otherwise. For a source $i$, candidate neighbor $j$ is
+eligible when
 
 $$E_{ij}^{t,\mathrm{visit}} = \mathbf{1}[j \in \mathcal{N}_i]
 \mathbf{1}[c_j^{t,\mathrm{visit}} \in \mathcal{C}_{\mathrm{suitable}}]
 \mathbf{1}[z_j^{t,\mathrm{visit}} \leq Z_t]\mathbf{1}[Q_j^{t,\mathrm{visit}}].$$
 
-The factor $\mathbf{1}[Q_j^t]$ is 1 when the soil filter is skipped or when
-the destination has an accepted soil profile. Conversion occurs only when
-$E_{ij}^t=1$ and cell $i$ meets the source rule described in the next section.
+Each indicator factor represents one condition: $j \in \mathcal{N}_i$ checks
+that the candidate is a valid neighbor; $c_j^{t,\mathrm{visit}} \in
+\mathcal{C}_{\mathrm{suitable}}$ checks its class; $z_j^{t,\mathrm{visit}}\leq
+Z_t$ compares its current elevation with the threshold; and
+$Q_j^{t,\mathrm{visit}}$ applies the soil filter. The product equals 1 only
+when all four conditions are satisfied; in that case
+$E_{ij}^{t,\mathrm{visit}}=1$, and otherwise $E_{ij}^{t,\mathrm{visit}}=0$.
+Conversion also requires source cell $i$ to satisfy rule
+$P_i^{t,\mathrm{visit}}$ in the next section.
 
 When accepted, the cell receives the **Migrated mangrove** state, starts at age zero, and ceases to be a suitable land-cover class. The rule traverses cells sequentially: flooding reads start-of-year states and elevations, whereas soil and migration read current values when each cell is visited. The maturation delay prevents a newly converted cell from immediately opening a new front.
 
 <a id="63-migrated-mangrove-maturity"></a>
 ### 6.3 Migrated-mangrove maturity
 
-Parameter $M$ is the configured number of complete years. Original mangrove can be a source immediately; migrated mangrove becomes a source only when its age reaches $M$. A newly converted cell receives age 0. With the default $M=3$, it must complete three annual steps before propagating. If it is flooded before then, it becomes **Flooded migrated mangrove**, its age is cleared, and it ceases to be a source.
+Parameter $M$ is the configured number of complete years. $a_i^{t,\mathrm{visit}}$
+is the age of migrated mangrove in cell $i$, counted in completed annual
+steps; $c_i^{t,\mathrm{visit}}$ is that cell's current state. Original
+mangrove can act as a source immediately; migrated mangrove becomes a source
+only when its age reaches $M$. A newly converted cell receives age 0. With
+$M=3$, it must complete three annual steps before propagating. If flooded
+before then, it becomes **Flooded migrated mangrove**, its age is cleared,
+and it ceases to be a source.
 
-The age counter is a configurable operational rule, not an automatic estimate of reproductive age for any species or location. Research on early reproduction in *Rhizophora mangle* provides context for biological variation, but does not calibrate the default value for all forests (Dangremond & Feller, 2016).
+The age counter $M$ is a configurable operational parameter. Research on
+early reproduction in *Rhizophora mangle* documents biological variation
+that provides context for this parameter (Dangremond & Feller, 2016).
 
 The source test can be summarized as
 
@@ -233,10 +278,14 @@ $$P_i^{t,\mathrm{visit}} = \mathbf{1}[c_i^{t,\mathrm{visit}}=\mathrm{mangrove}]
 \lor\left(\mathbf{1}[c_i^{t,\mathrm{visit}}=\mathrm{migrated\ mangrove}]
 \mathbf{1}[a_i^{t,\mathrm{visit}}\geq M]\right).$$
 
-When converted to migrated mangrove, a cell's age starts at zero. It advances
-in later steps while the state remains active. The superscript `visit` denotes
-current values at the point when the cell is examined in the annual traversal,
-not a simultaneous state computed for the whole grid.
+In the equation, $P_i^{t,\mathrm{visit}}$ equals 1 when cell $i$ can act as
+a source and 0 otherwise; $\mathbf{1}[C]$ is the indicator function defined
+above; $\lor$ means “or”; and the product of the two indicators in
+parentheses requires both a migrated-mangrove state and an age of at least
+$M$. When converted to migrated mangrove, a cell's age starts at zero and
+advances in later steps while the state remains active. The superscript
+`visit` identifies current values when a cell is examined in the annual
+traversal.
 
 <a id="64-soil-suitability-layer"></a>
 ### 6.4 Soil-suitability layer
@@ -248,20 +297,44 @@ Mangrove soil and channel profiles can pass the migrated-soil profile to neighbo
 <a id="65-vertical-accretion"></a>
 ### 6.5 Vertical accretion
 
-The user may supply a constant rate $A$ in mm/year. If the field is empty, the engine uses the empirical regression attributed to Alongi (2008, Fig. 7):
+The user may supply a constant rate $A_{\mathrm{user}}$ in mm/year. If the
+field is empty, the engine uses the empirical regression attributed to
+Alongi (2008, Fig. 7):
 
 $$A_t = 1.693 + 0.939x_t,$$
 
-where $x_t = 1000\,\delta H_t$ is the annual sea-level increment in mm/year, and $A_t$ is also in mm/year. The value is converted to metres and applied to elevation at each step. Accretion is applied to states with mangrove behavior: original mangrove, migrated mangrove, and their flooded states. A supplied fixed rate replaces the regression for the entire run. This empirical equation is not a sediment mass-conservation law or a site-specific calibration; studies may substitute a documented rate.
+Here, $x_t=1000\,\delta H_t$ converts the annual sea-level increment
+$\delta H_t$ from metres to millimetres per year; $A_t$ is the resulting
+accretion rate, also in mm/year; 1.693 mm/year is the regression intercept;
+and 0.939 is its dimensionless slope because input and output use mm/year.
+The calculated rate is converted
+to metres and applied to elevation at each annual step. Accretion applies to
+states with mangrove behavior: original mangrove, migrated mangrove, and
+their flooded states. When the user supplies a constant rate, it replaces
+the regression for the entire run. The empirical relation links sea-level
+increment to accretion rate; an application may supply its own documented
+rate.
 
-In general, the applied rate is $A_t=A_{\mathrm{user}}$ when a constant rate
-is supplied; otherwise, the regression above is used. The elevation adjustment
-is $\Delta z_{i,\mathrm{accretion}}^t=A_t/1000$ metres per annual step.
+In the command-line workflow, `--legacy-lua-accretion-typo` restricts
+accretion to cells with soil profile 3 (mangrove soil). Report this option
+when used because it changes which cells receive the increment.
+
+When $A_{\mathrm{user}}$ is supplied, the applied rate is
+$A_t=A_{\mathrm{user}}$; otherwise, $A_t$ comes from the regression. The
+adjustment $\Delta z_{i,\mathrm{accretion}}^t=A_t/1000$ is the elevation
+increase for cell $i$, in metres, during annual step $t$; division by 1000
+converts millimetres to metres.
 
 <a id="comparison-with-the-antecedent-model"></a>
 ### Comparison with the antecedent model
 
-Bezerra et al. (2014) describe the antecedent formulation for sea-level rise, flooding, and mangrove migration on Maranhão Island. The current version retains the cellular approach and local spatial propagation, but its forcing, increment distribution, behavior mapping, configurable maturation, accretion treatment, raster processing, and flooded states are those implemented in version 1.4.5. Cite the 2014 article as the conceptual and historical antecedent; use this documentation and the software release to describe what the Studio executes.
+Bezerra et al. (2014) describe the reference formulation for sea-level rise,
+flooding, and mangrove migration on Maranhão Island. BR-MANGUE Studio retains
+the cellular approach and local spatial propagation. Its forcing,
+increment distribution, behavior mapping, configurable maturation, accretion
+treatment, raster processing, and flooded states are specified in this
+documentation and in the software release. Cite the 2014 article as the
+conceptual and historical antecedent of the application.
 
 <a id="rule-and-equation-provenance"></a>
 ### Rule and equation provenance
@@ -269,9 +342,9 @@ Bezerra et al. (2014) describe the antecedent formulation for sea-level rise, fl
 | Component | Provenance and attribution |
 | --- | --- |
 | Cellular automaton and Moore neighborhood | Established modelling concepts; the raster grid and eight-cell neighborhood are implementation choices (Wolfram, 1983; O’Sullivan, 2001). |
-| Antecedent mangrove model | Bezerra et al. (2014) is the conceptual and historical reference for the Maranhão Island application; it is not the literal specification of engine 1.4.5. |
+| Antecedent mangrove model | Bezerra et al. (2014) is the conceptual and historical reference for the Maranhão Island application. |
 | Constant or CSV forcing | Unit conversion, linear interpolation, and rebasing to the initial year are software input rules. The file and its source define the climate scenario. |
-| Local flood redistribution | Operational equation implemented in BR-MANGUE Studio; it should not be attributed as a literal equation from Bezerra et al. (2014). |
+| Local flood redistribution | Operational equation specified in this documentation and implemented in BR-MANGUE Studio. |
 | Accretion | Empirical relation from Alongi (2008, Fig. 7), used when no constant rate is supplied; a study-specific value overrides it. |
 | Maturation and eligibility | Configurable software parameters and conditions. Mangrove reproductive literature provides biological context, but does not calibrate the three-year default for every location (Dangremond & Feller, 2016). |
 | Extent, gains, and losses | Operational definitions of states and metrics in the code; flooded states are counted separately from active extent. |
@@ -281,7 +354,9 @@ Bezerra et al. (2014) describe the antecedent formulation for sea-level rise, fl
 
 At each step, the engine preserves the start-of-year states, elevations, and migration ages, and calculates the forcing ($H_t$, $\delta H_t$, $Z_t$, and accretion). It then traverses valid cells in stored order. For each cell, it advances age if it was already migrated mangrove, applies the flooding contribution indicated by the snapshot, updates soil profiles, checks migration, and applies accretion. Cover changes from flooding and migration, and elevation adjustments, are available to subsequent current-value rules according to this visit order. At the end, the engine counts states and metrics, writes enabled outputs, and uses the resulting state as the next year's starting state.
 
-The workflow is deterministic for the same inputs, configuration, software version, and cell order. Update order is part of the specification; it is not a simultaneous order-independent update.
+With the same inputs, configuration, software version, and cell order, the
+workflow is deterministic. The engine traverses valid cells sequentially;
+this order is part of the annual update rule.
 
 <a id="8-execution-engines"></a>
 ## 8. Execution engines
@@ -314,14 +389,17 @@ Transition and migration reports are exported by the desktop workflow; files may
 
 The `mangrove_extent` metric counts unflooded original mangrove and active migrated mangrove. Flooded mangrove and flooded migrated mangrove are counted separately and excluded from active extent. Annual gain counts cells entering active extent; annual loss counts cells leaving it. Thus, a flooded mangrove cell contributes to active loss while its flooded area remains recorded as a separate state.
 
-The nominal number of cell-year updates is $U=N\times T$, where $N$ is the number of valid cells and $T$ is the number of computed annual steps. It counts spatial units updated per step; it is not the number of years per run.
+The nominal number of cell-year updates is $U=N\times n_{\mathrm{steps}}$,
+where $N$ is the number of valid cells and $n_{\mathrm{steps}}$ is the total
+number of computed annual steps. For example, a run with $N$ valid cells over
+75 steps counts $75N$ cell-year updates.
 
 <a id="10-interpretation-and-limitations"></a>
 ## 10. Interpretation and limitations
 
-BR-MANGUE Studio spatializes an explicit set of rules. It does not solve hydrodynamic equations or directly represent salinity, daily tides, waves, propagule transport, species differences, population dynamics, mortality from other causes, or a sediment mass balance. A sea-level rate or trajectory does not correct the raster's vertical datum. Suitable, blocked, and flooded areas depend on each application's class mapping and assumptions.
+The engine tracks categorical land-cover states and elevation in annual steps. Salinity, daily tides, waves, propagule transport, species differences, population dynamics, mortality from other causes, and sediment mass balance are outside the simulated variables. The elevation raster and tidal height must use the same vertical datum. Suitable, blocked, and flooded areas follow the class mapping and assumptions defined for each application.
 
-Interpret results as scenarios conditional on the inputs and documented rules. A scientific application should report raster sources and processing, vertical reference, classes and source codes, sea-level forcing, parameters, soil options, software version, and independent calibration or validation procedures. Computational performance and execution checks do not replace independent ecological evaluation.
+Results are scenarios conditioned on the inputs and documented rules. A scientific application should report raster sources and processing, vertical reference, classes and source codes, sea-level forcing, parameters, soil options, software version, and independent calibration or validation procedures. Ecological evaluation complements computational checks and performance tests.
 
 <a id="11-reproducibility-and-citation"></a>
 ## 11. Reproducibility and citation

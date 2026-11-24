@@ -5,7 +5,7 @@
 
 [Read this documentation in English](MODEL_DOCUMENTATION_EN.md).
 
-Esta documentação descreve o comportamento do software, não um protocolo único de pesquisa. Forçante do nível do mar, altura de influência da maré, mapeamento das classes, acreção e maturação devem ser escolhidos e justificados em cada aplicação. As regras foram conferidas no código da versão 1.4.5. O suplemento técnico anterior descrevia a versão 1.4.4; este documento incorpora as mudanças da 1.4.5, incluindo o estado de mangue migrado inundado.
+Esta é a documentação técnica oficial do BR-MANGUE Studio. Ela especifica a finalidade do modelo, os dados de entrada, os parâmetros, os estados, as regras de transição, as saídas e os procedimentos de reprodução. Forçante do nível do mar, altura de influência da maré, mapeamento das classes, acreção e maturação são escolhas de cada aplicação e devem ser registrados. As regras descritas correspondem ao motor raster do release 1.4.5.
 
 <a id="sumario"></a>
 ## Sumário
@@ -36,9 +36,9 @@ Esta documentação descreve o comportamento do software, não um protocolo úni
 
 O BR-MANGUE Studio é um aplicativo de pesquisa que executa e inspeciona cenários espaciais de mudanças nos manguezais sob elevação do nível do mar. O motor representa a paisagem como uma grade de células e aplica, em passos anuais, regras locais de inundação, migração e acreção. O modelo é baseado em autômatos celulares: cada célula tem um estado e atributos, e sua atualização depende de condições próprias e das células vizinhas (Wolfram, 1983; O’Sullivan, 2001).
 
-O Studio dá continuidade conceitual ao modelo de Bezerra et al. (2014), desenvolvido para a Ilha do Maranhão. A implementação atual é uma nova implementação computacional. Seus comportamentos, parâmetros e equações devem ser lidos nesta documentação e no catálogo gravado em cada execução. As equações aqui apresentadas como regras atuais descrevem o código 1.4.5; não devem ser citadas como transcrição literal das equações de Bezerra et al.
+O BR-MANGUE Studio desenvolve computacionalmente a abordagem celular aplicada por Bezerra et al. (2014) na Ilha do Maranhão. Esta documentação especifica as regras executadas pelo Studio; o catálogo gravado em cada execução registra os estados usados. Bezerra et al. (2014) é a referência conceitual e histórica da aplicação.
 
-O programa permite construir cenários explícitos, inspecionar transições e comparar resultados sob entradas e parâmetros documentados. Ele não fornece, por si só, uma previsão validada para qualquer litoral.
+Cada execução produz um cenário condicionado aos dados, parâmetros e regras informados. O programa permite inspecionar as transições e comparar execuções com configurações documentadas.
 
 <a id="2-estrutura-espacial-e-variaveis"></a>
 ## 2. Estrutura espacial e variáveis
@@ -111,7 +111,7 @@ Os números do raster de origem não têm significado universal no motor. No map
 | **Área bloqueada** | Não recebe migração; pode passar ao estado derivado inundado. |
 | **Classe fixa** | Mantém seu estado e não é convertida pelas regras de inundação ou migração. |
 
-O perfil legado **Solo exposto** é interpretado como **Área bloqueada**. No mapeamento de referência baseado no MapBiomas Coleção 11, o apicum (código 32) é uma das classes que pode ser atribuída a **Apta para migração**. Isso é uma decisão configurável de classificação, não uma regra ecológica automática: a legenda e a hipótese de cada aplicação devem ser verificadas.
+O perfil **Solo exposto** é interpretado como **Área bloqueada**. No mapeamento de referência baseado no MapBiomas Coleção 11, o apicum (código 32) pode ser atribuído a **Apta para migração**. Essa associação é configurável e deve acompanhar a legenda e a hipótese adotadas em cada aplicação.
 
 O mapeamento MapBiomas de referência incluído no software começa com estes
 grupos de códigos:
@@ -123,8 +123,9 @@ grupos de códigos:
 | Água | 33 |
 | Área antropizada | 14, 15, 18, 19, 20, 21, 24, 25, 30, 35, 36, 39, 40, 41, 46, 47, 48, 62 |
 
-Essas associações são valores iniciais do mapeamento, não uma afirmação de
-que todos os códigos sejam ecologicamente equivalentes. No modo padrão,
+Essas associações são valores iniciais do mapeamento. A interpretação
+ecológica de cada classe de origem depende da legenda e do desenho do estudo.
+No modo padrão,
 códigos observados que não estejam nessa lista são atribuídos a **Área
 antropizada** até que o usuário os remapeie ou exclua. No modo personalizado,
 cada código observado precisa receber uma classe ou ser excluído. A legenda
@@ -134,7 +135,7 @@ originais; consulte também a [documentação oficial da legenda MapBiomas Brasi
 
 O catálogo de estados do projeto inclui estados derivados conforme os perfis usados, como **Mangue migrado**, **Mangue inundado** e **Mangue migrado inundado**. Códigos numéricos derivados são alocados conforme o catálogo de cada execução; leia `model_state_catalog` em `metadata.json` ou nos metadados do raster, em vez de presumir códigos fixos entre projetos.
 
-Na versão 1.4.5, mangue migrado alcançado pela regra de inundação passa a **Mangue migrado inundado**. Ele deixa de contar como mangue ativo e de propagar migração. As classes de origem e o estado final continuam identificáveis nas tabelas de transição e no resumo por classe de origem.
+Quando a regra de inundação alcança mangue migrado, ele passa a **Mangue migrado inundado**. Esse estado deixa de contar como mangue ativo e de propagar migração. As classes de origem e o estado final permanecem identificáveis nas tabelas de transição e no resumo por classe de origem.
 
 <a id="5-forcantes-e-parametros"></a>
 ## 5. Forçantes e parâmetros
@@ -149,27 +150,34 @@ Na versão 1.4.5, mangue migrado alcançado pela regra de inundação passa a **
 | Migração sem camada de aptidão | Permite ignorar o filtro de solo quando não há camada ativada; vizinhança e elevação continuam obrigatórias. | Opção habilitada inicialmente quando a camada está desligada. |
 | Motor e tamanho do bloco | Estratégia de execução e número de células por bloco no motor persistente. | Blocos; tamanho inicial de 10.000 células. |
 
-Esses valores iniciais são opções do aplicativo, não parâmetros recomendados universalmente. Registre as escolhas efetivas de cada estudo.
+Esses são os valores iniciais apresentados pela interface. Em cada estudo, registre os parâmetros efetivamente usados e suas fontes.
 
 ### Cálculo da forçante do nível do mar
 
 Na interface, a taxa constante é informada em mm/ano e convertida para metros
-por passo anual. Se $r$ for a taxa constante em m/ano, a mudança acumulada e
-o incremento do passo são
+por passo anual. Na equação, $r$ é essa taxa em m/ano; $t$ é o número de passos
+anuais transcorridos; $H_t$ é a elevação acumulada desde o início, em metros;
+$\delta H_t$ é a elevação acrescentada no passo $t$, também em metros; e
+$H_0=0$ define a referência inicial. Assim, a mudança acumulada e o incremento
+anual são
 
 $$H_t=tr, \qquad \delta H_t=r \quad (t\geq1),$$
 
-com $H_0=0$. No modo CSV, seja $L(y)$ o nível acumulado interpolado em mm no
-ano-calendário $y$, e $y_0$ o ano inicial. O motor usa
+No modo CSV, $L(y)$ é o nível acumulado interpolado, em milímetros, no
+ano-calendário $y$; $y_0$ é o ano inicial da simulação; e $t$ é o número de
+passos anuais desde esse ano. O denominador 1000 converte milímetros em
+metros. O motor calcula a elevação acumulada $H_t$ e o incremento entre dois
+anos consecutivos $\delta H_t$ por
 
 $$H_t=\frac{L(y_0+t)-L(y_0)}{1000}, \qquad
 \delta H_t=\frac{L(y_0+t)-L(y_0+t-1)}{1000}.$$
 
-Assim, ambos ficam em metros; $H_t$ alimenta o limiar $Z_t$, enquanto
+Como $L(y_0)$ é subtraído, a série tem valor zero no início da simulação.
+Ambos os resultados ficam em metros; $H_t$ alimenta o limiar $Z_t$, enquanto
 $\delta H_t$ é usado na redistribuição local da inundação e na regressão de
 acreção. A interface gráfica recebe a taxa em mm/ano. Para compatibilidade
-com unidades legadas, o parâmetro `--sea-level-rise-rate` da linha de comando
-usa metros por passo anual.
+com a convenção do parâmetro de linha de comando `--sea-level-rise-rate`,
+esse parâmetro usa metros por passo anual.
 
 <a id="6-regras-de-transicao"></a>
 ## 6. Regras de transição
@@ -177,25 +185,45 @@ usa metros por passo anual.
 <a id="61-inundacao-e-redistribuicao-local"></a>
 ### 6.1 Inundação e redistribuição local
 
-Seja $H_t$ a elevação acumulada do nível do mar desde o ano inicial e $\delta H_t$ seu incremento anual, ambos convertidos para metros. A altura da zona de influência usada para migração é
+Seja $T$ a altura de influência da maré definida na configuração, em metros e
+no mesmo datum vertical do raster de elevação. $H_t$ é a elevação acumulada do
+nível do mar desde o ano inicial, também em metros. O limiar $Z_t$ usado para
+avaliar a elegibilidade à migração é a soma desses termos:
 
 $$Z_t = T + H_t.$$
 
-A inundação é propagada a partir das células cujo estado no início do ano é água ou inundado e cuja elevação no início do passo é não negativa. Para uma fonte $i$, o conjunto de vizinhas válidas mais baixas é
+A inundação parte de uma célula-fonte $i$ cujo estado no início do ano é água
+ou inundado e cuja elevação é não negativa. $\mathcal{N}_i$ é o conjunto de
+células válidas na vizinhança de Moore de $i$ (até oito vizinhas); $j$ indica
+uma dessas células; e $z_i^t$ e $z_j^t$ são as elevações, em metros, no
+instantâneo do início do passo anual $t$. O conjunto $\mathcal{L}_i^t$
+reúne apenas as vizinhas com elevação estritamente menor que a da fonte:
 
 $$\mathcal{L}_i^t = \{j \in \mathcal{N}_i : z_j^t < z_i^t\}.$$
 
-O incremento anual é repartido igualmente entre a fonte e essas vizinhas:
+O número $|\mathcal{L}_i^t|$ é a quantidade dessas vizinhas. O incremento de
+nível do mar $\delta H_t$, em metros por passo anual, é dividido igualmente
+entre a fonte e as vizinhas reunidas no conjunto:
 
 $$q_i^t = \frac{\delta H_t}{1 + |\mathcal{L}_i^t|}.$$
 
-O motor adiciona $q_i^t$ à elevação corrente da fonte e de cada vizinha mais baixa. Uma vizinha que ainda não era água ou inundada passa ao estado inundado correspondente à classe-base, se o catálogo definir esse estado. A relação de menor elevação e os estados-fontes são lidos do instantâneo do início do ano. Novas células inundadas passam a contribuir como fontes somente no ano seguinte. Várias fontes podem contribuir para a mesma célula no mesmo ano.
+Assim, $q_i^t$ é a contribuição de uma fonte para a elevação da própria
+célula-fonte e de cada vizinha mais baixa, em metros por passo anual. O motor
+adiciona esse valor às elevações correntes dessas células. Uma vizinha que
+ainda não era água ou inundada passa ao estado inundado correspondente à
+classe-base, se esse estado estiver definido no catálogo. As comparações de
+elevação e os estados-fontes vêm do instantâneo do início do ano. Novas
+células inundadas passam a contribuir como fontes somente no ano seguinte;
+várias fontes podem contribuir para a mesma célula no mesmo ano.
 
 A altura de maré $T$ e o limiar $Z_t$ definem a elegibilidade para migração;
 a propagação da inundação segue a regra local acima, a partir dos estados de
 água ou inundados.
 
-Esta é uma regra local implementada no BR-MANGUE Studio, com continuidade conceitual em relação ao modelo antecedente de Bezerra et al. (2014). Não é uma solução hidrodinâmica nem uma fórmula copiada literalmente daquele artigo. O motor não calcula salinidade, velocidade de corrente, conectividade hidráulica detalhada ou balanço de massa da água.
+A inundação é representada por essa regra de propagação local. O motor acompanha
+estados categóricos e elevação; não calcula salinidade, velocidade de corrente,
+conectividade hidráulica detalhada nem balanço de massa da água. A abordagem
+celular mantém continuidade conceitual com Bezerra et al. (2014).
 
 <a id="62-migracao-e-elegibilidade"></a>
 ### 6.2 Migração e elegibilidade
@@ -207,26 +235,42 @@ Mangue original e mangue migrado maduro podem ser fontes. Para receber migraçã
 3. ter elevação corrente $z_j \leq Z_t$;
 4. passar pelo filtro de solo, quando a camada estiver ativada.
 
-Em notação compacta, seja $\mathcal{C}_{\mathrm{apta}}$ o conjunto de classes
-com perfil **Apta para migração** e $Q_j^t$ a condição de solo. Para uma fonte
-$i$, a elegibilidade da vizinha $j$ pode ser escrita como
+Em notação compacta, $\mathcal{C}_{\mathrm{apta}}$ é o conjunto de classes
+com perfil **Apta para migração**; $Q_j^{t,\mathrm{visita}}$ vale verdadeiro
+quando a condição de solo da célula candidata $j$ é aceita ou quando o filtro
+de solo está desligado. A função indicadora $\mathbf{1}[C]$ vale 1 quando a
+condição $C$ é verdadeira e 0 quando é falsa. Para uma fonte $i$, a
+elegibilidade da vizinha candidata $j$ é
 
 $$E_{ij}^{t,\mathrm{visita}} = \mathbf{1}[j \in \mathcal{N}_i]
 \mathbf{1}[c_j^{t,\mathrm{visita}} \in \mathcal{C}_{\mathrm{apta}}]
 \mathbf{1}[z_j^{t,\mathrm{visita}} \leq Z_t]\mathbf{1}[Q_j^{t,\mathrm{visita}}].$$
 
-O fator $\mathbf{1}[Q_j^t]$ vale 1 quando o filtro é ignorado ou quando o solo
-do destino tem um perfil aceito. A conversão ocorre somente se $E_{ij}^t=1$ e
-a célula $i$ satisfaz a regra de fonte descrita na seção seguinte.
+Cada fator indicadora representa uma condição: $j \in \mathcal{N}_i$ verifica
+se a candidata é vizinha válida; $c_j^{t,\mathrm{visita}} \in
+\mathcal{C}_{\mathrm{apta}}$ verifica sua classe; $z_j^{t,\mathrm{visita}}\leq
+Z_t$ compara a elevação corrente com o limiar; e $Q_j^{t,\mathrm{visita}}$
+aplica o filtro de solo. O produto vale 1 somente quando as quatro condições
+são satisfeitas; nesse caso, $E_{ij}^{t,\mathrm{visita}}=1$, e nos demais
+$E_{ij}^{t,\mathrm{visita}}=0$. A conversão também exige que a célula-fonte
+$i$ satisfaça a regra $P_i^{t,\mathrm{visita}}$ da seção seguinte.
 
 Quando aceita, a célula recebe o estado **Mangue migrado**, inicia com idade zero e deixa de ser uma classe de cobertura apta. A regra percorre as células sequencialmente: a inundação consulta os estados e as elevações do começo do ano, enquanto solo e migração consultam valores correntes no instante em que cada célula é visitada. O atraso de maturação impede que uma célula recém-convertida abra imediatamente uma nova frente.
 
 <a id="63-maturacao-do-mangue-migrado"></a>
 ### 6.3 Maturação do mangue migrado
 
-O parâmetro $M$ é o número configurado de anos completos. Mangue original pode ser fonte imediatamente; mangue migrado só é fonte quando sua idade alcança $M$. Uma célula recém-convertida recebe idade 0. Com o padrão $M=3$, precisa completar três passos anuais antes de propagar. Se inundar antes disso, passa a **Mangue migrado inundado**, sua idade é encerrada e ela deixa de ser fonte.
+O parâmetro $M$ é o número configurado de anos completos. $a_i^{t,\mathrm{visita}}$
+é a idade do mangue migrado na célula $i$, contada em passos anuais completos;
+$c_i^{t,\mathrm{visita}}$ é o estado corrente dessa célula. Mangue original
+pode ser fonte imediatamente; mangue migrado só é fonte quando sua idade
+alcança $M$. Uma célula recém-convertida recebe idade 0. Com $M=3$, precisa
+completar três passos anuais antes de propagar. Se inundar antes disso, passa
+a **Mangue migrado inundado**, sua idade é encerrada e ela deixa de ser fonte.
 
-O contador é uma regra operacional configurável, não uma estimativa automática de idade reprodutiva de qualquer espécie ou local. Estudos sobre reprodução precoce de *Rhizophora mangle* contextualizam a possibilidade de variação, mas não calibram o valor padrão para todas as florestas (Dangremond e Feller, 2016).
+O contador $M$ é um parâmetro operacional configurável. Estudos sobre
+reprodução precoce de *Rhizophora mangle* documentam variação biológica que
+contextualiza esse parâmetro (Dangremond e Feller, 2016).
 
 O teste de fonte pode ser resumido por
 
@@ -234,10 +278,14 @@ $$P_i^{t,\mathrm{visita}} = \mathbf{1}[c_i^{t,\mathrm{visita}}=\mathrm{mangue}]
 \lor\left(\mathbf{1}[c_i^{t,\mathrm{visita}}=\mathrm{mangue\ migrado}]
 \mathbf{1}[a_i^{t,\mathrm{visita}}\geq M]\right).$$
 
-Na conversão para mangue migrado, a idade é iniciada em zero. Ela avança nos
-passos posteriores enquanto o estado permanecer ativo. O sobrescrito
-`visita` indica os valores correntes no ponto em que a célula é examinada na
-ordem anual, e não um estado simultâneo calculado para toda a grade.
+Na equação, $P_i^{t,\mathrm{visita}}$ vale 1 quando a célula $i$ pode atuar
+como fonte e 0 nos demais casos; $\mathbf{1}[C]$ é a função indicadora já
+definida; $\lor$ significa “ou”; e o produto das duas indicadoras entre
+parênteses exige que o estado seja mangue migrado e que a idade seja pelo
+menos $M$. Na conversão para mangue migrado, a idade começa em zero e avança
+nos passos posteriores enquanto o estado permanecer ativo. O sobrescrito
+`visita` identifica os valores correntes quando a célula é examinada na ordem
+anual.
 
 <a id="64-camada-de-aptidao-do-solo"></a>
 ### 6.4 Camada de aptidão do solo
@@ -249,20 +297,43 @@ O solo de mangue e o canal podem transferir o perfil de solo migrado às célula
 <a id="65-acrecao-vertical"></a>
 ### 6.5 Acreção vertical
 
-O usuário pode informar uma taxa constante $A$ em mm/ano. Se o campo ficar vazio, o motor usa a regressão empírica atribuída a Alongi (2008, Fig. 7):
+O usuário pode informar uma taxa constante $A_{\mathrm{usuário}}$ em mm/ano.
+Se o campo ficar vazio, o motor usa a regressão empírica atribuída a Alongi
+(2008, Fig. 7):
 
 $$A_t = 1{,}693 + 0{,}939x_t,$$
 
-em que $x_t = 1000\,\delta H_t$ é o incremento anual do nível do mar em mm/ano, e $A_t$ também resulta em mm/ano. O valor é convertido para metros e aplicado à elevação em cada passo. O motor aplica acreção aos estados com comportamento de mangue: mangue original, mangue migrado e seus estados inundados. Uma taxa fixa informada substitui a regressão durante toda a execução. A equação empírica não é uma lei de conservação sedimentar nem uma calibração local; estudos podem substituí-la por uma taxa documentada.
+Aqui, $x_t=1000\,\delta H_t$ converte o incremento anual do nível do mar
+$\delta H_t$ de metros para milímetros por ano; $A_t$ é a taxa de acreção
+resultante, também em mm/ano; 1,693 mm/ano é o intercepto da regressão; e
+0,939 é seu coeficiente angular adimensional, pois entrada e saída estão em
+mm/ano. A taxa calculada
+é convertida para metros e aplicada à elevação em cada passo anual. Acreção
+incide sobre estados com comportamento de mangue: mangue original, mangue
+migrado e seus estados inundados. Quando o usuário informa uma taxa constante,
+ela substitui a regressão durante toda a execução. A relação empírica associa
+o incremento do nível do mar à taxa de acreção; uma aplicação pode informar
+uma taxa própria documentada.
 
-De forma geral, a taxa aplicada é $A_t=A_{\mathrm{usuário}}$ quando uma taxa
-constante foi informada; caso contrário, usa-se a regressão acima. O ajuste de
-elevação é $\Delta z_{i,\mathrm{acreção}}^t=A_t/1000$ metros por passo anual.
+Na linha de comando, `--legacy-lua-accretion-typo` restringe a acreção às
+células com perfil de solo 3 (solo de mangue). Registre essa opção quando
+utilizada, pois ela altera quais células recebem o incremento.
+
+Se $A_{\mathrm{usuário}}$ foi informado, a taxa aplicada é
+$A_t=A_{\mathrm{usuário}}$; caso contrário, $A_t$ vem da regressão. O ajuste
+$\Delta z_{i,\mathrm{acreção}}^t=A_t/1000$ é o aumento da elevação da célula
+$i$ em metros no passo anual $t$; a divisão por 1000 converte mm em m.
 
 <a id="comparacao-com-o-modelo-antecedente"></a>
 ### Comparação com o modelo antecedente
 
-Bezerra et al. (2014) descrevem a formulação antecedente para simular nível do mar, inundação e migração na Ilha do Maranhão. A versão atual mantém a abordagem celular e a propagação espacial local, mas sua forçante, repartição do incremento, mapeamento comportamental, maturação configurável, tratamento da acreção, processamento raster e estados inundados são os definidos pela implementação 1.4.5. Use o artigo de 2014 como antecedente conceitual e histórico; use esta documentação e o release do software para descrever o que o Studio executa.
+Bezerra et al. (2014) descrevem a formulação de referência para simular nível
+do mar, inundação e migração na Ilha do Maranhão. O BR-MANGUE Studio mantém a
+abordagem celular e a propagação espacial local. A forçante, a repartição do
+incremento, o mapeamento comportamental, a maturação configurável, o
+tratamento da acreção, o processamento raster e os estados inundados são
+especificados nesta documentação e no release do software. Cite o artigo de
+2014 como antecedente conceitual e histórico da aplicação.
 
 <a id="origem-das-regras-e-expressoes"></a>
 ### Origem das regras e expressões
@@ -270,9 +341,9 @@ Bezerra et al. (2014) descrevem a formulação antecedente para simular nível d
 | Componente | Procedência e atribuição |
 | --- | --- |
 | Autômato celular e vizinhança de Moore | Conceito de modelagem estabelecido na literatura; a grade raster e a vizinhança de oito células são escolhas desta implementação (Wolfram, 1983; O’Sullivan, 2001). |
-| Modelo antecedente de manguezal | Bezerra et al. (2014) é a referência conceitual e histórica para a aplicação na Ilha do Maranhão; não é a especificação literal do motor 1.4.5. |
+| Modelo antecedente de manguezal | Bezerra et al. (2014) é a referência conceitual e histórica para a aplicação na Ilha do Maranhão. |
 | Forçante constante ou CSV | Conversão de unidades, interpolação linear e rebase ao ano inicial são regras de entrada implementadas no software. O arquivo e sua fonte definem o cenário climático. |
-| Redistribuição local de inundação | Equação operacional implementada no BR-MANGUE Studio; não deve ser atribuída como equação literal de Bezerra et al. (2014). |
+| Redistribuição local de inundação | Equação operacional especificada nesta documentação e implementada no BR-MANGUE Studio. |
 | Acreção | Relação empírica de Alongi (2008, Fig. 7), usada como padrão quando não se informa taxa constante; uma taxa de estudo informada a substitui. |
 | Maturação e elegibilidade | Parâmetros e condições configuráveis do software. A literatura sobre reprodução de mangues oferece contexto biológico, não calibra o padrão de três anos para todos os locais (Dangremond; Feller, 2016). |
 | Extensão, ganhos e perdas | Definições operacionais dos estados e métricas implementadas no código; inundados são contados à parte da extensão ativa. |
@@ -282,7 +353,7 @@ Bezerra et al. (2014) descrevem a formulação antecedente para simular nível d
 
 Em cada passo, o motor preserva estados, elevações e idades do começo do ano e calcula a forçante ($H_t$, $\delta H_t$, $Z_t$ e acreção). Em seguida, percorre as células válidas na ordem armazenada. Para cada célula, avança a idade se ela já era mangue migrado, aplica a contribuição de inundação indicada pelo instantâneo, atualiza os perfis de solo, testa a migração e aplica acreção. As alterações de cobertura por inundação e migração, assim como os ajustes de elevação, ficam disponíveis às regras correntes subsequentes conforme a ordem de visita. Ao final, o motor conta estados e métricas, grava as saídas habilitadas e usa o novo estado como início do ano seguinte.
 
-O fluxo é determinístico para as mesmas entradas, configuração, versão e ordem das células. A sequência de atualização faz parte da especificação; não se trata de uma atualização simultânea independente da ordem.
+Com as mesmas entradas, configuração, versão e ordem das células, o fluxo é determinístico. O motor percorre sequencialmente as células válidas; essa ordem integra a regra de atualização anual.
 
 <a id="8-motores-de-execucao"></a>
 ## 8. Motores de execução
@@ -315,14 +386,14 @@ Os relatórios de transição e migração são exportados pelo fluxo da interfa
 
 A métrica `mangrove_extent` conta mangue original não inundado e mangue migrado ativo. Mangue inundado e mangue migrado inundado são contados separadamente e ficam fora da extensão ativa. Ganho anual conta células que entraram na extensão ativa; perda anual conta células que saíram dela. Assim, uma célula de mangue inundada contribui para a perda ativa, enquanto sua área inundada permanece registrada em outro estado.
 
-O número nominal de atualizações célula-ano é $U=N\times T$, em que $N$ é o número de células válidas e $T$ o número de passos anuais calculados. É uma contagem de unidades espaciais atualizadas por passo, não um número de anos por execução.
+O número nominal de atualizações célula-ano é $U=N\times n_{\mathrm{passos}}$, em que $N$ é o número de células válidas e $n_{\mathrm{passos}}$ é o total de passos anuais calculados. Por exemplo, uma execução com $N$ células válidas durante 75 passos contabiliza $75N$ atualizações célula-ano.
 
 <a id="10-interpretacao-e-limites"></a>
 ## 10. Interpretação e limites
 
-O BR-MANGUE Studio espacializa um conjunto explícito de regras. Não resolve equações hidrodinâmicas nem representa diretamente salinidade, marés diárias, ondas, transporte de propágulos, diferenças entre espécies, dinâmica demográfica, mortalidade por causas independentes ou balanço de massa sedimentar. Uma taxa ou trajetória de elevação do mar não corrige o datum vertical do raster. Áreas aptas, bloqueadas e inundadas dependem do mapeamento e das hipóteses da aplicação.
+O motor acompanha estados categóricos da cobertura e elevação em passos anuais. Salinidade, marés diárias, ondas, transporte de propágulos, diferenças entre espécies, dinâmica demográfica, mortalidade por causas independentes e balanço de massa sedimentar ficam fora das variáveis simuladas. O raster de elevação e a altura de maré devem compartilhar o mesmo datum vertical. A classificação das áreas aptas, bloqueadas e inundadas segue o mapeamento e as hipóteses definidos para cada aplicação.
 
-Interprete os resultados como cenários condicionais às entradas e às regras documentadas. Uma aplicação científica deve declarar a origem e o processamento dos rasters, a referência vertical, as classes e seus códigos de origem, a forçante do nível do mar, os parâmetros, as opções de solo, a versão do software e procedimentos independentes de calibração ou validação. Funcionamento computacional e testes de desempenho não substituem avaliação ecológica independente.
+Os resultados são cenários condicionados às entradas e às regras documentadas. Uma aplicação científica deve declarar a origem e o processamento dos rasters, a referência vertical, as classes e seus códigos de origem, a forçante do nível do mar, os parâmetros, as opções de solo, a versão do software e os procedimentos independentes de calibração ou validação. A avaliação ecológica complementa a verificação computacional e os testes de desempenho.
 
 <a id="11-reprodutibilidade-e-citacao"></a>
 ## 11. Reprodutibilidade e citação
