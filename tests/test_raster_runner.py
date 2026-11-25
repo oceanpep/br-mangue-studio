@@ -449,12 +449,21 @@ def test_transition_report_names_derived_states_from_catalog(tmp_path, monkeypat
     assert rows.cells.tolist() == [2, 2]
 
 
-def test_transition_report_preserves_mapbiomas_source_names_for_migrated_cells(tmp_path):
-    land_cover_path = tmp_path / "mapbiomas_c11.tif"
+def test_transition_report_preserves_user_source_names_for_migrated_cells(tmp_path):
+    land_cover_path = tmp_path / "land_cover.tif"
     elevation_path = tmp_path / "dem.tif"
     _write_raster(land_cover_path, np.array([[32, 12]], dtype=np.uint8), dtype="uint8")
     _write_raster(elevation_path, np.ones((1, 2), dtype=np.float32), dtype="float32", nodata=-9999)
-    inputs = load_raster_inputs(land_cover_path, elevation_path, soil_enabled=False)
+    legend_path = tmp_path / "source_legend.csv"
+    legend_path.write_text(
+        "code;name_pt_br;name_en\n"
+        "32;Classe local de migração 1;Local migration class 1\n"
+        "12;Classe local de migração 2;Local migration class 2\n",
+        encoding="utf-8",
+    )
+    inputs = load_raster_inputs(
+        land_cover_path, elevation_path, soil_enabled=False, source_legend_path=legend_path
+    )
     catalog = inputs.metadata["model_state_catalog"]
     migrated_code = int(catalog["migrated_mangrove_code"])
     flooded_migrated_code = int(catalog["flooded_codes"][str(migrated_code)])
@@ -467,10 +476,12 @@ def test_transition_report_preserves_mapbiomas_source_names_for_migrated_cells(t
         tmp_path / "transition_by_land_cover_code.csv",
     )
     transitions = pd.read_csv(report)
-    assert transitions.source_land_cover_class_pt_br.tolist() == ["Formação Campestre", "Apicum"]
-    assert transitions.source_land_cover_class_en.tolist() == ["Grassland Formation", "Hypersaline Tidal Flat"]
+    expected_pt = ["Classe local de migração 1", "Classe local de migração 2"]
+    expected_en = ["Local migration class 1", "Local migration class 2"]
+    assert transitions.source_land_cover_class_pt_br.tolist() == expected_pt
+    assert transitions.source_land_cover_class_en.tolist() == expected_en
     migration = pd.read_csv(tmp_path / "migration_by_source_class.csv")
-    assert migration.source_land_cover_class_pt_br.tolist() == ["Formação Campestre", "Apicum"]
+    assert migration.source_land_cover_class_pt_br.tolist() == expected_pt
     assert migration.total_cells_with_migrated_mangrove_origin.tolist() == [1, 1]
     assert migration.share_of_migrated_origin_cells_pct.tolist() == [50.0, 50.0]
 
