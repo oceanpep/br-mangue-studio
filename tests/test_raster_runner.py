@@ -476,8 +476,8 @@ def test_transition_report_preserves_user_source_names_for_migrated_cells(tmp_pa
         tmp_path / "transition_by_land_cover_code.csv",
     )
     transitions = pd.read_csv(report)
-    expected_pt = ["Classe local de migração 1", "Classe local de migração 2"]
-    expected_en = ["Local migration class 1", "Local migration class 2"]
+    expected_pt = ["Classe local de migração 2", "Classe local de migração 1"]
+    expected_en = ["Local migration class 2", "Local migration class 1"]
     assert transitions.source_land_cover_class_pt_br.tolist() == expected_pt
     assert transitions.source_land_cover_class_en.tolist() == expected_en
     migration = pd.read_csv(tmp_path / "migration_by_source_class.csv")
