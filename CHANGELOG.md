@@ -2,6 +2,13 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [1.4.6] — 2026-11-25
+
+- Show the recommended software citation and Zenodo concept DOI at startup.
+- Add **Help → Contact and support** with an email address for reporting
+  software or model problems and requesting clarification.
+- Provide both notices in English and Brazilian Portuguese.
+
 ## [1.4.5] — 2026-11-06
 
 - Allow migrated mangrove to transition to its own flooded state in continuous

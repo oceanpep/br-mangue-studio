@@ -160,7 +160,7 @@ def _model_legend_handles(
         for name, color in STANDARD_DISPLAY_STYLES.values()
     ]
 
-APP_VERSION = "1.4.5"
+APP_VERSION = "1.4.6"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -1063,6 +1063,7 @@ class BRMangueStudio(tk.Tk):
         self._apply_language()
         self.after(100, self._poll_messages)
         self.after(1000, self._update_resources)
+        self.after(700, self._show_startup_citation_notice)
 
     def _set_window_icon(self) -> None:
         """Use native ICO on Windows and bundled PNG sizes on Linux."""
@@ -1163,9 +1164,31 @@ class BRMangueStudio(tk.Tk):
             "Desktop interface for the BR-MANGUE cellular model.\n"
             "The model accepts aligned user-provided rasters; inputs are read-only and products are saved in the project results folder.",
         ))
+        help_menu.add_command(label="Contact and support", command=self._show_support_contact)
         menu.add_cascade(label="Help", menu=help_menu)
         self._menus = (menu, project, data, help_menu)
         self.config(menu=menu)
+
+    def _show_startup_citation_notice(self) -> None:
+        """Ask users to acknowledge and cite the software when it is used."""
+        self._show_message(
+            "showinfo",
+            "Please cite BR-MANGUE Studio",
+            "When using BR-MANGUE Studio, please acknowledge the software and cite its authors.\n\n"
+            "Recommended citation:\n"
+            "Sousa, F. M., Bezerra, D. da S., Costa, S. S., & Santos, R. L. (2026).\n"
+            "BR-MANGUE Studio (version 1.4.6) [software]. Zenodo.\n"
+            "https://doi.org/10.5281/zenodo.23509308",
+        )
+
+    def _show_support_contact(self) -> None:
+        """Show the email address for reporting problems and asking questions."""
+        self._show_message(
+            "showinfo",
+            "Contact and support",
+            "If you find a problem in the model or software, or need clarification, please email:\n"
+            "pepocean@gmail.com",
+        )
 
     def _create_linux_shortcuts(self) -> None:
         try:
