@@ -2,6 +2,12 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [1.4.7] — 2026-11-25
+
+- Show the startup citation dialog after the splash screen closes and the main
+  window is visible, keeping the dialog in front of the application.
+- Update the citation displayed by the application to version 1.4.7.
+
 ## [1.4.6] — 2026-11-25
 
 - Show the recommended software citation and Zenodo concept DOI at startup.

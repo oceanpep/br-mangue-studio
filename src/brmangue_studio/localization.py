@@ -79,7 +79,7 @@ _PT_BR = {
     "When using BR-MANGUE Studio, please acknowledge the software and cite its authors.": "Ao usar o BR-MANGUE Studio, dê os devidos créditos à ferramenta e cite seus autores.",
     "Recommended citation:": "Citação recomendada:",
     "Sousa, F. M., Bezerra, D. da S., Costa, S. S., & Santos, R. L. (2026).": "Sousa, F. M., Bezerra, D. da S., Costa, S. S., & Santos, R. L. (2026).",
-    "BR-MANGUE Studio (version 1.4.6) [software]. Zenodo.": "BR-MANGUE Studio (versão 1.4.6) [software]. Zenodo.",
+    "BR-MANGUE Studio (version 1.4.7) [software]. Zenodo.": "BR-MANGUE Studio (versão 1.4.7) [software]. Zenodo.",
     "If you find a problem in the model or software, or need clarification, please email:": "Se encontrar alguma falha no modelo ou no programa, ou precisar de esclarecimentos, envie um e-mail para:",
     "Create Linux shortcuts": "Criar atalhos no Linux",
     "Application shortcuts": "Atalhos do aplicativo",
