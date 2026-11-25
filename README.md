@@ -13,12 +13,12 @@ annual maps, trajectories, transitions, and reproducibility metadata.
 Read the [official model documentation in Portuguese](docs/MODEL_DOCUMENTATION_PT.md)
 or [English](docs/MODEL_DOCUMENTATION_EN.md) for the accepted inputs, current
 transition rules and equations, outputs, and interpretation limits of version
-1.4.7.
+1.4.8.
 
-Version 1.4.7 displays the recommended Zenodo citation in front of the main
-window after the startup screen closes. Version 1.4.6 added **Help → Contact
-and support** for software or model problems and questions. Both messages
-follow the selected interface language.
+Version 1.4.8 opens maximized on Linux. Version 1.4.7 displays the recommended
+Zenodo citation in front of the main window after the startup screen closes.
+Version 1.4.6 added **Help → Contact and support** for software or model
+problems and questions. Both messages follow the selected interface language.
 
 Version 1.4.5 allows migrated mangrove to become flooded and records that state
 separately from active migrated mangrove. Source cover types share the model
@@ -62,8 +62,8 @@ rasters, project files, and simulation results remain on your computer.
 
 | Platform | Availability | Verified environment |
 | --- | --- | --- |
-| Windows 10/11, 64-bit | Stable 1.4.7 | Windows desktop release |
-| Linux x86_64 | Research preview 1.4.7 | Built and smoke-tested on Ubuntu 22.04 LTS |
+| Windows 10/11, 64-bit | Stable 1.4.8 | Windows desktop release |
+| Linux x86_64 | Research preview 1.4.8 | Built and smoke-tested on Ubuntu 22.04 LTS |
 
 The interface is available in English and Brazilian Portuguese. English is the
 default for a new installation; choose a language in the application header.
@@ -187,7 +187,7 @@ model rules, outputs, or performance measurements.
 
 ## Citation, license, and support
 
-Cite version 1.4.7 using the [Zenodo concept DOI](https://doi.org/10.5281/zenodo.23509308),
+Cite version 1.4.8 using the [Zenodo concept DOI](https://doi.org/10.5281/zenodo.23509308),
 which identifies the software across versions. The version-specific DOI will be
 listed here after Zenodo archives this release. The
 repository is distributed under the [MIT License](LICENSE). For reproducible

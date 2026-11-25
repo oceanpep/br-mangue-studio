@@ -160,7 +160,7 @@ def _model_legend_handles(
         for name, color in STANDARD_DISPLAY_STYLES.values()
     ]
 
-APP_VERSION = "1.4.7"
+APP_VERSION = "1.4.8"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -518,6 +518,7 @@ def _show_splash(app: tk.Tk) -> tk.Toplevel:
         splash.destroy()
         app.deiconify()
         app.lift()
+        app.after(100, app._maximize_linux_window)
         # Wait until the main window is mapped and raised before opening the
         # citation dialog; otherwise it can remain behind the application.
         app.after(300, app._show_startup_citation_notice)
@@ -1067,6 +1068,17 @@ class BRMangueStudio(tk.Tk):
         self.after(100, self._poll_messages)
         self.after(1000, self._update_resources)
 
+    def _maximize_linux_window(self) -> None:
+        """Start the Linux desktop window maximized while retaining its title bar."""
+        if not sys.platform.startswith("linux") or not self.winfo_exists():
+            return
+        try:
+            # Tk exposes -zoomed on X11 as the window manager's maximize request.
+            self.wm_attributes("-zoomed", True)
+        except tk.TclError:
+            # Keep the regular window geometry if a compositor lacks this hint.
+            return
+
     def _set_window_icon(self) -> None:
         """Use native ICO on Windows and bundled PNG sizes on Linux."""
         icon_path = _resource_path("BR-MANGUE_BR_icon.ico")
@@ -1179,7 +1191,7 @@ class BRMangueStudio(tk.Tk):
             "When using BR-MANGUE Studio, please acknowledge the software and cite its authors.\n\n"
             "Recommended citation:\n"
             "Sousa, F. M., Bezerra, D. da S., Costa, S. S., & Santos, R. L. (2026).\n"
-            "BR-MANGUE Studio (version 1.4.7) [software]. Zenodo.\n"
+            "BR-MANGUE Studio (version 1.4.8) [software]. Zenodo.\n"
             "https://doi.org/10.5281/zenodo.23509308",
         )
 

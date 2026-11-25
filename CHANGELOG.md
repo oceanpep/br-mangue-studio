@@ -2,6 +2,10 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [1.4.8] — 2026-11-25
+
+- Open the main window maximized on Linux after the splash screen closes.
+
 ## [1.4.7] — 2026-11-25
 
 - Show the startup citation dialog after the splash screen closes and the main
