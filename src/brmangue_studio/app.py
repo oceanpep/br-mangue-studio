@@ -160,7 +160,7 @@ def _model_legend_handles(
         for name, color in STANDARD_DISPLAY_STYLES.values()
     ]
 
-APP_VERSION = "1.4.9"
+APP_VERSION = "1.4.10"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -1184,7 +1184,7 @@ class BRMangueStudio(tk.Tk):
             "When using BR-MANGUE Studio, please acknowledge the software and cite its authors.\n\n"
             "Recommended citation:\n"
             "Sousa, F. M., Bezerra, D. da S., Costa, S. S., & Santos, R. L. (2026).\n"
-            "BR-MANGUE Studio (version 1.4.9) [software]. Zenodo.\n"
+            "BR-MANGUE Studio (version 1.4.10) [software]. Zenodo.\n"
             "https://doi.org/10.5281/zenodo.23509308",
         )
 
@@ -1558,6 +1558,64 @@ class BRMangueStudio(tk.Tk):
         self._update_crs_suggestions(self.target_crs_var.get())
 
     def _build_class_tab(self, parent: ttk.Frame) -> None:
+        # Keep the complete class-mapping form accessible on smaller screens.
+        # Previously only the raster-code list lived in a scrollable canvas,
+        # leaving the explanatory text and mapping controls above it fixed in
+        # place and pushing most of the list below the visible area.
+        outer = parent
+        outer.rowconfigure(0, weight=1)
+        outer.columnconfigure(0, weight=1)
+        self.class_scroll_canvas = tk.Canvas(outer, highlightthickness=0)
+        self.class_scrollbar = ttk.Scrollbar(
+            outer, orient="vertical", command=self.class_scroll_canvas.yview
+        )
+        self.class_scroll_content = ttk.Frame(self.class_scroll_canvas)
+        self.class_scroll_content.columnconfigure(0, weight=1)
+        self.class_scroll_content.bind(
+            "<Configure>",
+            lambda _: self.class_scroll_canvas.configure(
+                scrollregion=self.class_scroll_canvas.bbox("all")
+            ),
+        )
+        window_id = self.class_scroll_canvas.create_window(
+            (0, 0), window=self.class_scroll_content, anchor="nw"
+        )
+        self.class_scroll_canvas.bind(
+            "<Configure>",
+            lambda event: self.class_scroll_canvas.itemconfigure(
+                window_id, width=event.width
+            ),
+        )
+        self.class_scroll_canvas.configure(
+            yscrollcommand=self.class_scrollbar.set
+        )
+        self.class_scroll_canvas.grid(row=0, column=0, sticky="nsew")
+        self.class_scrollbar.grid(row=0, column=1, sticky="ns")
+        parent = self.class_scroll_content
+
+        def scroll_class_tab(event: tk.Event) -> str | None:
+            target = self.winfo_containing(event.x_root, event.y_root)
+            while target is not None:
+                if target is self.class_scroll_content:
+                    if getattr(event, "num", None) == 4:
+                        direction = -1
+                    elif getattr(event, "num", None) == 5:
+                        direction = 1
+                    elif getattr(event, "delta", 0):
+                        direction = -1 if event.delta > 0 else 1
+                    else:
+                        return None
+                    self.class_scroll_canvas.yview_scroll(direction, "units")
+                    return "break"
+                target = getattr(target, "master", None)
+            return None
+
+        # Mouse-wheel scrolling complements the visible scrollbar. The handler
+        # only consumes wheel events while the pointer is inside this tab.
+        self.bind_all("<MouseWheel>", scroll_class_tab, add="+")
+        self.bind_all("<Button-4>", scroll_class_tab, add="+")
+        self.bind_all("<Button-5>", scroll_class_tab, add="+")
+
         parent.columnconfigure(0, weight=1)
         ttk.Label(parent, text="Source class → model class", font=("Segoe UI", 10, "bold")).pack(anchor="w")
         ttk.Label(parent, text="Assign each numeric code according to your input legend. No dataset-specific code meanings are assumed; excluded codes become NoData.", wraplength=360, foreground="#5d6b78").pack(anchor="w", pady=(3, 8))
@@ -1633,17 +1691,8 @@ class BRMangueStudio(tk.Tk):
         ).pack(anchor="w", pady=(4, 5))
         self.custom_class_list = ttk.Frame(custom_frame)
         self.custom_class_list.pack(fill="x")
-        container = ttk.Frame(parent)
-        container.pack(fill="both", expand=True)
-        container.columnconfigure(0, weight=1)
-        self.class_canvas = tk.Canvas(container, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(container, orient="vertical", command=self.class_canvas.yview)
-        self.class_inner = ttk.Frame(self.class_canvas)
-        self.class_inner.bind("<Configure>", lambda _: self.class_canvas.configure(scrollregion=self.class_canvas.bbox("all")))
-        self.class_canvas.create_window((0, 0), window=self.class_inner, anchor="nw")
-        self.class_canvas.configure(yscrollcommand=scrollbar.set)
-        self.class_canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        self.class_inner = ttk.Frame(parent)
+        self.class_inner.pack(fill="x", expand=False)
         ttk.Label(self.class_inner, text="Inspect the land-cover raster to list its classes.").pack(anchor="w", pady=8)
         self._refresh_custom_class_list()
 

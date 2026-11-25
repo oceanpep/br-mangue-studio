@@ -14,8 +14,10 @@ Read the [official model documentation in Portuguese](docs/MODEL_DOCUMENTATION_P
 or [English](docs/MODEL_DOCUMENTATION_EN.md) for accepted inputs, explicit
 class mapping, current transition rules and equations, outputs, and limits.
 
-Version 1.4.9 opens maximized on Linux and requires explicit class mapping for
-new projects. Optional CSV labels can add the names from any source legend to
+Version 1.4.10 opens maximized on Linux and makes the full class-mapping panel
+scrollable, including its instructions, mapping controls, and source-class
+table. It requires explicit class mapping for new projects. Optional CSV labels
+can add the names from any source legend to
 the result tables. The class-mapping panel makes no assumptions about the
 provider or meaning of numeric raster codes. The center tab is named
 **Simulation rules**.
@@ -59,8 +61,8 @@ rasters, project files, and simulation results remain on your computer.
 
 | Platform | Availability | Verified environment |
 | --- | --- | --- |
-| Windows 10/11, 64-bit | Stable 1.4.9 | Windows desktop release |
-| Linux x86_64 | Research preview 1.4.9 | Built and smoke-tested on Ubuntu 22.04 LTS |
+| Windows 10/11, 64-bit | Stable 1.4.10 | Windows desktop release |
+| Linux x86_64 | Research preview 1.4.10 | Built and smoke-tested on Ubuntu 22.04 LTS |
 
 The interface is available in English and Brazilian Portuguese. English is the
 default for a new installation; choose a language in the application header.
@@ -184,7 +186,7 @@ model rules, outputs, or performance measurements.
 
 ## Citation, license, and support
 
-Cite version 1.4.9 using the [Zenodo concept DOI](https://doi.org/10.5281/zenodo.23509308),
+Cite version 1.4.10 using the [Zenodo concept DOI](https://doi.org/10.5281/zenodo.23509308),
 which identifies the software across versions. The version-specific DOI will be
 listed here after Zenodo archives this release. The
 repository is distributed under the [MIT License](LICENSE). For reproducible

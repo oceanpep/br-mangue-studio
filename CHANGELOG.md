@@ -2,6 +2,12 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [1.4.10] — 2026-11-25
+
+- Make the full **Class mapping** panel vertically scrollable on smaller screens,
+  including its guidance, mapping controls, and source-class table.
+- Support mouse-wheel scrolling within the class-mapping panel.
+
 ## [1.4.9] — 2026-11-25
 
 - Require explicit source-code mapping in new desktop projects; no provider-specific class legend is preselected.
