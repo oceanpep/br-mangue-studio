@@ -1,11 +1,11 @@
 # BR-MANGUE Studio — technical model documentation
 
-**Documented version:** 1.4.5 · **Language:** English · **Scope:** rules
+**Documented release:** 1.4.9 · **Language:** English · **Scope:** rules
 implemented by the BR-MANGUE Studio raster engine.
 
 [Leia esta documentação em português](MODEL_DOCUMENTATION_PT.md).
 
-This is the official technical documentation for BR-MANGUE Studio. It specifies the model's purpose, input data, parameters, states, transition rules, outputs, and reproducibility procedures. Sea-level forcing, tidal influence height, class mapping, accretion, and maturation are application choices and should be reported. The rules described here correspond to the raster engine in release 1.4.5.
+This is the official technical documentation for BR-MANGUE Studio. It specifies the model's purpose, input data, parameters, states, transition rules, outputs, and reproducibility procedures. Sea-level forcing, tidal influence height, class mapping, accretion, and maturation are application choices and should be reported. The rules described here correspond to the raster engine in the current BR-MANGUE Studio release.
 
 <a id="contents"></a>
 ## Contents
@@ -111,25 +111,7 @@ Source raster numbers have no universal meaning in the engine. During class mapp
 | **Blocked area** | Cannot receive migration; it may change to its derived flooded state. |
 | **Fixed class** | Retains its state and is not converted by flooding or migration rules. |
 
-The **Bare soil** profile is interpreted as **Blocked area**. In the reference mapping based on MapBiomas Collection 11, apicum (class code 32) can be assigned to **Suitable for migration**. This association is configurable and should follow the legend and hypothesis adopted for each application.
-
-The MapBiomas reference mapping bundled with the software starts with these
-source-code groups:
-
-| Initial profile | Source codes |
-| --- | --- |
-| Mangrove | 5 |
-| Suitable for migration | 6, 11, 12, 23, 32, 49, 50 |
-| Water | 33 |
-| Anthropized area | 14, 15, 18, 19, 20, 21, 24, 25, 30, 35, 36, 39, 40, 41, 46, 47, 48, 62 |
-
-These associations are starting values for class mapping. The ecological
-interpretation of each source class depends on the legend and study design. In standard mode, observed
-codes outside these lists default to **Anthropized area** until the user
-remaps or excludes them. In custom mode, every observed code must be assigned
-to a class or excluded. The bundled MapBiomas Collection 11 legend helps
-identify original class names; also consult the [official MapBiomas Brazil
-30 m Collection 11 legend documentation](https://brasil.mapbiomas.org/iniciativas-e-produtos/cobertura-e-uso-da-terra/cobertura-30m/cobertura/).
+The **Bare soil** profile is interpreted as **Blocked area**. Source raster codes do not have universal meanings. In a new desktop project, assign each observed code to a model behavior or exclude it; the software assumes no particular land-cover product or code scheme. A user-provided CSV legend can add readable source-class names to output tables. It supplies labels only and does not change class assignments or simulation rules. Without a CSV, source codes remain numeric in the reports.
 
 The project state catalog creates derived states as needed, such as **Migrated mangrove**, **Flooded mangrove**, and **Flooded migrated mangrove**. Derived numeric codes are allocated for each project. Read `model_state_catalog` in `metadata.json` or the raster metadata instead of assuming that numeric codes are fixed across projects.
 
@@ -406,7 +388,7 @@ Results are scenarios conditioned on the inputs and documented rules. A scientif
 
 To reproduce a run, archive original and prepared rasters, legends, mask, class configuration, sea-level data, parameters, project file, output metadata, and exact software version. Projects with CSV trajectories store the samples and source hash; each run records the annual forcing used.
 
-The DOI for release 1.4.5 is [10.5281/zenodo.24018559](https://doi.org/10.5281/zenodo.24018559). The [GitHub repository](https://github.com/oceanpep/br-mangue-studio) hosts source code and releases.
+Cite BR-MANGUE Studio using the [Zenodo concept DOI](https://doi.org/10.5281/zenodo.23509308). The [GitHub repository](https://github.com/oceanpep/br-mangue-studio) hosts source code and releases.
 
 <a id="12-references"></a>
 ## 12. References
@@ -415,6 +397,5 @@ The DOI for release 1.4.5 is [10.5281/zenodo.24018559](https://doi.org/10.5281/z
 - Bezerra, D. da S., Amaral, S., Kampel, M., & Andrade, P. R. (2014). Simulating sea-level rise impacts on mangrove ecosystem adjacent to anthropic areas: The case of Maranhão Island, Brazilian Northeast. *Pan-American Journal of Aquatic Sciences*, 9(3), 188–198. [Article PDF](https://panamjas.org/pdf_artigos/PANAMJAS_9(3)_188-198.pdf).
 - Dangremond, E. M., & Feller, I. C. (2016). Precocious reproduction increases at the leading edge of a mangrove range expansion. *Ecology and Evolution*, 6(14), 5087–5092. [https://doi.org/10.1002/ece3.2270](https://doi.org/10.1002/ece3.2270).
 - O’Sullivan, D. (2001). Exploring spatial process dynamics using irregular cellular automaton models. *Geographical Analysis*, 33(1), 1–18. [https://doi.org/10.1111/j.1538-4632.2001.tb00433.x](https://doi.org/10.1111/j.1538-4632.2001.tb00433.x).
-- Sousa, F. M., Bezerra, D. da S., Costa, S. S., & Santos, R. L. (2026). *BR-MANGUE Studio* (version 1.4.5) [software]. Zenodo. [https://doi.org/10.5281/zenodo.24018559](https://doi.org/10.5281/zenodo.24018559).
+- Sousa, F. M., Bezerra, D. da S., Costa, S. S., & Santos, R. L. (2026). *BR-MANGUE Studio* [software]. Zenodo. [https://doi.org/10.5281/zenodo.23509308](https://doi.org/10.5281/zenodo.23509308).
 - Wolfram, S. (1983). Statistical mechanics of cellular automata. *Reviews of Modern Physics*, 55(3), 601–644. [https://doi.org/10.1103/RevModPhys.55.601](https://doi.org/10.1103/RevModPhys.55.601).
-- MapBiomas Brasil. (2026). *Brazil land cover and land use, 30 m — Collection 11: class codes and legend description*. [Official page](https://brasil.mapbiomas.org/iniciativas-e-produtos/cobertura-e-uso-da-terra/cobertura-30m/cobertura/).

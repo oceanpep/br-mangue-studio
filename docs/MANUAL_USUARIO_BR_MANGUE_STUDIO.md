@@ -150,7 +150,7 @@ atribui cada código a um papel do modelo:
 | **Blocked area** | Área explicitamente bloqueada à migração; pode passar ao estado inundado | Não |
 | **Exclude** | NoData, borda inválida ou classe fora do domínio do estudo | Não participa |
 
-A categoria `Suitable for migration` reúne classes originais distintas para aplicar a mesma regra do modelo; os códigos e nomes originais são mantidos nos resultados. No mapeamento MapBiomas incluído, o código 32 (Apicum) pode receber migração. A categoria `Blocked area` não recebe migração. O rótulo legado `Bare soil` é interpretado como `Blocked area` em projetos antigos.
+A categoria `Suitable for migration` reúne classes originais distintas para aplicar a mesma regra do modelo; os códigos e nomes originais são mantidos nos resultados. Os códigos e as categorias variam conforme a fonte dos dados; associe cada código observado ao perfil adequado para o seu estudo. A categoria `Blocked area` não recebe migração. O rótulo legado `Bare soil` é interpretado como `Blocked area` em projetos antigos.
 
 A versão 1.4.3 separa as categorias antropizada e bloqueada no seletor padrão. Projetos antigos com o rótulo `Anthropized / blocked` continuam sendo lidos como área antropizada. Configurações antigas de `Natural vegetation` são lidas como `Suitable for migration`.
 
@@ -192,9 +192,7 @@ mais migração. O arquivo `transition_by_land_cover_code.csv` registra o códig
 e o nome da classe original, o perfil e o estado final. O arquivo
 `migration_by_source_class.csv` resume quantas células de mangue migrado vieram
 de cada classe de origem, distinguindo as que permanecem ativas das inundadas.
-A legenda MapBiomas Coleção 11 está incluída; outra legenda CSV pode ser
-selecionada para outra coleção ou fonte. Códigos sem nome na legenda continuam
-identificados numericamente. Um projeto aceita
+A legenda de nomes das classes é opcional. Selecione um CSV com os códigos e nomes da fonte para exibir esses nomes nas planilhas; isso não altera o mapeamento nem as regras. Sem legenda, os códigos numéricos são preservados. Um projeto aceita
 até 32.757 classes personalizadas.
 
 ### 3.2 Estados internos
@@ -423,7 +421,7 @@ explicados na seção 7.
 - **Trajectory:** gráfico de contagens e mudanças anuais;
 - **Animation:** mapas e gráficos anuais individualizados, com controles de
   reprodução e salvamento;
-- **Model rules:** consulta das regras e da implementação para auditoria.
+- **Regras da simulação:** consulta das regras e da implementação para auditoria.
 
 Os divisores dos painéis podem ser arrastados. Redimensione um painel sem
 alterar os dados da simulação.

@@ -160,7 +160,7 @@ def _model_legend_handles(
         for name, color in STANDARD_DISPLAY_STYLES.values()
     ]
 
-APP_VERSION = "1.4.8"
+APP_VERSION = "1.4.9"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -528,16 +528,9 @@ def _show_splash(app: tk.Tk) -> tk.Toplevel:
     return splash
 
 
-def _default_role(code: int) -> str:
-    if code in DEFAULT_LAND_COVER_MAPPING["mangrove"]:
-        return "Mangrove"
-    if code in DEFAULT_LAND_COVER_MAPPING["water"]:
-        return "Water"
-    if code in DEFAULT_LAND_COVER_MAPPING["natural_accommodation_candidate"]:
-        return "Suitable for migration"
-    if code in DEFAULT_LAND_COVER_MAPPING["blocked"]:
-        return "Blocked area"
-    return "Anthropized area"
+def _default_role(_code: int) -> str:
+    """Require the user to map each source code explicitly."""
+    return UNASSIGNED_ROLE
 
 
 def _validate_class_assignments(
@@ -553,7 +546,7 @@ def _validate_class_assignments(
     )
     if unassigned:
         raise ValueError(translate(
-            "Assign each source code to a custom class or choose Exclude before loading inputs. Unassigned codes: {codes}.",
+            "Assign each source code to a model class or choose Exclude before loading inputs. Unassigned codes: {codes}.",
             language,
         ).format(codes=", ".join(map(str, unassigned))))
     if mode == "custom" and not custom_classes:
@@ -1166,7 +1159,7 @@ class BRMangueStudio(tk.Tk):
         menu.add_cascade(label="Project", menu=project)
         data = tk.Menu(menu, tearoff=False)
         data.add_command(label="Load / inspect inputs", command=self.load_inputs)
-        data.add_command(label="Refresh land-cover classes", command=self.inspect_mapbiomas)
+        data.add_command(label="Refresh land-cover classes", command=self.inspect_land_cover)
         menu.add_cascade(label="Data", menu=data)
         help_menu = tk.Menu(menu, tearoff=False)
         if sys.platform.startswith("linux") and getattr(sys, "frozen", False):
@@ -1191,7 +1184,7 @@ class BRMangueStudio(tk.Tk):
             "When using BR-MANGUE Studio, please acknowledge the software and cite its authors.\n\n"
             "Recommended citation:\n"
             "Sousa, F. M., Bezerra, D. da S., Costa, S. S., & Santos, R. L. (2026).\n"
-            "BR-MANGUE Studio (version 1.4.8) [software]. Zenodo.\n"
+            "BR-MANGUE Studio (version 1.4.9) [software]. Zenodo.\n"
             "https://doi.org/10.5281/zenodo.23509308",
         )
 
@@ -1489,7 +1482,7 @@ class BRMangueStudio(tk.Tk):
         ttk.Label(parent, text="Reference year (optional)").grid(row=10, column=1, sticky="w")
         ttk.Entry(parent, textvariable=self.year_var, width=12).grid(row=11, column=1, sticky="w")
         ttk.Label(parent, text="For a multiband raster, select the band that represents the desired reference date. Leave the year blank when the raster has no date metadata.", wraplength=360, foreground="#5d6b78").grid(row=12, column=0, columnspan=2, sticky="w", pady=(2, 8))
-        ttk.Button(parent, text="Inspect land-cover classes", command=self.inspect_mapbiomas).grid(row=13, column=0, columnspan=2, sticky="ew", pady=(8, 4))
+        ttk.Button(parent, text="Inspect land-cover classes", command=self.inspect_land_cover).grid(row=13, column=0, columnspan=2, sticky="ew", pady=(8, 4))
         ttk.Button(parent, text="Validate and load inputs", command=self.load_inputs).grid(row=14, column=0, columnspan=2, sticky="ew")
         ttk.Separator(parent).grid(row=15, column=0, columnspan=2, sticky="ew", pady=12)
         ttk.Label(parent, text="Coordinate reference", font=("Segoe UI", 10, "bold")).grid(row=16, column=0, columnspan=2, sticky="w")
@@ -1567,19 +1560,19 @@ class BRMangueStudio(tk.Tk):
     def _build_class_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
         ttk.Label(parent, text="Source class → model class", font=("Segoe UI", 10, "bold")).pack(anchor="w")
-        ttk.Label(parent, text="Choose how each numeric class from the categorical raster is interpreted. Excluded codes become NoData.", wraplength=360, foreground="#5d6b78").pack(anchor="w", pady=(3, 8))
-        legend_frame = ttk.LabelFrame(parent, text="Original source class names", padding=6)
+        ttk.Label(parent, text="Assign each numeric code according to your input legend. No dataset-specific code meanings are assumed; excluded codes become NoData.", wraplength=360, foreground="#5d6b78").pack(anchor="w", pady=(3, 8))
+        legend_frame = ttk.LabelFrame(parent, text="Source class names (optional)", padding=6)
         legend_frame.pack(fill="x", pady=(0, 8))
         ttk.Label(
             legend_frame,
-            text="Output tables retain the original raster code and its class name.",
+            text="A CSV legend can add readable names to output tables. It does not assign model classes or change simulation rules.",
             wraplength=360,
             foreground="#5d6b78",
         ).pack(anchor="w")
         legend_row = ttk.Frame(legend_frame)
         legend_row.pack(fill="x", pady=(4, 0))
         ttk.Label(legend_row, textvariable=self.source_legend_label_var, wraplength=235).pack(side="left", fill="x", expand=True)
-        ttk.Button(legend_row, text="Choose CSV…", command=self._choose_source_class_legend).pack(side="right")
+        ttk.Button(legend_row, text="Select legend CSV…", command=self._choose_source_class_legend).pack(side="right")
         self._update_source_legend_label()
         mode_frame = ttk.LabelFrame(parent, text="Mapping mode", padding=6)
         mode_frame.pack(fill="x", pady=(0, 8))
@@ -1662,13 +1655,13 @@ class BRMangueStudio(tk.Tk):
         label = (
             f"{translate('Custom source legend', self.language_code)}: {Path(path).name}"
             if path
-            else translate("MapBiomas Collection 11 legend (built-in)", self.language_code)
+            else translate("No class-name legend selected (optional)", self.language_code)
         )
         self.source_legend_label_var.set(label)
 
     def _choose_source_class_legend(self) -> None:
         path = filedialog.askopenfilename(
-            title=translate("Choose source class legend", self.language_code),
+            title=translate("Select class-name legend", self.language_code),
             filetypes=[(translate("CSV files", self.language_code), "*.csv"), (translate("All files", self.language_code), "*.*")],
         )
         if not path:
@@ -1707,7 +1700,7 @@ class BRMangueStudio(tk.Tk):
     def _role_options(self) -> tuple[str, ...]:
         mode_var = getattr(self, "class_mapping_mode_var", None)
         custom_mode = mode_var is not None and mode_var.get() == "custom"
-        roles = [UNASSIGNED_ROLE, "Exclude"] if custom_mode else ROLE_LABELS
+        roles = [UNASSIGNED_ROLE, "Exclude"] if custom_mode else [UNASSIGNED_ROLE, *ROLE_LABELS]
         return tuple(
             [translate(role, self.language_code) for role in roles]
             + [self._custom_role_label(item) for item in self.custom_model_classes]
@@ -2091,7 +2084,7 @@ class BRMangueStudio(tk.Tk):
         self.center_notebook.add(results_tab, text="Results")
         self.center_notebook.add(trajectory_tab, text="Trajectory")
         self.center_notebook.add(animation_tab, text="Animation")
-        self.center_notebook.add(source_tab, text="Model rules")
+        self.center_notebook.add(source_tab, text="Simulation rules")
         visual_tab.rowconfigure(0, weight=0)
         visual_tab.columnconfigure(0, weight=1)
 
@@ -2492,9 +2485,9 @@ class BRMangueStudio(tk.Tk):
         if path:
             variable.set(path)
             if variable is self.mapbiomas_var:
-                self.inspect_mapbiomas()
+                self.inspect_land_cover()
 
-    def inspect_mapbiomas(self) -> None:
+    def inspect_land_cover(self) -> None:
         path = Path(self.mapbiomas_var.get().strip())
         if not path.exists():
             self._show_message("showerror", "Land-cover inspection", "Select a valid categorical land-cover GeoTIFF first.")
@@ -2616,7 +2609,7 @@ class BRMangueStudio(tk.Tk):
             self.target_crs_var.set(target_text)
             self.expected_crs_var.set(target_label)
             self.run_status_var.set("Prepared aligned rasters; validate and load inputs")
-            self.inspect_mapbiomas()
+            self.inspect_land_cover()
             self._show_message("showinfo",
                 "Inputs prepared",
                 f"Aligned copies were created in:\n{output_dir}\n\nOriginal rasters were not modified. Review the class mapping and click Validate and load inputs.",
@@ -3616,7 +3609,7 @@ class BRMangueStudio(tk.Tk):
             self.soil_enabled_var.set(bool(parameters.get("soil_enabled", False)))
             self.migration_without_soil_var.set(bool(parameters.get("allow_migration_without_soil", True)))
             self.project_status_var.set(f"Project: {self.project_file.parent}")
-            self.inspect_mapbiomas()
+            self.inspect_land_cover()
             saved_roles = payload.get("class_roles", {})
             for code, var in self.class_vars.items():
                 if str(code) in saved_roles:

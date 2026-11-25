@@ -32,7 +32,6 @@ from .model_states import (
 
 SOIL_DISABLED_SENTINEL = -999
 MAX_CUSTOM_MODEL_CLASS_CODE = 32767
-MAPBIOMAS_C11_LEGEND_PATH = Path(__file__).with_name("data") / "mapbiomas_collection_11_legend.csv"
 
 # Default numeric mapping for the built-in demonstration. Users can replace
 # every code through the interface; the core is provider-agnostic.
@@ -252,13 +251,14 @@ def normalize_custom_model_classes(
 def load_source_class_legend(
     path: str | Path | None = None,
 ) -> tuple[dict[int, dict[str, str]], str]:
-    """Read source class labels from a MapBiomas-style legend CSV.
+    """Read optional source-code labels from a user-provided CSV legend.
 
-    When no path is provided, the bundled MapBiomas Collection 11 legend is
-    used because the standard input mapping uses MapBiomas class codes.
-    Alternate collections or providers can supply their own CSV.
+    Without a legend file, numeric source codes remain available for reports.
+    The legend supplies names only; it does not assign model behavior.
     """
-    legend_path = Path(path).expanduser().resolve() if path else MAPBIOMAS_C11_LEGEND_PATH
+    if path is None or not str(path).strip():
+        return {}, "Not provided"
+    legend_path = Path(path).expanduser().resolve()
     if not legend_path.is_file():
         raise FileNotFoundError(legend_path)
     with legend_path.open("r", encoding="utf-8-sig", newline="") as stream:
@@ -313,11 +313,7 @@ def load_source_class_legend(
             }
     if not legend:
         raise ValueError("The source class legend CSV contains no class records.")
-    source = (
-        "MapBiomas Collection 11 (bundled)"
-        if not path
-        else str(legend_path)
-    )
+    source = str(legend_path)
     return legend, source
 
 

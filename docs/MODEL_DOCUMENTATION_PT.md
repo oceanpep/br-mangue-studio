@@ -1,11 +1,11 @@
 # BR-MANGUE Studio — documentação técnica do modelo
 
-**Versão documentada:** 1.4.5 · **Idioma:** português brasileiro ·
+**Versão documentada:** 1.4.9 · **Idioma:** português brasileiro ·
 **Escopo:** regras implementadas no motor raster do BR-MANGUE Studio.
 
 [Read this documentation in English](MODEL_DOCUMENTATION_EN.md).
 
-Esta é a documentação técnica oficial do BR-MANGUE Studio. Ela especifica a finalidade do modelo, os dados de entrada, os parâmetros, os estados, as regras de transição, as saídas e os procedimentos de reprodução. Forçante do nível do mar, altura de influência da maré, mapeamento das classes, acreção e maturação são escolhas de cada aplicação e devem ser registrados. As regras descritas correspondem ao motor raster do release 1.4.5.
+Esta é a documentação técnica oficial do BR-MANGUE Studio. Ela especifica a finalidade do modelo, os dados de entrada, os parâmetros, os estados, as regras de transição, as saídas e os procedimentos de reprodução. Forçante do nível do mar, altura de influência da maré, mapeamento das classes, acreção e maturação são escolhas de cada aplicação e devem ser registrados. As regras descritas correspondem ao motor raster da versão atual do BR-MANGUE Studio.
 
 <a id="sumario"></a>
 ## Sumário
@@ -111,27 +111,7 @@ Os números do raster de origem não têm significado universal no motor. No map
 | **Área bloqueada** | Não recebe migração; pode passar ao estado derivado inundado. |
 | **Classe fixa** | Mantém seu estado e não é convertida pelas regras de inundação ou migração. |
 
-O perfil **Solo exposto** é interpretado como **Área bloqueada**. No mapeamento de referência baseado no MapBiomas Coleção 11, o apicum (código 32) pode ser atribuído a **Apta para migração**. Essa associação é configurável e deve acompanhar a legenda e a hipótese adotadas em cada aplicação.
-
-O mapeamento MapBiomas de referência incluído no software começa com estes
-grupos de códigos:
-
-| Perfil inicial | Códigos de origem |
-| --- | --- |
-| Mangue | 5 |
-| Apta para migração | 6, 11, 12, 23, 32, 49, 50 |
-| Água | 33 |
-| Área antropizada | 14, 15, 18, 19, 20, 21, 24, 25, 30, 35, 36, 39, 40, 41, 46, 47, 48, 62 |
-
-Essas associações são valores iniciais do mapeamento. A interpretação
-ecológica de cada classe de origem depende da legenda e do desenho do estudo.
-No modo padrão,
-códigos observados que não estejam nessa lista são atribuídos a **Área
-antropizada** até que o usuário os remapeie ou exclua. No modo personalizado,
-cada código observado precisa receber uma classe ou ser excluído. A legenda
-MapBiomas Coleção 11 incluída no programa auxilia a identificar os nomes
-originais; consulte também a [documentação oficial da legenda MapBiomas Brasil
-30 m — Coleção 11](https://brasil.mapbiomas.org/iniciativas-e-produtos/cobertura-e-uso-da-terra/cobertura-30m/cobertura/).
+O perfil **Solo exposto** é interpretado como **Área bloqueada**. Os códigos do raster de origem não têm significado universal. Em um novo projeto, associe cada código observado a um perfil do modelo ou exclua-o; o programa não pressupõe um produto de cobertura da terra nem um esquema específico de códigos. Uma legenda CSV fornecida pelo usuário pode acrescentar nomes legíveis às planilhas de resultados. Ela fornece apenas rótulos e não altera o mapeamento nem as regras da simulação. Sem CSV, os códigos de origem permanecem numéricos nos relatórios.
 
 O catálogo de estados do projeto inclui estados derivados conforme os perfis usados, como **Mangue migrado**, **Mangue inundado** e **Mangue migrado inundado**. Códigos numéricos derivados são alocados conforme o catálogo de cada execução; leia `model_state_catalog` em `metadata.json` ou nos metadados do raster, em vez de presumir códigos fixos entre projetos.
 
@@ -400,7 +380,7 @@ Os resultados são cenários condicionados às entradas e às regras documentada
 
 Para reproduzir uma execução, arquive os rasters originais e preparados, as legendas, a máscara, a configuração de classes, os dados do nível do mar, os parâmetros, o arquivo de projeto, os metadados de saída e a versão exata do software. Projetos com trajetória CSV armazenam amostras e hash da fonte; cada execução registra a forçante anual usada.
 
-O DOI do release 1.4.5 é [10.5281/zenodo.24018559](https://doi.org/10.5281/zenodo.24018559). O [repositório GitHub](https://github.com/oceanpep/br-mangue-studio) mantém o código-fonte e os releases.
+O [DOI conceitual do BR-MANGUE Studio](https://doi.org/10.5281/zenodo.23509308) identifica o software e reúne suas versões arquivadas. O [repositório GitHub](https://github.com/oceanpep/br-mangue-studio) mantém o código-fonte e os executáveis.
 
 <a id="12-referencias"></a>
 ## 12. Referências
@@ -409,6 +389,5 @@ O DOI do release 1.4.5 é [10.5281/zenodo.24018559](https://doi.org/10.5281/zeno
 - Bezerra, D. da S., Amaral, S., Kampel, M., & Andrade, P. R. (2014). Simulating sea-level rise impacts on mangrove ecosystem adjacent to anthropic areas: The case of Maranhão Island, Brazilian Northeast. *Pan-American Journal of Aquatic Sciences*, 9(3), 188–198. [Artigo em PDF](https://panamjas.org/pdf_artigos/PANAMJAS_9(3)_188-198.pdf).
 - Dangremond, E. M., & Feller, I. C. (2016). Precocious reproduction increases at the leading edge of a mangrove range expansion. *Ecology and Evolution*, 6(14), 5087–5092. [https://doi.org/10.1002/ece3.2270](https://doi.org/10.1002/ece3.2270).
 - O’Sullivan, D. (2001). Exploring spatial process dynamics using irregular cellular automaton models. *Geographical Analysis*, 33(1), 1–18. [https://doi.org/10.1111/j.1538-4632.2001.tb00433.x](https://doi.org/10.1111/j.1538-4632.2001.tb00433.x).
-- Sousa, F. M., Bezerra, D. da S., Costa, S. S., & Santos, R. L. (2026). *BR-MANGUE Studio* (versão 1.4.5) [software]. Zenodo. [https://doi.org/10.5281/zenodo.24018559](https://doi.org/10.5281/zenodo.24018559).
+- Sousa, F. M., Bezerra, D. da S., Costa, S. S., & Santos, R. L. (2026). *BR-MANGUE Studio* [software]. Zenodo. [https://doi.org/10.5281/zenodo.23509308](https://doi.org/10.5281/zenodo.23509308).
 - Wolfram, S. (1983). Statistical mechanics of cellular automata. *Reviews of Modern Physics*, 55(3), 601–644. [https://doi.org/10.1103/RevModPhys.55.601](https://doi.org/10.1103/RevModPhys.55.601).
-- MapBiomas Brasil. (2026). *Cobertura e uso da terra no Brasil, 30 m — Coleção 11: códigos e descrição da legenda*. [Página oficial](https://brasil.mapbiomas.org/iniciativas-e-produtos/cobertura-e-uso-da-terra/cobertura-30m/cobertura/).

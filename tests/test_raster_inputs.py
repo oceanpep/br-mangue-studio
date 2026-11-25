@@ -43,13 +43,14 @@ def test_raster_loader_without_soil_keeps_flooding_inputs(tmp_path):
     assert inputs.grid.class_counts()["water"] == 1
     assert np.all(inputs.grid.soil_class == -999)
     assert inputs.metadata["soil"]["enabled"] is False
-    assert inputs.metadata["land_cover"]["source_class_names"]["6"]["pt-BR"] == "Floresta Alagável"
+    assert inputs.metadata["land_cover"]["source_class_names"] == {}
+    assert inputs.metadata["land_cover"]["source_class_legend"] == "Not provided"
 
 
-def test_source_class_legend_can_read_mapbiomas_c11_and_custom_csv(tmp_path):
-    bundled, source = load_source_class_legend()
-    assert "Collection 11" in source
-    assert bundled[32]["pt-BR"] == "Apicum"
+def test_source_class_legend_is_optional_and_reads_user_csv(tmp_path):
+    empty, source = load_source_class_legend()
+    assert empty == {}
+    assert source == "Not provided"
     custom_path = tmp_path / "legend.csv"
     custom_path.write_text("code;name_pt_br;name_en\n88;Classe local;Local class\n", encoding="utf-8")
     custom, custom_source = load_source_class_legend(custom_path)

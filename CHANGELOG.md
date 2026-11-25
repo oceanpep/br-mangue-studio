@@ -2,6 +2,12 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [1.4.9] — 2026-11-25
+
+- Require explicit source-code mapping in new desktop projects; no provider-specific class legend is preselected.
+- Make a user-provided CSV class-name legend optional and label-only.
+- Rename the center-panel tab to “Simulation rules.”
+
 ## [1.4.8] — 2026-11-25
 
 - Open the main window maximized on Linux after the splash screen closes.
@@ -25,11 +31,11 @@ All notable changes to BR-MANGUE Studio are recorded here.
   and persistent-block runs. Flooded migrated cells leave the active mangrove
   extent and cannot propagate migration.
 - Merge migration-receiving cover types under **Suitable for migration** while
-  retaining original MapBiomas codes and names in transition tables. Add a
+  retaining original source codes and names in transition tables. Add a
   per-source-class migration summary and an optional source-legend CSV.
 - Interpret legacy `Bare soil` assignments as **Blocked area**, which cannot
-  receive mangrove migration. Bundle the MapBiomas Collection 11 legend for
-  class-name reporting.
+  receive mangrove migration. Source-class labels are optional and supplied by
+  the user.
 
 ## [1.4.4] — 2026-10-21
 

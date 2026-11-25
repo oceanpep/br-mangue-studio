@@ -11,21 +11,18 @@ Use aligned land-cover and elevation rasters, set the scenario, and inspect
 annual maps, trajectories, transitions, and reproducibility metadata.
 
 Read the [official model documentation in Portuguese](docs/MODEL_DOCUMENTATION_PT.md)
-or [English](docs/MODEL_DOCUMENTATION_EN.md) for the accepted inputs, current
-transition rules and equations, outputs, and interpretation limits of version
-1.4.8.
+or [English](docs/MODEL_DOCUMENTATION_EN.md) for accepted inputs, explicit
+class mapping, current transition rules and equations, outputs, and limits.
 
-Version 1.4.8 opens maximized on Linux. Version 1.4.7 displays the recommended
-Zenodo citation in front of the main window after the startup screen closes.
-Version 1.4.6 added **Help → Contact and support** for software or model
-problems and questions. Both messages follow the selected interface language.
+Version 1.4.9 opens maximized on Linux and requires explicit class mapping for
+new projects. Optional CSV labels can add the names from any source legend to
+the result tables. The class-mapping panel makes no assumptions about the
+provider or meaning of numeric raster codes. The center tab is named
+**Simulation rules**.
 
-Version 1.4.5 allows migrated mangrove to become flooded and records that state
-separately from active migrated mangrove. Source cover types share the model
-role **Suitable for migration**; transition tables retain each original
-MapBiomas code and name, with a separate per-source-class migration summary.
-The MapBiomas Collection 11 legend is bundled for source-class reporting.
-Legacy bare-soil assignments are treated as **Blocked area**.
+The current release also includes migration-to-flooding transitions, a startup
+citation notice, and **Help → Contact and support**. The interface follows the
+selected language.
 
 Version 1.4.4 restores the standard display palette: purple identifies
 migrated mangrove and red identifies flooded mangrove.
@@ -62,8 +59,8 @@ rasters, project files, and simulation results remain on your computer.
 
 | Platform | Availability | Verified environment |
 | --- | --- | --- |
-| Windows 10/11, 64-bit | Stable 1.4.8 | Windows desktop release |
-| Linux x86_64 | Research preview 1.4.8 | Built and smoke-tested on Ubuntu 22.04 LTS |
+| Windows 10/11, 64-bit | Stable 1.4.9 | Windows desktop release |
+| Linux x86_64 | Research preview 1.4.9 | Built and smoke-tested on Ubuntu 22.04 LTS |
 
 The interface is available in English and Brazilian Portuguese. English is the
 default for a new installation; choose a language in the application header.
@@ -187,7 +184,7 @@ model rules, outputs, or performance measurements.
 
 ## Citation, license, and support
 
-Cite version 1.4.8 using the [Zenodo concept DOI](https://doi.org/10.5281/zenodo.23509308),
+Cite version 1.4.9 using the [Zenodo concept DOI](https://doi.org/10.5281/zenodo.23509308),
 which identifies the software across versions. The version-specific DOI will be
 listed here after Zenodo archives this release. The
 repository is distributed under the [MIT License](LICENSE). For reproducible
