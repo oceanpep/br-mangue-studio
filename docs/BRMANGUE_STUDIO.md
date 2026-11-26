@@ -2,9 +2,10 @@
 
 Para o fluxo completo do executável, consulte o [Manual do usuário](MANUAL_USUARIO_BR_MANGUE_STUDIO.md).
 
-A versão 1.4.0 acrescenta seleção entre taxa constante
-e trajetória anual do nível do mar. Consulte o [guia das trajetórias CSV](SEA_LEVEL_TRAJECTORIES.md)
-para configurar níveis acumulados, interpolação e referência temporal.
+**Versão atual do aplicativo: 1.4.10.** Desde a versão 1.4.0, o Studio permite
+selecionar taxa constante ou trajetória anual do nível do mar. Consulte o
+[guia das trajetórias CSV](SEA_LEVEL_TRAJECTORIES.md) para configurar níveis
+acumulados, interpolação e referência temporal.
 
 ## O que é
 
@@ -20,8 +21,8 @@ Nesta versão, a interface já oferece:
 - seleção de um raster categórico de uso/cobertura, um raster de elevação,
   máscara e camada opcional de aptidão de mangue;
 - inspeção das classes numéricas e contagens do raster categórico;
-- associação interativa de cada código às classes Mangrove, Natural
-  vegetation, Water, Anthropized area, Blocked area ou Exclude;
+- associação interativa de cada código às classes Mangrove, Suitable for
+  migration, Water, Anthropized area, Blocked area ou Exclude;
 - modo de mapeamento personalizado que começa sem atribuições, oculta as
   classes padrão e exige que cada código seja associado a uma classe criada
   pelo usuário ou explicitamente excluído;

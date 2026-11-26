@@ -1,6 +1,6 @@
 # BR-MANGUE Studio — documentação técnica do modelo
 
-**Versão documentada:** 1.4.9 · **Idioma:** português brasileiro ·
+**Versão documentada:** 1.4.10 · **Idioma:** português brasileiro ·
 **Escopo:** regras implementadas no motor raster do BR-MANGUE Studio.
 
 [Read this documentation in English](MODEL_DOCUMENTATION_EN.md).

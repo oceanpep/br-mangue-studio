@@ -10,6 +10,9 @@ spatial cellular-automaton scenarios of mangrove response to sea-level rise.
 Use aligned land-cover and elevation rasters, set the scenario, and inspect
 annual maps, trajectories, transitions, and reproducibility metadata.
 
+**Current application version: 1.4.10.** Get the Windows or Linux build from
+the [official download page](https://oceanpep.github.io/br-mangue-studio-site/downloads.html).
+
 Read the [official model documentation in Portuguese](docs/MODEL_DOCUMENTATION_PT.md)
 or [English](docs/MODEL_DOCUMENTATION_EN.md) for accepted inputs, explicit
 class mapping, current transition rules and equations, outputs, and limits.

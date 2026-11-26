@@ -1,6 +1,6 @@
 # BR-MANGUE Studio — technical model documentation
 
-**Documented release:** 1.4.9 · **Language:** English · **Scope:** rules
+**Documented release:** 1.4.10 · **Language:** English · **Scope:** rules
 implemented by the BR-MANGUE Studio raster engine.
 
 [Leia esta documentação em português](MODEL_DOCUMENTATION_PT.md).
