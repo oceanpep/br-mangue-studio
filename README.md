@@ -195,10 +195,9 @@ model rules, outputs, or performance measurements.
 
 ## Citation, license, and support
 
-Cite version 1.4.11 using the [Zenodo concept DOI](https://doi.org/10.5281/zenodo.23509308),
-which identifies the software across versions. The version-specific DOI will be
-listed here after Zenodo archives this release. The
-repository is distributed under the [MIT License](LICENSE). For reproducible
+Cite version 1.4.11 using its [version-specific Zenodo DOI](https://doi.org/10.5281/zenodo.24595004).
+The [concept DOI](https://doi.org/10.5281/zenodo.23509308) identifies the
+software across versions. The repository is distributed under the [MIT License](LICENSE). For reproducible
 software issues, use the [issue tracker](https://github.com/oceanpep/br-mangue-studio/issues)
 and follow the [support checklist](SUPPORT.md). Contributions follow the
 [Code of Conduct](CODE_OF_CONDUCT.md).

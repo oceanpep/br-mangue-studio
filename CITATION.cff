@@ -4,6 +4,7 @@ title: "BR-MANGUE Studio"
 type: software
 version: 1.4.11
 date-released: 2026-11-27
+doi: 10.5281/zenodo.24595004
 license: MIT
 abstract: >-
   Desktop research software for running and inspecting the BR-MANGUE spatial
