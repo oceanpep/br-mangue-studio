@@ -10,20 +10,26 @@ spatial cellular-automaton scenarios of mangrove response to sea-level rise.
 Use aligned land-cover and elevation rasters, set the scenario, and inspect
 annual maps, trajectories, transitions, and reproducibility metadata.
 
-**Current application version: 1.4.10.** Get the Windows or Linux build from
+**Current application version: 1.4.11.** Get the Windows or Linux build from
 the [official download page](https://oceanpep.github.io/br-mangue-studio-site/downloads.html).
 
 Read the [official model documentation in Portuguese](docs/MODEL_DOCUMENTATION_PT.md)
 or [English](docs/MODEL_DOCUMENTATION_EN.md) for accepted inputs, explicit
 class mapping, current transition rules and equations, outputs, and limits.
 
+Version 1.4.11 changes flood propagation when the annual sea-level increment
+is negative: water can propagate only to neighboring cells with the same
+relative elevation at the start of that annual step (within 1e-12 m).
+Lower-elevation neighbors are not inundated in that case. Positive and zero
+increments retain the lower-neighbor rule. The change applies to continuous
+and persistent-block processing and is covered by regression tests.
+
 Version 1.4.10 opens maximized on Linux and makes the full class-mapping panel
 scrollable, including its instructions, mapping controls, and source-class
 table. It requires explicit class mapping for new projects. Optional CSV labels
-can add the names from any source legend to
-the result tables. The class-mapping panel makes no assumptions about the
-provider or meaning of numeric raster codes. The center tab is named
-**Simulation rules**.
+can add the names from any source legend to the result tables. The class-mapping
+panel makes no assumptions about the provider or meaning of numeric raster
+codes. The center tab is named **Simulation rules**.
 
 The current release also includes migration-to-flooding transitions, a startup
 citation notice, and **Help → Contact and support**. The interface follows the
@@ -64,8 +70,8 @@ rasters, project files, and simulation results remain on your computer.
 
 | Platform | Availability | Verified environment |
 | --- | --- | --- |
-| Windows 10/11, 64-bit | Stable 1.4.10 | Windows desktop release |
-| Linux x86_64 | Research preview 1.4.10 | Built and smoke-tested on Ubuntu 22.04 LTS |
+| Windows 10/11, 64-bit | Stable 1.4.11 | Windows desktop release |
+| Linux x86_64 | Research preview 1.4.11 | Built and smoke-tested on Ubuntu 22.04 LTS |
 
 The interface is available in English and Brazilian Portuguese. English is the
 default for a new installation; choose a language in the application header.
@@ -189,7 +195,7 @@ model rules, outputs, or performance measurements.
 
 ## Citation, license, and support
 
-Cite version 1.4.10 using the [Zenodo concept DOI](https://doi.org/10.5281/zenodo.23509308),
+Cite version 1.4.11 using the [Zenodo concept DOI](https://doi.org/10.5281/zenodo.23509308),
 which identifies the software across versions. The version-specific DOI will be
 listed here after Zenodo archives this release. The
 repository is distributed under the [MIT License](LICENSE). For reproducible

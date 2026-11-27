@@ -1,6 +1,6 @@
 # BR-MANGUE Studio — technical model documentation
 
-**Documented release:** 1.4.10 · **Language:** English · **Scope:** rules
+**Documented release:** 1.4.11 · **Language:** English · **Scope:** rules
 implemented by the BR-MANGUE Studio raster engine.
 
 [Leia esta documentação em português](MODEL_DOCUMENTATION_PT.md).
@@ -176,25 +176,40 @@ is water or flooded and whose elevation is nonnegative. $\mathcal{N}_i$ is
 the set of valid cells in the Moore neighborhood of $i$ (up to eight
 neighbors); $j$ denotes one of those cells; and $z_i^t$ and $z_j^t$ are their
 elevations, in metres, in the snapshot at the start of annual step $t$. The
-set $\mathcal{L}_i^t$ includes only neighbors with elevation strictly lower
-than the source:
+set $\mathcal{P}_i^t$ contains the neighbors that receive the source's
+contribution. The rule depends on the sign of annual increment
+$\delta H_t$:
 
-$$\mathcal{L}_i^t = \{j \in \mathcal{N}_i : z_j^t < z_i^t\}.$$
+$$
+\mathcal{P}_i^t =
+\begin{cases}
+\{j \in \mathcal{N}_i : |z_j^t-z_i^t| \le 10^{-12}\;\mathrm{m}\}, & \delta H_t < 0,\\
+\{j \in \mathcal{N}_i : z_j^t < z_i^t\}, & \delta H_t \ge 0.
+\end{cases}
+$$
 
-The quantity $|\mathcal{L}_i^t|$ is the number of those neighbors. The
-sea-level increment $\delta H_t$, in metres per annual step, is divided
-equally between the source and the neighbors in the set:
+When the annual increment is negative, only neighbors whose relative elevation
+at the start of the step equals the source elevation, within a numerical
+tolerance of $10^{-12}$ m, are included; lower neighbors are excluded. For
+zero or positive increments, the lower-neighbor rule is retained. The quantity
+$|\mathcal{P}_i^t|$ is
+the number of selected neighbors. The increment $\delta H_t$, in metres
+per annual step, is divided equally between the source and those neighbors:
 
-$$q_i^t = \frac{\delta H_t}{1 + |\mathcal{L}_i^t|}.$$
+$$q_i^t = \frac{\delta H_t}{1 + |\mathcal{P}_i^t|}.$$
 
-Thus, $q_i^t$ is one source's contribution to the elevation of the source
-cell and each lower neighbor, in metres per annual step. The engine adds this
-value to their current elevations. A neighbor that was not already water or
-flooded changes to the flooded state corresponding to its base class when
-that state is defined in the catalog. Elevation comparisons and source
-states come from the start-of-year snapshot. Newly flooded cells can act as
-sources only in the following year; multiple sources can contribute to one
-cell in the same year.
+Thus, $q_i^t$ is one source's contribution to its relative elevation and to
+that of each selected neighbor, in metres per annual step. The engine adds
+this contribution to their current relative elevations. A neighbor that was
+not already water or flooded changes to the flooded state corresponding to
+its base class when that state is defined in the catalog. Elevation
+comparisons and source states come from the start-of-year snapshot. Newly
+flooded cells can act as sources only in the following year; multiple sources
+can contribute to one cell in the same year.
+
+A negative increment does not reverse the state of cells that were flooded in
+an earlier step. It restricts which neighbors can receive new flood propagation
+during that step.
 
 Tidal height $T$ and threshold $Z_t$ define migration eligibility; flood
 propagation follows the local rule above, starting from water or flooded

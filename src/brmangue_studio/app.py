@@ -160,7 +160,7 @@ def _model_legend_handles(
         for name, color in STANDARD_DISPLAY_STYLES.values()
     ]
 
-APP_VERSION = "1.4.10"
+APP_VERSION = "1.4.11"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
@@ -1184,7 +1184,7 @@ class BRMangueStudio(tk.Tk):
             "When using BR-MANGUE Studio, please acknowledge the software and cite its authors.\n\n"
             "Recommended citation:\n"
             "Sousa, F. M., Bezerra, D. da S., Costa, S. S., & Santos, R. L. (2026).\n"
-            "BR-MANGUE Studio (version 1.4.10) [software]. Zenodo.\n"
+            "BR-MANGUE Studio (version 1.4.11) [software]. Zenodo.\n"
             "https://doi.org/10.5281/zenodo.23509308",
         )
 

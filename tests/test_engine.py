@@ -314,3 +314,62 @@ def test_persistent_blocks_match_continuous(tmp_path):
         assert np.array_equal(continuous.relative_elevation, current["relative_elevation"][:])
     finally:
         runner.close()
+
+
+def test_negative_rate_floods_only_same_height_in_both_engines(tmp_path):
+    catalog = make_catalog()
+    flooded_mangrove = int(catalog["flooded_codes"]["20"])
+
+    def make_direction_grid():
+        return BrMangueGrid(
+            land_cover_state=np.array([50, 20, 20, 20], dtype=np.uint16),
+            relative_elevation=np.array([1.0, 1.0 + 0.5e-12, 0.5, 1.5], dtype=np.float64),
+            soil_class=np.full(4, -999, dtype=np.int16),
+            column=np.arange(4),
+            row=np.zeros(4, dtype=np.int32),
+            neighbors=((1, 2, 3), (), (), ()),
+            model_state_catalog=catalog,
+        )
+
+    negative = ModelParameters(
+        final_time=1, tide_height=0, sea_level_rise_rate=-0.001, accretion_rate_mm=0.0
+    )
+    continuous = make_direction_grid()
+    continuous.step(1, negative)
+    assert int(continuous.land_cover_state[1]) == flooded_mangrove  # equal within tolerance
+    assert int(continuous.land_cover_state[2]) == 20  # lower: not flooded
+    assert int(continuous.land_cover_state[3]) == 20  # higher: not flooded
+
+    blocks = PersistentBlockRunner.create_from_grid(
+        make_direction_grid(), tmp_path / "negative-rate-workspace", block_size=2
+    )
+    try:
+        blocks.step(1, negative)
+        assert int(blocks.current["land_cover_state"][1]) == flooded_mangrove
+        assert int(blocks.current["land_cover_state"][2]) == 20
+        assert int(blocks.current["land_cover_state"][3]) == 20
+    finally:
+        blocks.close()
+
+    for rate in (0.001, 0.0):
+        nonnegative = ModelParameters(
+            final_time=1, tide_height=0, sea_level_rise_rate=rate, accretion_rate_mm=0.0
+        )
+        downhill = make_direction_grid()
+        downhill.step(1, nonnegative)
+        assert int(downhill.land_cover_state[1]) == 20  # same height: not flooded
+        assert int(downhill.land_cover_state[2]) == flooded_mangrove  # lower: preserved rule
+        assert int(downhill.land_cover_state[3]) == 20  # higher: not flooded
+
+        blocks = PersistentBlockRunner.create_from_grid(
+            make_direction_grid(),
+            tmp_path / f"nonnegative-rate-workspace-{rate}",
+            block_size=2,
+        )
+        try:
+            blocks.step(1, nonnegative)
+            assert int(blocks.current["land_cover_state"][1]) == 20
+            assert int(blocks.current["land_cover_state"][2]) == flooded_mangrove
+            assert int(blocks.current["land_cover_state"][3]) == 20
+        finally:
+            blocks.close()

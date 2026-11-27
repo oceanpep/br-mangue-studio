@@ -254,7 +254,6 @@ def test_studio_modes_languages_and_saved_embedded_curve(tmp_path, monkeypatch):
         payload = json.loads(studio.project_file.read_text())
         assert payload["parameters"]["sea_level_mode"] == "trajectory"
         monkeypatch.setattr(module.filedialog, "askopenfilename", lambda **_: str(studio.project_file))
-        monkeypatch.setattr(studio, "inspect_mapbiomas", lambda: None)
         monkeypatch.setattr(studio, "load_inputs", lambda: None)
         studio._sea_level_trajectory = None
         studio.open_project()

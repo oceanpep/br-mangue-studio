@@ -2,15 +2,18 @@ cff-version: 1.2.0
 message: "If you use BR-MANGUE Studio, please cite the release and its source repository."
 title: "BR-MANGUE Studio"
 type: software
-version: 1.4.10
-date-released: 2026-11-25
+version: 1.4.11
+date-released: 2026-11-27
 license: MIT
 abstract: >-
   Desktop research software for running and inspecting the BR-MANGUE spatial
   cellular model of mangrove response to coastal sea-level change. The Studio
   provides aligned raster inputs, explicit class mapping, custom class behavior
   profiles, continuous and persistent-block processing, annual outputs, visual
-  monitoring, constant or calendar-based sea-level forcing, and reproducible run metadata.
+  monitoring, constant or calendar-based sea-level forcing, and reproducible
+  run metadata. Under a negative annual sea-level increment, flood propagation
+  is limited to neighbors with equal start-of-step relative elevation (within
+  1e-12 m) in both execution engines.
 authors:
   - family-names: Sousa
     given-names: Felipe Martins

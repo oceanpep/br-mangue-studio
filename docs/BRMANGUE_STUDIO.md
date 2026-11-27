@@ -2,7 +2,7 @@
 
 Para o fluxo completo do executável, consulte o [Manual do usuário](MANUAL_USUARIO_BR_MANGUE_STUDIO.md).
 
-**Versão atual do aplicativo: 1.4.10.** Desde a versão 1.4.0, o Studio permite
+**Versão atual do aplicativo: 1.4.11.** Desde a versão 1.4.0, o Studio permite
 selecionar taxa constante ou trajetória anual do nível do mar. Consulte o
 [guia das trajetórias CSV](SEA_LEVEL_TRAJECTORIES.md) para configurar níveis
 acumulados, interpolação e referência temporal.

@@ -1,6 +1,6 @@
 # BR-MANGUE Studio — documentação técnica do modelo
 
-**Versão documentada:** 1.4.10 · **Idioma:** português brasileiro ·
+**Versão documentada:** 1.4.11 · **Idioma:** português brasileiro ·
 **Escopo:** regras implementadas no motor raster do BR-MANGUE Studio.
 
 [Read this documentation in English](MODEL_DOCUMENTATION_EN.md).
@@ -176,25 +176,39 @@ A inundação parte de uma célula-fonte $i$ cujo estado no início do ano é á
 ou inundado e cuja elevação é não negativa. $\mathcal{N}_i$ é o conjunto de
 células válidas na vizinhança de Moore de $i$ (até oito vizinhas); $j$ indica
 uma dessas células; e $z_i^t$ e $z_j^t$ são as elevações, em metros, no
-instantâneo do início do passo anual $t$. O conjunto $\mathcal{L}_i^t$
-reúne apenas as vizinhas com elevação estritamente menor que a da fonte:
+instantâneo do início do passo anual $t$. O conjunto $\mathcal{P}_i^t$ reúne as vizinhas que recebem a contribuição
+da fonte. A regra depende do sinal do incremento anual
+$\delta H_t$:
 
-$$\mathcal{L}_i^t = \{j \in \mathcal{N}_i : z_j^t < z_i^t\}.$$
+$$
+\mathcal{P}_i^t =
+\begin{cases}
+\{j \in \mathcal{N}_i : |z_j^t-z_i^t| \le 10^{-12}\;\mathrm{m}\}, & \delta H_t < 0,\\
+\{j \in \mathcal{N}_i : z_j^t < z_i^t\}, & \delta H_t \ge 0.
+\end{cases}
+$$
 
-O número $|\mathcal{L}_i^t|$ é a quantidade dessas vizinhas. O incremento de
-nível do mar $\delta H_t$, em metros por passo anual, é dividido igualmente
-entre a fonte e as vizinhas reunidas no conjunto:
+Quando a taxa anual é negativa, só entram no conjunto as vizinhas cuja
+elevação relativa no início do passo é igual à da fonte, com tolerância
+numérica de $10^{-12}$ m; vizinhas mais baixas ficam de fora. Para incremento
+zero ou positivo, mantém-se a regra das vizinhas mais baixas. O número
+$|\mathcal{P}_i^t|$ é a quantidade de vizinhas selecionadas. O incremento
+$\delta H_t$, em metros por passo anual, é dividido igualmente entre a
+fonte e essas vizinhas:
 
-$$q_i^t = \frac{\delta H_t}{1 + |\mathcal{L}_i^t|}.$$
+$$q_i^t = \frac{\delta H_t}{1 + |\mathcal{P}_i^t|}.$$
 
-Assim, $q_i^t$ é a contribuição de uma fonte para a elevação da própria
-célula-fonte e de cada vizinha mais baixa, em metros por passo anual. O motor
-adiciona esse valor às elevações correntes dessas células. Uma vizinha que
+Assim, $q_i^t$ é a contribuição de uma fonte para sua elevação relativa e a de
+cada vizinha selecionada, em metros por passo anual. O motor adiciona essa
+contribuição às elevações relativas correntes dessas células. Uma vizinha que
 ainda não era água ou inundada passa ao estado inundado correspondente à
 classe-base, se esse estado estiver definido no catálogo. As comparações de
 elevação e os estados-fontes vêm do instantâneo do início do ano. Novas
 células inundadas passam a contribuir como fontes somente no ano seguinte;
 várias fontes podem contribuir para a mesma célula no mesmo ano.
+
+Um incremento negativo não reverte o estado de células que já foram inundadas.
+Ele restringe quais vizinhas podem receber nova propagação naquele passo.
 
 A altura de maré $T$ e o limiar $Z_t$ definem a elegibilidade para migração;
 a propagação da inundação segue a regra local acima, a partir dos estados de

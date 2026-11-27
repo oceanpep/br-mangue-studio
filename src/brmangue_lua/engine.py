@@ -129,6 +129,34 @@ class ModelParameters:
         return result
 
 
+def _flood_propagation_neighbors(
+    index: int,
+    neighbor_indices: Iterable[int],
+    previous_elevation: np.ndarray,
+    annual_sea_level_increment: float,
+) -> list[int]:
+    """Select propagation cells by the sign of the annual sea-level change.
+
+    Negative increments may propagate only across equal-height cells, using
+    the model's 1e-12 m numeric resolution. Nonnegative increments retain
+    the existing downhill-neighbor rule.
+    """
+    source_elevation = float(previous_elevation[index])
+    if annual_sea_level_increment < 0:
+        return [
+            int(neighbor)
+            for neighbor in neighbor_indices
+            if int(neighbor) >= 0
+            and abs(float(previous_elevation[int(neighbor)]) - source_elevation) <= 1e-12
+        ]
+    return [
+        int(neighbor)
+        for neighbor in neighbor_indices
+        if int(neighbor) >= 0
+        and float(previous_elevation[int(neighbor)]) < source_elevation
+    ]
+
+
 @dataclass
 class BrMangueGrid:
     """Cell grid and current simulation state."""
@@ -352,16 +380,17 @@ class BrMangueGrid:
                 self.migration_age[index] = -1
 
             if is_sea_or_flooded(int(past_states[index]), self.model_state_catalog) and past_elevation[index] >= 0:
-                lower = [
-                    neighbor
-                    for neighbor in self.neighbors[index]
-                    if int(neighbor) >= 0 and past_elevation[int(neighbor)] < past_elevation[index]
-                ]
-                neighbor_count = 1 + len(lower)
+                propagation_neighbors = _flood_propagation_neighbors(
+                    index,
+                    self.neighbors[index],
+                    past_elevation,
+                    annual_sea_level_increment,
+                )
+                neighbor_count = 1 + len(propagation_neighbors)
                 flow = annual_sea_level_increment / neighbor_count
                 self.relative_elevation[index] += flow
 
-                for neighbor in lower:
+                for neighbor in propagation_neighbors:
                     self.relative_elevation[neighbor] += flow
                     if not is_sea_or_flooded(int(past_states[neighbor]), self.model_state_catalog):
                         self._apply_flooding(neighbor, past_states)

@@ -2,6 +2,15 @@
 
 All notable changes to BR-MANGUE Studio are recorded here.
 
+## [1.4.11] — 2026-11-27
+
+- Under a negative annual sea-level increment, limit flooding propagation to
+  neighboring cells with equal start-of-step relative elevation (within
+  1e-12 m) in both continuous and persistent-block engines. Positive and zero
+  increments retain the lower-neighbor propagation rule.
+- Add regression coverage for both engines with negative, zero, and positive
+  annual increments.
+
 ## [1.4.10] — 2026-11-25
 
 - Make the full **Class mapping** panel vertically scrollable on smaller screens,

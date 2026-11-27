@@ -17,7 +17,13 @@ try:
 except ImportError:  # pragma: no cover - optional diagnostics
     psutil = None
 
-from .engine import ModelParameters, SOIL_PROFILE_CODES, is_sea_or_flooded, mangrove_extent_metrics
+from .engine import (
+    ModelParameters,
+    SOIL_PROFILE_CODES,
+    _flood_propagation_neighbors,
+    is_sea_or_flooded,
+    mangrove_extent_metrics,
+)
 from .model_states import (
     count_model_states,
     flooded_state_code,
@@ -232,14 +238,15 @@ class PersistentBlockRunner:
                     migration_age[index] = -1
 
                 if is_sea_or_flooded(int(previous_states[index]), self.model_state_catalog) and previous_elevation[index] >= 0:
-                    lower_neighbors = [
-                        int(neighbor)
-                        for neighbor in self.neighbors[index]
-                        if neighbor >= 0 and previous_elevation[neighbor] < previous_elevation[index]
-                    ]
-                    flow = annual_sea_level_increment / (1 + len(lower_neighbors))
+                    propagation_neighbors = _flood_propagation_neighbors(
+                        index,
+                        self.neighbors[index],
+                        previous_elevation,
+                        annual_sea_level_increment,
+                    )
+                    flow = annual_sea_level_increment / (1 + len(propagation_neighbors))
                     elevation[index] += flow
-                    for neighbor in lower_neighbors:
+                    for neighbor in propagation_neighbors:
                         elevation[neighbor] += flow
                         if not is_sea_or_flooded(int(previous_states[neighbor]), self.model_state_catalog):
                             self._apply_flooding(states, previous_states, migration_age, neighbor)
