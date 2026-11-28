@@ -162,6 +162,7 @@ def _model_legend_handles(
 
 APP_VERSION = "1.4.11"
 APP_COPYRIGHT = "Copyright © 2026 BR-MANGUE Project"
+MODEL_DOCUMENTATION_URL = "https://github.com/oceanpep/br-mangue-studio/blob/main/docs/BRMANGUE_STUDIO.md"
 SPLASH_DURATION_MS = 4000
 UI_COLORS = {
     "window": "#f3f8fb",
@@ -175,6 +176,11 @@ UI_COLORS = {
     "blue_dark": "#125b82",
     "green": "#2d7f52",
 }
+
+
+def _ui_font_family(widget: tk.Misc) -> str:
+    """Use the operating system's normal interface font family."""
+    return str(tkfont.nametofont("TkDefaultFont", root=widget).actual("family"))
 
 # This is the user-provided local definition for the Albers projection used as
 # the first suggestion. PROJ does not register 10857 as an EPSG code, so the
@@ -403,6 +409,7 @@ def _reproject_raster_to_grid(
 def _show_splash(app: tk.Tk) -> tk.Toplevel:
     """Show a compact startup screen while the main workspace becomes ready."""
     splash = tk.Toplevel(app)
+    font_family = _ui_font_family(splash)
     splash.overrideredirect(True)
     splash.resizable(False, False)
     splash.configure(bg="#cbd5df")
@@ -425,7 +432,7 @@ def _show_splash(app: tk.Tk) -> tk.Toplevel:
         tk.Label(
             content,
             text="BR-MANGUE Studio",
-            font=("Segoe UI", 22, "bold"),
+            font=(font_family, 22, "bold"),
             foreground="#17324d",
             bg="#ffffff",
         ).pack(pady=(10, 24))
@@ -436,7 +443,7 @@ def _show_splash(app: tk.Tk) -> tk.Toplevel:
     tk.Label(
         geotam_row,
         text=translate("by", language_code),
-        font=("Segoe UI", 9),
+        font=(font_family, 9),
         foreground="#687786",
         bg="#ffffff",
     ).pack(side="left", padx=(0, 8))
@@ -452,7 +459,7 @@ def _show_splash(app: tk.Tk) -> tk.Toplevel:
         tk.Label(
             geotam_row,
             text="GEOTAM",
-            font=("Segoe UI", 10, "bold"),
+            font=(font_family, 10, "bold"),
             foreground="#2a628d",
             bg="#ffffff",
         ).pack(side="left")
@@ -460,21 +467,21 @@ def _show_splash(app: tk.Tk) -> tk.Toplevel:
     tk.Label(
         content,
         text=translate("Spatial cellular model for coastal change", language_code),
-        font=("Segoe UI", 10),
+        font=(font_family, 10),
         foreground="#53616f",
         bg="#ffffff",
     ).pack(pady=(0, 12))
     tk.Label(
         content,
         text=f"{translate('Version', language_code)} {APP_VERSION}",
-        font=("Segoe UI", 10, "bold"),
+        font=(font_family, 10, "bold"),
         foreground="#17324d",
         bg="#ffffff",
     ).pack()
     tk.Label(
         content,
         text=APP_COPYRIGHT,
-        font=("Segoe UI", 9),
+        font=(font_family, 9),
         foreground="#687786",
         bg="#ffffff",
     ).pack(pady=(2, 16))
@@ -499,7 +506,7 @@ def _show_splash(app: tk.Tk) -> tk.Toplevel:
     tk.Label(
         content,
         text=translate("Loading workspace…", language_code),
-        font=("Segoe UI", 8),
+        font=(font_family, 8),
         foreground="#7a8792",
         bg="#ffffff",
     ).pack()
@@ -1165,16 +1172,62 @@ class BRMangueStudio(tk.Tk):
         if sys.platform.startswith("linux") and getattr(sys, "frozen", False):
             help_menu.add_command(label="Create Linux shortcuts", command=self._create_linux_shortcuts)
             help_menu.add_separator()
-        help_menu.add_command(label="About", command=lambda: self._show_message(
-            "showinfo",
-            "BR-MANGUE Studio",
-            "Desktop interface for the BR-MANGUE cellular model.\n"
-            "The model accepts aligned user-provided rasters; inputs are read-only and products are saved in the project results folder.",
-        ))
+        help_menu.add_command(label="About", command=self._show_about)
         help_menu.add_command(label="Contact and support", command=self._show_support_contact)
         menu.add_cascade(label="Help", menu=help_menu)
         self._menus = (menu, project, data, help_menu)
         self.config(menu=menu)
+
+    def _show_about(self) -> None:
+        """Show the installed software version and the official documentation link."""
+        window = tk.Toplevel(self)
+        window.title(translate("About BR-MANGUE Studio", self.language_code))
+        window.transient(self)
+        window.resizable(False, False)
+        window.configure(bg=UI_COLORS["window"])
+
+        content = ttk.Frame(window, padding=(24, 20))
+        content.pack(fill="both", expand=True)
+        ttk.Label(
+            content,
+            text="BR-MANGUE Studio",
+            style="Title.TLabel",
+        ).pack(anchor="w")
+        ttk.Label(
+            content,
+            text=f"{translate('Version', self.language_code)} {APP_VERSION}",
+        ).pack(anchor="w", pady=(8, 16))
+        ttk.Button(
+            content,
+            text=translate("Open official documentation on GitHub", self.language_code),
+            command=self._open_model_documentation,
+        ).pack(anchor="w", fill="x")
+        ttk.Button(
+            content,
+            text=translate("Close", self.language_code),
+            command=window.destroy,
+        ).pack(anchor="e", pady=(16, 0))
+
+        window.bind("<Escape>", lambda _event: window.destroy())
+        window.protocol("WM_DELETE_WINDOW", window.destroy)
+        window.update_idletasks()
+        _center_window(window, window.winfo_reqwidth(), window.winfo_reqheight())
+        window.grab_set()
+        window.focus_set()
+
+    def _open_model_documentation(self) -> None:
+        """Open the official model documentation on GitHub."""
+        try:
+            opened = webbrowser.open(MODEL_DOCUMENTATION_URL, new=2)
+        except webbrowser.Error:
+            opened = False
+        if not opened:
+            self._show_message(
+                "showinfo",
+                "Documentation",
+                f"{translate('Copy this address into your browser', self.language_code)}:\n"
+                f"{MODEL_DOCUMENTATION_URL}",
+            )
 
     def _show_startup_citation_notice(self) -> None:
         """Ask users to acknowledge and cite the software when it is used."""
@@ -1209,6 +1262,7 @@ class BRMangueStudio(tk.Tk):
         )
 
     def _build_layout(self) -> None:
+        self.ui_font_family = _ui_font_family(self)
         style = ttk.Style(self)
         try:
             style.theme_use("clam")
@@ -1218,9 +1272,9 @@ class BRMangueStudio(tk.Tk):
         style.configure(".", background=UI_COLORS["window"], foreground=UI_COLORS["text"])
         style.configure("TFrame", background=UI_COLORS["window"])
         style.configure("TLabel", background=UI_COLORS["window"], foreground=UI_COLORS["text"])
-        style.configure("Title.TLabel", font=("Segoe UI", 16, "bold"), foreground=UI_COLORS["blue_dark"])
-        style.configure("Subtitle.TLabel", font=("Segoe UI", 9), foreground=UI_COLORS["muted"])
-        style.configure("Section.TLabelframe.Label", font=("Segoe UI", 10, "bold"), foreground=UI_COLORS["blue_dark"])
+        style.configure("Title.TLabel", font=(self.ui_font_family, 16, "bold"), foreground=UI_COLORS["blue_dark"])
+        style.configure("Subtitle.TLabel", font=(self.ui_font_family, 9), foreground=UI_COLORS["muted"])
+        style.configure("Section.TLabelframe.Label", font=(self.ui_font_family, 10, "bold"), foreground=UI_COLORS["blue_dark"])
         style.configure("TLabelframe", background=UI_COLORS["window"], bordercolor=UI_COLORS["border"], lightcolor=UI_COLORS["border"], darkcolor=UI_COLORS["border"])
         style.configure("TLabelframe.Label", background=UI_COLORS["window"], foreground=UI_COLORS["blue_dark"])
         style.configure("TNotebook", background=UI_COLORS["panel"], borderwidth=0)
@@ -1228,14 +1282,14 @@ class BRMangueStudio(tk.Tk):
         style.map("TNotebook.Tab", background=[("selected", UI_COLORS["surface"]), ("active", UI_COLORS["panel_active"])], foreground=[("selected", UI_COLORS["blue_dark"])])
         style.configure("TButton", background=UI_COLORS["panel"], foreground=UI_COLORS["blue_dark"], bordercolor=UI_COLORS["border"], padding=(9, 5))
         style.map("TButton", background=[("active", UI_COLORS["panel_active"]), ("pressed", "#c7e5ec")])
-        style.configure("Accent.TButton", font=("Segoe UI", 10, "bold"), foreground="#ffffff", background=UI_COLORS["blue"])
+        style.configure("Accent.TButton", font=(self.ui_font_family, 10, "bold"), foreground="#ffffff", background=UI_COLORS["blue"])
         style.map("Accent.TButton", background=[("active", UI_COLORS["blue_dark"]), ("pressed", UI_COLORS["green"])])
         style.configure("TEntry", fieldbackground=UI_COLORS["surface"], foreground=UI_COLORS["text"], bordercolor=UI_COLORS["border"])
         style.configure("TCombobox", fieldbackground=UI_COLORS["surface"], foreground=UI_COLORS["text"], bordercolor=UI_COLORS["border"])
         style.configure("TCheckbutton", background=UI_COLORS["window"], foreground=UI_COLORS["text"])
         style.configure("TSeparator", background=UI_COLORS["border"])
         style.configure("Horizontal.TProgressbar", troughcolor=UI_COLORS["panel"], background=UI_COLORS["blue"], lightcolor=UI_COLORS["blue"], darkcolor=UI_COLORS["blue_dark"])
-        self.option_add("*Font", ("Segoe UI", 9))
+        self.option_add("*Font", (self.ui_font_family, 9))
 
         header = ttk.Frame(self, padding=(14, 10))
         header.pack(fill="x")
@@ -1471,7 +1525,7 @@ class BRMangueStudio(tk.Tk):
         scrollbar.grid(row=0, column=1, sticky="ns")
         parent = content
         parent.columnconfigure(0, weight=1)
-        ttk.Label(parent, text="Input rasters (read-only)", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, columnspan=2, sticky="w")
+        ttk.Label(parent, text="Input rasters (read-only)", font=(self.ui_font_family, 10, "bold")).grid(row=0, column=0, columnspan=2, sticky="w")
         ttk.Label(parent, text="Choose any aligned categorical raster for land cover and any aligned elevation raster. The model does not require a specific provider.", wraplength=360, foreground="#5d6b78").grid(row=1, column=0, columnspan=2, sticky="w", pady=(3, 8))
         self._path_row(parent, 2, "Land-cover / categorical raster (GeoTIFF)", self.land_cover_var)
         self._path_row(parent, 4, "Elevation raster (GeoTIFF)", self.elevation_var)
@@ -1485,7 +1539,7 @@ class BRMangueStudio(tk.Tk):
         ttk.Button(parent, text="Inspect land-cover classes", command=self.inspect_land_cover).grid(row=13, column=0, columnspan=2, sticky="ew", pady=(8, 4))
         ttk.Button(parent, text="Validate and load inputs", command=self.load_inputs).grid(row=14, column=0, columnspan=2, sticky="ew")
         ttk.Separator(parent).grid(row=15, column=0, columnspan=2, sticky="ew", pady=12)
-        ttk.Label(parent, text="Coordinate reference", font=("Segoe UI", 10, "bold")).grid(row=16, column=0, columnspan=2, sticky="w")
+        ttk.Label(parent, text="Coordinate reference", font=(self.ui_font_family, 10, "bold")).grid(row=16, column=0, columnspan=2, sticky="w")
         ttk.Label(parent, text="Detected CRS").grid(row=17, column=0, sticky="w")
         ttk.Entry(parent, textvariable=self.source_crs_var, state="readonly").grid(row=18, column=0, columnspan=2, sticky="ew")
         ttk.Label(parent, text="Datum metadata").grid(row=19, column=0, sticky="w", pady=(5, 0))
@@ -1617,7 +1671,7 @@ class BRMangueStudio(tk.Tk):
         self.bind_all("<Button-5>", scroll_class_tab, add="+")
 
         parent.columnconfigure(0, weight=1)
-        ttk.Label(parent, text="Source class → model class", font=("Segoe UI", 10, "bold")).pack(anchor="w")
+        ttk.Label(parent, text="Source class → model class", font=(self.ui_font_family, 10, "bold")).pack(anchor="w")
         ttk.Label(parent, text="Assign each numeric code according to your input legend. No dataset-specific code meanings are assumed; excluded codes become NoData.", wraplength=360, foreground="#5d6b78").pack(anchor="w", pady=(3, 8))
         legend_frame = ttk.LabelFrame(parent, text="Source class names (optional)", padding=6)
         legend_frame.pack(fill="x", pady=(0, 8))
@@ -2199,7 +2253,7 @@ class BRMangueStudio(tk.Tk):
 
         results_tab.columnconfigure(0, weight=1)
         self.result_path_var = tk.StringVar(value="No simulation has been run in this project.")
-        ttk.Label(results_tab, text="Project outputs", font=("Segoe UI", 11, "bold"), foreground="#17324d").grid(row=0, column=0, sticky="w")
+        ttk.Label(results_tab, text="Project outputs", font=(self.ui_font_family, 11, "bold"), foreground="#17324d").grid(row=0, column=0, sticky="w")
         ttk.Label(results_tab, textvariable=self.result_path_var, wraplength=650).grid(row=1, column=0, sticky="w", pady=(8, 16))
         ttk.Label(results_tab, text="Each run stores annual state rasters, four independent figure series, a complete simulation table, transition summaries and metadata in its own timestamped folder.", wraplength=650, foreground="#5d6b78").grid(row=2, column=0, sticky="w")
         results_actions = ttk.Frame(results_tab)
@@ -2274,7 +2328,7 @@ class BRMangueStudio(tk.Tk):
         ttk.Label(
             active_rules_tab,
             textvariable=self.rule_mapping_mode_var,
-            font=("Segoe UI", 10, "bold"),
+            font=(self.ui_font_family, 10, "bold"),
             foreground="#17324d",
         ).grid(row=1, column=0, sticky="w", pady=(0, 4))
         self.rule_summary_status_var = tk.StringVar()
@@ -2464,11 +2518,11 @@ class BRMangueStudio(tk.Tk):
 
     def _build_right(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
-        ttk.Label(parent, text="Live run monitor", font=("Segoe UI", 11, "bold"), anchor="center").grid(row=0, column=0, sticky="ew", pady=(5, 8))
+        ttk.Label(parent, text="Live run monitor", font=(self.ui_font_family, 11, "bold"), anchor="center").grid(row=0, column=0, sticky="ew", pady=(5, 8))
         self.monitor_text = tk.Text(parent, width=34, height=16, state="disabled", wrap="word", background=UI_COLORS["surface"], foreground=UI_COLORS["text"], relief="solid", borderwidth=1, highlightthickness=0)
         self.monitor_text.grid(row=1, column=0, sticky="nsew")
         parent.rowconfigure(1, weight=1)
-        ttk.Label(parent, text="Net change by class", font=("Segoe UI", 11, "bold"), anchor="center").grid(row=2, column=0, sticky="ew", pady=(12, 5))
+        ttk.Label(parent, text="Net change by class", font=(self.ui_font_family, 11, "bold"), anchor="center").grid(row=2, column=0, sticky="ew", pady=(12, 5))
         ttk.Label(parent, text="Loss ↓     0     ↑ Gain", anchor="center", foreground=UI_COLORS["muted"]).grid(row=3, column=0, sticky="ew", pady=(0, 2))
         self.class_chart = tk.Canvas(parent, height=300, background=UI_COLORS["surface"], highlightbackground=UI_COLORS["border"], highlightthickness=1, bd=0)
         self.class_chart.grid(row=4, column=0, sticky="ew")
@@ -3375,9 +3429,9 @@ class BRMangueStudio(tk.Tk):
         zero_y = top + plot_height / 2.0
         max_abs = max(max((abs(value) for value in self.class_change_values.values()), default=0), 1)
         chart.create_line(left, zero_y, width - right, zero_y, fill="#647986", width=1)
-        chart.create_text(left - 5, top, text=f"+{max_abs:,}", anchor="e", fill=UI_COLORS["muted"], font=("Segoe UI", 8))
-        chart.create_text(left - 5, zero_y, text="0", anchor="e", fill=UI_COLORS["muted"], font=("Segoe UI", 8))
-        chart.create_text(left - 5, top + plot_height, text=f"−{max_abs:,}", anchor="e", fill=UI_COLORS["muted"], font=("Segoe UI", 8))
+        chart.create_text(left - 5, top, text=f"+{max_abs:,}", anchor="e", fill=UI_COLORS["muted"], font=(self.ui_font_family, 8))
+        chart.create_text(left - 5, zero_y, text="0", anchor="e", fill=UI_COLORS["muted"], font=(self.ui_font_family, 8))
+        chart.create_text(left - 5, top + plot_height, text=f"−{max_abs:,}", anchor="e", fill=UI_COLORS["muted"], font=(self.ui_font_family, 8))
         keys = list(self.class_bar_colors)
         slot = (width - left - right) / max(len(keys), 1)
         bar_width = min(34.0, slot * 0.58)
@@ -3394,8 +3448,8 @@ class BRMangueStudio(tk.Tk):
             if delta:
                 chart.create_rectangle(center_x - bar_width / 2, y0, center_x + bar_width / 2, y1, outline="", fill=self.class_bar_colors[key])
                 value_label = f"+{delta:,}" if delta > 0 else f"−{abs(delta):,}"
-                chart.create_text(center_x, y0 - 4 if delta > 0 else y1 + 4, text=value_label, anchor="s" if delta > 0 else "n", fill=UI_COLORS["text"], font=("Segoe UI", 8))
-            chart.create_text(center_x, height - bottom + 10, text=self.class_bar_labels[key], anchor="n", fill=UI_COLORS["text"], font=("Segoe UI", 8))
+                chart.create_text(center_x, y0 - 4 if delta > 0 else y1 + 4, text=value_label, anchor="s" if delta > 0 else "n", fill=UI_COLORS["text"], font=(self.ui_font_family, 8))
+            chart.create_text(center_x, height - bottom + 10, text=self.class_bar_labels[key], anchor="n", fill=UI_COLORS["text"], font=(self.ui_font_family, 8))
 
     def _update_class_bars(self, summary: dict[str, Any]) -> None:
         keys = tuple(self.class_bar_colors)
