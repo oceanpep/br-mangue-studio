@@ -22,6 +22,10 @@ estudos_caso/*/resultados/
 *.mp4
 *.zip
 
+# Application installers are distributed as GitHub Release assets.
+/docs/downloads/*.exe
+/docs/downloads/*.exe.sha256
+
 # Local previews and QA exports; published documentation assets are tracked
 /tmp/
 /output/

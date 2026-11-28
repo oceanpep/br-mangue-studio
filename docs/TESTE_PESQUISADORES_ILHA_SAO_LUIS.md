@@ -5,7 +5,7 @@ Studio sem precisar procurar ou baixar dados adicionais.
 
 ## Conteúdo
 
-- `BR-MANGUE.exe`: executável Windows da versão 1.0.0;
+- O aplicativo deve ser baixado separadamente na página de [Releases do BR-MANGUE Studio](https://github.com/oceanpep/br-mangue-studio/releases/latest).
 - `mapbiomas_2025_ilha_sao_luis.tif`: uso e cobertura da terra do MapBiomas,
   banda de 2025, em GeoTIFF categórico;
 - `anadem_30m_ilha_sao_luis.tif`: modelo digital de terreno ANADEM, resolução
@@ -17,7 +17,7 @@ Studio sem precisar procurar ou baixar dados adicionais.
 ## Como iniciar
 
 1. Extraia todos os arquivos para uma pasta com permissão de escrita.
-2. Abra `BR-MANGUE.exe`.
+2. Abra o BR-MANGUE Studio instalado.
 3. No menu **Project**, abra `brmangue_project.json`.
 4. Confira o mapeamento das classes na aba **Class mapping**.
 5. Na aba **Simulation**, revise os parâmetros e clique em **Run simulation**.
